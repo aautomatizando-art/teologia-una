@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_13.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>As Epístolas Paulinas III — Teologia Una</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:ital,wght@0,300;0,400;0,600;1,300&family=Fira+Code:wght@400;500&display=swap');
+:root{
+  --bg:#0e0e0e;--s1:#141414;--s2:#1e1e1e;--s3:#252525;
+  --br:#303030;--br2:#3a3a3a;--tx:#f2f2f2;--mu:#777;--mu2:#999;
+  --lime:#c8f135;--lime-d:rgba(200,241,53,.1);--lime-b:rgba(200,241,53,.22);
+  --orange:#ff6b35;--orange-d:rgba(255,107,53,.1);--orange-b:rgba(255,107,53,.22);
+  --sky:#35c8ff;--sky-d:rgba(53,200,255,.1);
+  --rose:#ff3577;--rose-d:rgba(255,53,119,.1);--rose-b:rgba(255,53,119,.22);
+  --gold:#ffd166;--gold-d:rgba(255,209,102,.1);
+  --blue:#2a5fa5;--blue-l:#3a7bd5;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Archivo',sans-serif;}
+#bar{position:fixed;top:0;left:0;height:3px;background:var(--lime);z-index:99;transition:width .3s ease;box-shadow:0 0 12px var(--lime);}
+#deck{width:100%;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:52px 64px 68px;opacity:0;transform:scale(.97) translateY(16px);transition:opacity .38s ease,transform .38s ease;pointer-events:none;}
+.slide.active{opacity:1;transform:scale(1) translateY(0);pointer-events:all;}
+.slide.out{opacity:0;transform:scale(1.02) translateY(-16px);}
+.tag{font-family:'Fira Code',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--lime);display:flex;align-items:center;gap:10px;margin-bottom:16px;align-self:flex-start;}
+.tag::before{content:'//';opacity:.4;}
+h1.hero{font-family:'Archivo Black',sans-serif;font-size:clamp(3.5rem,7vw,7rem);line-height:.9;letter-spacing:-3px;text-align:center;}
+h1.hero em{color:var(--lime);font-style:normal;display:block;}
+.sub{font-size:1rem;color:var(--mu2);margin-top:20px;text-align:center;max-width:580px;line-height:1.75;font-weight:300;}
+h2{font-family:'Archivo Black',sans-serif;font-size:clamp(1.6rem,2.8vw,2.6rem);letter-spacing:-1px;line-height:1;align-self:flex-start;margin-bottom:18px;}
+h2 em{color:var(--lime);font-style:normal;}
+.w{width:100%;max-width:920px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+.card{background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:16px 18px;transition:border-color .2s;}
+.card:hover{border-color:var(--br2);}
+.card h3{font-family:'Fira Code',monospace;font-size:.72rem;color:var(--lime);margin-bottom:8px;letter-spacing:.5px;}
+.card p{font-size:.81rem;color:var(--mu2);line-height:1.65;}
+.card ul{list-style:none;margin-top:6px;}
+.card ul li{font-size:.78rem;color:var(--mu2);padding:3px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.55;}
+.card ul li::before{content:'▸';color:var(--lime);font-size:.6rem;margin-top:4px;flex-shrink:0;}
+.hl{border-left:2px solid var(--lime);background:var(--lime-d);border-radius:0 8px 8px 0;padding:13px 17px;width:100%;max-width:920px;}
+.hl p{font-size:.84rem;color:var(--tx);line-height:1.7;}
+.hl strong{color:var(--lime);}
+.gold-hl{border-left-color:var(--gold);background:var(--gold-d);}
+.gold-hl p{color:var(--tx);}
+.gold-hl strong{color:var(--gold);}
+.orange-hl{border-left-color:var(--orange);background:var(--orange-d);}
+.orange-hl p,.orange-hl strong{color:var(--orange);}
+.badge{display:inline-flex;align-items:center;gap:4px;font-family:'Fira Code',monospace;font-size:.67rem;padding:3px 10px;border-radius:3px;}
+.bl{background:var(--lime-d);color:var(--lime);border:1px solid var(--lime-b);}
+.bo{background:var(--orange-d);color:var(--orange);border:1px solid var(--orange-b);}
+.bs{background:var(--sky-d);color:var(--sky);border:1px solid rgba(53,200,255,.22);}
+.bgold{background:var(--gold-d);color:var(--gold);border:1px solid rgba(255,209,102,.22);}
+.steps{list-style:none;width:100%;max-width:900px;}
+.steps li{display:flex;gap:14px;align-items:flex-start;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:12px 16px;margin-bottom:8px;transition:border-color .2s;}
+.steps li:hover{border-color:var(--br2);}
+.sn{font-family:'Fira Code',monospace;font-size:.65rem;background:var(--lime);color:var(--bg);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.sb h4{font-size:.87rem;font-weight:600;margin-bottom:3px;}
+.sb p{font-size:.78rem;color:var(--mu2);line-height:1.55;}
+.ctbl{width:100%;border-collapse:collapse;font-size:.76rem;}
+.ctbl thead th{background:var(--s3);color:var(--lime);padding:9px 13px;text-align:left;border-bottom:1px solid var(--br2);font-family:'Fira Code',monospace;font-size:.67rem;letter-spacing:1px;}
+.ctbl tbody tr{border-bottom:1px solid rgba(48,48,48,.7);transition:background .15s;}
+.ctbl tbody tr:hover{background:var(--s2);}
+.ctbl td{padding:8px 13px;color:var(--mu2);}
+.ctbl td.hi{color:var(--lime);}
+.ctbl td.ok{color:#c3e88d;}
+.ctbl td.warn{color:var(--gold);}
+.verso{background:var(--s2);border:1px solid var(--br);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:14px 18px;width:100%;max-width:920px;margin-bottom:10px;}
+.verso .ref{font-family:'Fira Code',monospace;font-size:.65rem;color:var(--gold);margin-top:6px;}
+.verso p{font-size:.88rem;line-height:1.7;color:var(--tx);font-style:italic;}
+.prisao-card{background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px 16px;}
+.prisao-card h3{font-size:.82rem;font-weight:700;color:var(--orange);margin-bottom:6px;}
+.prisao-card p{font-size:.76rem;color:var(--mu2);line-height:1.6;font-style:italic;}
+.arma{background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start;}
+.arma .icon{font-size:1.4rem;flex-shrink:0;margin-top:2px;}
+.arma h4{font-size:.84rem;font-weight:700;color:var(--lime);margin-bottom:3px;}
+.arma p{font-size:.76rem;color:var(--mu2);line-height:1.55;}
+#nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(14,14,14,.93);border:1px solid var(--br2);border-radius:40px;padding:8px 18px;backdrop-filter:blur(20px);z-index:10000;}
+#nav button{background:none;border:none;color:var(--mu);font-size:15px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .2s;}
+#nav button:hover{color:var(--lime);background:var(--lime-d);}
+#ctr{font-family:'Fira Code',monospace;font-size:11px;color:var(--mu);min-width:55px;text-align:center;}
+#menu{position:fixed;inset:0;background:rgba(10,10,10,.97);backdrop-filter:blur(24px);z-index:200;display:none;overflow-y:auto;padding:48px 44px;}
+#menu.open{display:block;}
+#mc{background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer;position:fixed;top:16px;right:20px;}
+.mt{font-family:'Archivo Black',sans-serif;font-size:2rem;letter-spacing:-1px;color:var(--lime);margin-bottom:28px;}
+.ms{margin-bottom:18px;}
+.msl{font-family:'Fira Code',monospace;font-size:.6rem;letter-spacing:3px;color:var(--mu);text-transform:uppercase;margin-bottom:8px;}
+.mi{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background .15s;margin-bottom:3px;}
+.mi:hover{background:var(--s2);}
+.mi.cur{background:var(--lime-d);}
+.mn{font-family:'Fira Code',monospace;font-size:.6rem;color:var(--lime);width:22px;}
+.ml{font-size:.83rem;}
+.gfx{position:absolute;pointer-events:none;border-radius:50%;filter:blur(110px);opacity:.06;}
+.gfxa{width:600px;height:400px;background:var(--gold);top:-150px;right:-200px;}
+.gfxb{width:400px;height:400px;background:var(--blue-l);bottom:-150px;left:-150px;}
+
+/* ── Bible Modal ── */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.vref{color:#ffd166;border-bottom:1px dashed rgba(255,209,102,.5);cursor:pointer;}
+.vref:hover{opacity:.7;}
+</style>
+</head>
+<body>
+<div id="bar" style="width: 7.69231%;"></div>
+
+<!-- Bible Modal -->
+
+    
+    
+  
+
+
+<div id="menu">
+  <button id="mc" onclick="closeMenu()">✕</button>
+  <div class="mt">// Epístolas Paulinas III</div>
+  <div id="mb"></div>
+</div>
+<div id="deck">
+
+<!-- S0 CAPA -->
+<div class="slide active" id="s0">
+  <div class="gfx gfxa"></div><div class="gfx gfxb"></div>
+  <div class="tag">Ensino Teológico · UNA · Efésios a Filemom</div>
+  <h1 class="hero">As Epístolas<br><em>Paulinas III</em></h1>
+  <p class="sub">A Vontade de Deus para os Crentes e seus Líderes — Efésios a Filemom. Plano de Aula do manual de estudo Sã Palavra.</p>
+  <div style="display:flex;gap:8px;margin-top:26px;flex-wrap:wrap;justify-content:center;">
+    <span class="badge bl">Efésios 1–6</span>
+    <span class="badge bl">Eleição &amp; Predestinação</span>
+    <span class="badge bl">Unidade da Fé</span>
+    <span class="badge bl">Família Cristã</span>
+    <span class="badge bgold">Armadura de Deus</span>
+    <span class="badge bo">2 Lições</span>
+  </div>
+  <div class="verso" style="margin-top:28px;max-width:620px;">
+    <p>E quanto a mim, longe de mim que eu peque contra o Senhor, deixando de orar por vós; antes vos ensinarei o caminho bom e direito.</p>
+    <div class="ref">1 Samuel 12:23</div>
+  </div>
+</div>
+
+<!-- S1 ÍNDICE DAS LIÇÕES -->
+<div class="slide" id="s1">
+  <div class="tag">Visão Geral · Plano de Aula</div>
+  <h2 class="w">Efésios a Filemom — <em>Duas Lições</em></h2>
+  <div class="g2 w" style="margin-bottom:14px;">
+    <div class="card" style="border-color:var(--lime-b);">
+      <h3>Lição 1 · Efésios 1–3</h3>
+      <p style="margin-bottom:10px;color:var(--tx);font-weight:600;">A História do Evangelho</p>
+      <ul>
+        <li>Especificidades da Epístola aos Efésios – Parte I</li>
+        <li>Especificidades da Epístola aos Efésios – Parte II</li>
+        <li>Os crentes em um patamar especial como igreja</li>
+        <li>Eleição e Predestinação (Ef 1:4–5)</li>
+        <li>As prisões de Paulo — contexto histórico</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--gold-d);">
+      <h3>Lição 2 · Efésios 4–6</h3>
+      <p style="margin-bottom:10px;color:var(--tx);font-weight:600;">A Nossa História</p>
+      <ul>
+        <li>O Crente em uma Nova Vida</li>
+        <li>Unidade da Fé — Ef 4</li>
+        <li>O Crente Vivendo em Família — Ef 5–6</li>
+        <li>O Crente na Guerra Espiritual</li>
+        <li>A Armadura de Deus — Ef 6:13–17</li>
+      </ul>
+    </div>
+  </div>
+  <div class="hl w gold-hl">
+    <p>🎯 <strong>Tema central:</strong> Cristo estabelece e edifica a Sua Igreja — Paulo, escrevendo preso em Roma (~60–61 d.C.), exorta os crentes a amadurecerem espiritualmente. A expressão <strong>"em Cristo"</strong> aparece 36 vezes no texto.</p>
+  </div>
+</div>
+
+<!-- S2 ESPECIFICIDADES DE EFÉSIOS -->
+<div class="slide" id="s2">
+  <div class="tag">Lição 1 · <span class="vref" onclick="VMopen(&#39;Efesios 1-3&#39;)">Efésios 1–3</span></div>
+  <h2 class="w">A Carta de Paulo aos <em>Efésios</em></h2>
+  <div class="g3 w" style="margin-bottom:14px;">
+    <div class="card">
+      <h3>✍️ Escritor</h3>
+      <p><strong style="color:var(--tx);">Paulo</strong><br>Ef 3:1; 4:1<br>Escrita em torno de <strong style="color:var(--gold);">60 ou 61 d.C.</strong></p>
+    </div>
+    <div class="card">
+      <h3>📍 Local</h3>
+      <p>Paulo estava <strong style="color:var(--tx);">preso em Roma</strong> quando escreveu a carta — uma das chamadas "Epístolas do Cativeiro".</p>
+    </div>
+    <div class="card">
+      <h3>✉️ Destino</h3>
+      <p><strong style="color:var(--tx);">Os santos</strong> que vivem em <strong style="color:var(--gold);">Éfeso</strong> — crentes de origem gentílica e judaica.</p>
+    </div>
+    <div class="card">
+      <h3>🎯 Objetivo</h3>
+      <p>Exortar os crentes a que <strong style="color:var(--lime);">amadureçam espiritualmente</strong> e vivam de forma digna da vocação que receberam.</p>
+    </div>
+    <div class="card">
+      <h3>📖 Tema</h3>
+      <p><strong style="color:var(--tx);">Cristo estabelece e edifica a Sua Igreja</strong> — a unidade dos crentes judeus e gentios em um só corpo.</p>
+    </div>
+    <div class="card" style="border-color:var(--gold-d);">
+      <h3>🔑 Marca única</h3>
+      <p>A expressão <strong style="color:var(--gold);">"em Cristo"</strong> surge <strong style="color:var(--gold);">36 vezes</strong> — mais do que em qualquer outra carta paulina.</p>
+    </div>
+  </div>
+  <div class="verso w">
+    <p>Paulo começa com uma exaltação — <strong style="color:var(--gold);font-style:normal;">"BENDITO"</strong> — ele se encontra feliz, pleno em discorrer pelo milagre da Eleição dos santos.</p>
+  </div>
+</div>
+
+<!-- S3 PRISÕES DE PAULO -->
+<div class="slide" id="s3">
+  <div class="tag">Lição 1 · Contexto Histórico</div>
+  <h2 class="w">As <em>Prisões de Paulo</em></h2>
+  <div class="g2 w" style="margin-bottom:12px;">
+    <div class="prisao-card">
+      <h3>⛓️ Filipos (At 16:23)</h3>
+      <p>Paulo e Silas foram acusados: "Estes homens estão provocando desordem em nossa cidade; são judeus e pregam costumes que a nós, romanos, não é permitido aceitar nem seguir." (At 16:20–21)</p>
+    </div>
+    <div class="prisao-card">
+      <h3>⛓️ Jerusalém (At 21:33)</h3>
+      <p>Os judeus instigaram o povo: "Israelitas, socorro! Este é o homem que anda ensinando a todos contra o nosso povo, contra a lei e contra este lugar." (At 21:28)</p>
+    </div>
+    <div class="prisao-card">
+      <h3>⛓️ Cesaréia (At 23:23)</h3>
+      <p>O governador recebeu carta: "Verifiquei que ele era incriminado por questões referentes à lei que os rege, não havendo nenhum crime que justificasse morte ou prisão." (At 23:29)</p>
+    </div>
+    <div class="prisao-card">
+      <h3>⛓️ Roma (At 28:20)</h3>
+      <p>No tribunal os judeus diziam: "Verificamos que este homem é uma peste: ele promove conflitos entre os judeus do mundo inteiro e é também um dos líderes da seita dos nazareus." (At 24:5–6)</p>
+    </div>
+  </div>
+  <div class="hl w orange-hl">
+    <p>⚠️ <strong>Éfeso:</strong> Prisão muito pesada de onde escreveu para os Filipenses (Fil 1:13), Colossenses (Co 4:18) e talvez Filemom (9 e 13). Paulo descreveu como <em>"uma luta contra animais selvagens"</em> (1Cor 15:32) e afirmou ter passado por muitas prisões (2Cor 11:23).</p>
+  </div>
+</div>
+
+<!-- S4 PUNIÇÕES ROMANAS -->
+<div class="slide" id="s4">
+  <div class="tag">Lição 1 · Contexto Histórico · Roma</div>
+  <h2 class="w">Punições <em>Romanas</em> — O Peso da Prisão</h2>
+  <div class="g3 w" style="margin-bottom:14px;">
+    <div class="card">
+      <h3>🏚️ Oubliette — Esquecido</h3>
+      <p>Cela subterrânea em poço estreito e profundo, acessível apenas pelo teto. Do francês <em>"oublier"</em> (esquecer) — aprisionavam pessoas para esquecê-las. Usada na Prisão Mamertina de Roma.</p>
+    </div>
+    <div class="card">
+      <h3>🪨 Rocha Tarpeiana</h3>
+      <p>Execução lançando o condenado de um penhasco de <strong style="color:var(--gold);">25 metros</strong> de altura. Muito usada para advertir ladrões e escravos rebeldes.</p>
+    </div>
+    <div class="card">
+      <h3>🦁 Gangorras e Leões</h3>
+      <p>Prisioneiros jogados às feras no coliseu por meio de gangorras gigantes. Muito usado para prisioneiros de guerra ou inimigos do império.</p>
+    </div>
+    <div class="card">
+      <h3>🧰 Execução na Bolsa de Couro</h3>
+      <p>O condenado era costurado dentro de uma bolsa com animais vivos e lançado ao rio. Usada para crimes de parricídio (matar o próprio pai).</p>
+    </div>
+    <div class="card">
+      <h3>⚔️ Dizimação</h3>
+      <p>A cada dez soldados que fugiram da batalha, um era executado pelos próprios companheiros. Usada para disciplinar tropas covardes.</p>
+    </div>
+    <div class="card">
+      <h3>✝️ Crucificação</h3>
+      <p>A punição mais infame do império romano. Usada para punir escravos e ameaças ao poder imperial. Pena sofrida por Jesus Cristo.</p>
+    </div>
+  </div>
+  <div class="hl w">
+    <p>📖 <strong>Perspectiva:</strong> Conhecer as punições romanas aprofunda nossa compreensão da coragem de Paulo — escrever cartas de esperança e amor <em>dentro</em> dessas prisões é em si um milagre da graça de Deus.</p>
+  </div>
+</div>
+
+<!-- S5 EFÉSIOS 1:3 — BÊNÇÃOS -->
+<div class="slide" id="s5">
+  <div class="tag">Lição 1 · <span class="vref" onclick="VMopen(&#39;Efesios 1:3&#39;)">Efésios 1:3</span></div>
+  <h2 class="w">Bênçãos Espirituais <em>em Cristo</em></h2>
+  <div class="verso w" style="margin-bottom:20px;">
+    <p>Bendito o Deus e Pai de nosso Senhor Jesus Cristo, o qual nos abençoou com todas as bênçãos espirituais nos lugares celestiais em Cristo.</p>
+    <div class="ref">Efésios 1:3</div>
+  </div>
+  <div class="g3 w" style="margin-bottom:14px;">
+    <div class="card" style="border-color:var(--lime-b);">
+      <h3>⏮️ Passado</h3>
+      <p style="color:var(--tx);font-size:.9rem;font-weight:600;margin-bottom:6px;">Eleição</p>
+      <p>Antes da fundação do mundo, Deus nos escolheu em Cristo para sermos santos e irrepreensíveis diante dEle.</p>
+    </div>
+    <div class="card" style="border-color:var(--gold-d);">
+      <h3>⏯️ Presente</h3>
+      <p style="color:var(--tx);font-size:.9rem;font-weight:600;margin-bottom:6px;">Redenção</p>
+      <p>Nele temos a redenção pelo Seu sangue — o perdão dos pecados segundo as riquezas da Sua graça.</p>
+    </div>
+    <div class="card" style="border-color:var(--orange-b);">
+      <h3>⏭️ Futuro</h3>
+      <p style="color:var(--tx);font-size:.9rem;font-weight:600;margin-bottom:6px;">Herança Eterna</p>
+      <p>Fomos selados com o Espírito Santo da promessa, que é o penhor da nossa herança até a redenção da posse adquirida.</p>
+    </div>
+  </div>
+  <div class="hl w gold-hl">
+    <p>✨ As bênçãos espirituais nas regiões celestiais englobam <strong>passado</strong> (eleição), <strong>presente</strong> (redenção) e <strong>futuro</strong> (herança eterna) — a totalidade da obra salvadora de Deus em Cristo.</p>
+  </div>
+</div>
+
+<!-- S6 ELEIÇÃO — EF 1:4 -->
+<div class="slide" id="s6">
+  <div class="tag">Lição 1 · <span class="vref" onclick="VMopen(&#39;Efesios 1:4&#39;)">Efésios 1:4</span></div>
+  <h2 class="w"><em>Eleição</em> — "como também nos elegeu"</h2>
+  <div class="verso w" style="margin-bottom:16px;">
+    <p>"como também nos elegeu nEle antes da fundação do mundo, para sermos santos e irrepreensíveis diante dEle em amor"</p>
+    <div class="ref">Efésios 1:4</div>
+  </div>
+  <div class="g3 w" style="margin-bottom:12px;">
+    <div class="card">
+      <h3>Por</h3>
+      <p style="color:var(--gold);font-weight:700;margin-bottom:6px;">Segundo a sua vontade</p>
+      <p style="font-size:.75rem;font-style:italic;">"Não fostes vós que me escolhestes a mim; pelo contrário, eu vos escolhi a vós outros..."<br><strong style="color:var(--gold);font-style:normal;">João 15:16–17</strong></p>
+    </div>
+    <div class="card">
+      <h3>Quando</h3>
+      <p style="color:var(--gold);font-weight:700;margin-bottom:6px;">Antes da fundação do Mundo</p>
+      <p style="font-size:.75rem;font-style:italic;">"Ainda antes que houvesse dia, eu sou; e ninguém há que possa fazer escapar das minhas mãos..."<br><strong style="color:var(--gold);font-style:normal;">Isaías 43:13</strong></p>
+    </div>
+    <div class="card">
+      <h3>Para</h3>
+      <p style="color:var(--gold);font-weight:700;margin-bottom:6px;">Sermos Santos e Irrepreensíveis</p>
+      <p style="font-size:.75rem;font-style:italic;">"...para apresentá-los diante dele santos, inculpáveis e irrepreensíveis..."<br><strong style="color:var(--gold);font-style:normal;">Colossenses 1:21–23</strong></p>
+    </div>
+  </div>
+  <div class="hl w">
+    <p>📖 <strong>Definição:</strong> Eleição = ação de eleger (escolher); preferência, primazia, predileção. <strong>"Predileção"</strong> indica uma preferência forte por alguém em detrimento de outros — é a escolha soberana e amorosa de Deus por Seu povo.</p>
+  </div>
+</div>
+
+<!-- S7 PREDESTINAÇÃO — EF 1:5 -->
+<div class="slide" id="s7">
+  <div class="tag">Lição 1 · <span class="vref" onclick="VMopen(&#39;Efesios 1:5&#39;)">Efésios 1:5</span></div>
+  <h2 class="w"><em>Predestinação</em> — "e nos predestinou"</h2>
+  <div class="verso w" style="margin-bottom:14px;">
+    <p>"nos predestinando para sermos adotados como filhos, por Jesus Cristo, para Si mesmo, segundo o beneplácito de Sua vontade"</p>
+    <div class="ref">Efésios 1:5</div>
+  </div>
+  <div class="g3 w" style="margin-bottom:12px;">
+    <div class="card">
+      <h3>Segundo a sua vontade</h3>
+      <p style="font-size:.76rem;font-style:italic;color:var(--mu2);">"E aos que predestinou a estes também chamou; e aos que chamou a estes também justificou; e aos que justificou a estes também glorificou... Se Deus é por nós, quem será contra nós?"<br><strong style="color:var(--gold);font-style:normal;">Romanos 8:30–39</strong></p>
+    </div>
+    <div class="card">
+      <h3>Redenção e Remissão</h3>
+      <p style="font-size:.76rem;font-style:italic;color:var(--mu2);">"pois todos pecaram e estão destituídos da glória de Deus, sendo justificados gratuitamente por sua graça, por meio da redenção que há em Cristo Jesus."<br><strong style="color:var(--gold);font-style:normal;">Romanos 3:23–24</strong></p>
+    </div>
+    <div class="card">
+      <h3>Para quê? Adoção em Cristo</h3>
+      <p style="font-size:.76rem;font-style:italic;color:var(--mu2);">"Contudo, aos que o receberam, aos que creram em seu nome, deu-lhes o direito de se tornarem filhos de Deus."<br><strong style="color:var(--gold);font-style:normal;">João 1:12</strong></p>
+    </div>
+  </div>
+  <div class="hl w">
+    <p>📖 <strong>Nota teológica:</strong> Os eleitos são aqueles que Deus previu que creriam em Cristo — a base da eleição é a presciência divina. <em>"Os gentios, ouvindo isto, se alegravam e glorificavam a palavra do Senhor; e creram."</em> (Atos 13:48)</p>
+  </div>
+</div>
+
+<!-- S8 VISÃO GERAL EFÉSIOS -->
+<div class="slide" id="s8">
+  <div class="tag">Lição 1 → Lição 2 · Estrutura</div>
+  <h2 class="w">Efésios — <em>Estrutura da Carta</em></h2>
+  <div class="g2 w" style="margin-bottom:14px;">
+    <div class="card" style="border-color:var(--lime-b);">
+      <h3>📖 Capítulos 1–3 · A História do Evangelho</h3>
+      <ul>
+        <li>1:3–14 — Poema de abertura: louvo a Deus pelo que Ele fez em Cristo</li>
+        <li>1:15–23 — Oração: experimente o poder que levantou Jesus dos mortos</li>
+        <li>2:1–10 — A graça de Deus: de escravos do pecado a filhos adotados</li>
+        <li>2:11–22 — Uma nova família multiétnica vivendo em paz</li>
+        <li>Cap. 3 — Papel único de Paulo como mensageiro para os não judeus</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--gold-d);">
+      <h3>📖 Capítulos 4–6 · A Nossa História</h3>
+      <ul>
+        <li>4:1–16 — Unidade: um Espírito, muitos talentos para construir a Igreja</li>
+        <li>4:17–6:9 — Velho × Novo: tire mentira, raiva, roubo — coloque verdade, paz, generosidade</li>
+        <li>5:22–6:4 — Família Cristã: Jesus → Marido → Esposa → Filhos</li>
+        <li>6:10–20 — A Armadura de Deus contra o mal espiritual</li>
+      </ul>
+    </div>
+  </div>
+  <div class="hl w">
+    <p>🔑 <strong>"PORTANTO"</strong> (Ef 4:1) é a grande virada da carta: Paulo conclui a doutrina (cap. 1–3) e passa à prática (cap. 4–6). <strong>Doutrina → Prática</strong> — padrão típico das cartas paulinas.</p>
+  </div>
+</div>
+
+<!-- S9 UNIDADE DA FÉ — EF 4 -->
+<div class="slide" id="s9">
+  <div class="tag">Lição 2 · <span class="vref" onclick="VMopen(&#39;Efesios 4&#39;)">Efésios 4</span></div>
+  <h2 class="w">Unidade da Fé — <em>Efésios 4</em></h2>
+  <div class="verso w" style="margin-bottom:14px;">
+    <p>"há um só corpo e um só Espírito, como também fostes chamados em uma só esperança da vossa vocação; um só Senhor, uma só fé, um só batismo; um só Deus e Pai de todos..."</p>
+    <div class="ref">Efésios 4:4–6</div>
+  </div>
+  <div class="g2 w" style="margin-bottom:12px;">
+    <div>
+      <div class="card" style="margin-bottom:10px;">
+        <h3>🎯 Objetivos da Lição</h3>
+        <ul>
+          <li>Perceber a importância da unidade e pureza entre os irmãos</li>
+          <li>Valorizar os dons que Deus deu à Igreja para sua edificação</li>
+          <li>Entender que cada dom funciona de forma complementar</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>✅ Requisitos da Unidade · Ef 4:1–3</h3>
+        <ul>
+          <li>A unidade requer <strong style="color:var(--lime);">humildade</strong> — Ef 4:1–2</li>
+          <li>A unidade requer <strong style="color:var(--lime);">mansidão</strong> — Ef 4:2</li>
+          <li>A unidade requer <strong style="color:var(--lime);">longanimidade</strong> — Ef 4:2</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:10px;">
+        <h3>🔢 Provas da Unidade · Ef 4:4–6</h3>
+        <ul>
+          <li>Um só corpo e um só Espírito — Ef 4:4</li>
+          <li>Um só Senhor, uma só fé — Ef 4:5a</li>
+          <li>Um só batismo, um só Deus — Ef 4:5–6</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🎁 Os Dons Produzem Unidade · Ef 4:7–16</h3>
+        <ul>
+          <li>Dom de <strong style="color:var(--lime);">apóstolo</strong> e dom de <strong style="color:var(--lime);">profeta</strong> — Ef 4:11</li>
+          <li>Dom de <strong style="color:var(--lime);">evangelista</strong> — Ef 4:11</li>
+          <li>Dom de <strong style="color:var(--lime);">pastor e mestre</strong> — Ef 4:11</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S10 FAMÍLIA CRISTÃ — EF 5–6 -->
+<div class="slide" id="s10">
+  <div class="tag">Lição 2 · <span class="vref" onclick="VMopen(&#39;Efesios 5-6&#39;)">Efésios 5–6</span></div>
+  <h2 class="w">Família Segundo o <em>Coração de Deus</em></h2>
+  <div class="w" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+    <div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:16px;">
+      <div style="width:80px;text-align:center;font-family:&#39;Archivo Black&#39;,sans-serif;font-size:1rem;color:var(--gold);">JESUS</div>
+      <div style="flex:1;height:1px;background:var(--br);"></div>
+      <div style="font-size:.8rem;color:var(--mu2);">É a cabeça do marido <span style="color:var(--gold);">· 1 Cor 11:3</span></div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:16px;">
+      <div style="width:80px;text-align:center;font-family:&#39;Archivo Black&#39;,sans-serif;font-size:1rem;color:var(--lime);">MARIDO</div>
+      <div style="flex:1;height:1px;background:var(--br);"></div>
+      <div style="font-size:.8rem;color:var(--mu2);">Liderar, proteger e prover a família; amar sua esposa <span style="color:var(--lime);">· Ef 5:23–31; 6:4</span></div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:16px;">
+      <div style="width:80px;text-align:center;font-family:&#39;Archivo Black&#39;,sans-serif;font-size:1rem;color:var(--sky);">ESPOSA</div>
+      <div style="flex:1;height:1px;background:var(--br);"></div>
+      <div style="font-size:.8rem;color:var(--mu2);">Confortar, ensinar, nutrir e amar seu marido <span style="color:var(--sky);">· Ef 5:22–24; 6:4</span></div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:16px;">
+      <div style="width:80px;text-align:center;font-family:&#39;Archivo Black&#39;,sans-serif;font-size:.9rem;color:var(--orange);">FILHO · FILHA</div>
+      <div style="flex:1;height:1px;background:var(--br);"></div>
+      <div style="font-size:.8rem;color:var(--mu2);">Amar e obedecer os pais <span style="color:var(--orange);">· Ef 6:1–3</span></div>
+    </div>
+  </div>
+  <div class="hl w gold-hl">
+    <p>✨ <strong>Princípio de ordem:</strong> A família cristã reflete a ordem do próprio Deus — cada papel tem responsabilidades únicas e complementares. A submissão não é inferioridade, mas vocação sagrada dentro da aliança.</p>
+  </div>
+</div>
+
+<!-- S11 ARMADURA DE DEUS -->
+<div class="slide" id="s11">
+  <div class="tag">Lição 2 · <span class="vref" onclick="VMopen(&#39;Efesios 6:13-17&#39;)">Efésios 6:13–17</span></div>
+  <h2 class="w">A <em>Armadura de Deus</em></h2>
+  <div class="verso w" style="margin-bottom:14px;">
+    <p>"Portanto, tomai toda a armadura de Deus, para que possais resistir no dia mau e, havendo feito tudo, ficar firmes."</p>
+    <div class="ref">Efésios 6:13</div>
+  </div>
+  <div class="g2 w">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="arma">
+        <div class="icon">🪖</div>
+        <div><h4>Capacete da Salvação</h4><p>Simboliza a esperança da salvação e a segurança em Cristo — protege a mente e o pensamento do crente.</p></div>
+      </div>
+      <div class="arma">
+        <div class="icon">🛡️</div>
+        <div><h4>Escudo da Fé</h4><p>Protege contra os ataques do inimigo, permitindo que o crente confie em Deus e em suas promessas.</p></div>
+      </div>
+      <div class="arma">
+        <div class="icon">⚔️</div>
+        <div><h4>Espada do Espírito</h4><p>A Palavra de Deus — única arma ofensiva da armadura. Com ela o crente combate o mal e defende a verdade.</p></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="arma">
+        <div class="icon">🦺</div>
+        <div><h4>Couraça da Justiça</h4><p>Representa a proteção que vem de viver uma vida justa e reta perante Deus — protege o coração.</p></div>
+      </div>
+      <div class="arma">
+        <div class="icon">🔰</div>
+        <div><h4>Cinto da Verdade</h4><p>Simboliza a importância de conhecer e viver de acordo com a verdade de Deus — base de toda a armadura.</p></div>
+      </div>
+      <div class="arma">
+        <div class="icon">👟</div>
+        <div><h4>Sapatos do Evangelho da Paz</h4><p>Preparação e disposição para compartilhar a mensagem de paz e salvação aonde quer que o crente vá.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S12 RESUMO E CONCLUSÃO -->
+<div class="slide" id="s12">
+  <div class="tag">Conclusão · Epístolas Paulinas III</div>
+  <h2 class="w">O Que Paulo <em>Ensina</em> em Efésios</h2>
+  <div class="g3 w" style="margin-bottom:14px;">
+    <div class="card"><h3>Doutrina (1–3)</h3><ul><li>Eleição antes da criação</li><li>Predestinação para adoção</li><li>Redenção pelo sangue de Cristo</li><li>Igreja: nova humanidade unificada</li></ul></div>
+    <div class="card"><h3>Prática (4–6)</h3><ul><li>Andar dignamente da vocação</li><li>Unidade: um corpo, um Espírito</li><li>Renovação da mente e do caráter</li><li>Relações familiares segundo Deus</li></ul></div>
+    <div class="card"><h3>Batalha Espiritual</h3><ul><li>O mal espiritual é real</li><li>A armadura é necessária diariamente</li><li>A Palavra é a espada ofensiva</li><li>Oração: fundamento de tudo</li></ul></div>
+  </div>
+  <div class="verso w" style="margin-bottom:12px;">
+    <p>"Rogo-vos, pois, eu, o preso do Senhor, que andeis como é digno da vocação com que fostes chamados, com toda a humildade e mansidão, com longanimidade, suportando-vos uns aos outros em amor."</p>
+    <div class="ref">Efésios 4:1–2</div>
+  </div>
+  <div class="hl w gold-hl">
+    <p>🙏 <strong>A mensagem de Paulo:</strong> Deus já fez tudo em Cristo — eleição, redenção, herança eterna. Nossa resposta é viver à altura dessa graça: em unidade, em família, em batalha espiritual, <strong>em Cristo</strong>.</p>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button onclick="om()">☰</button>
+  <button onclick="go(-1)">←</button>
+  <span id="ctr">1 / 13</span>
+  <button onclick="go(1)">→</button>
+  <button onclick="fs()">⛶</button>
+</div>
+
+<script>
+const sl=document.querySelectorAll('.slide'),tot=sl.length;
+let cur=0;
+const idx=[
+  {l:'Capa — As Epístolas Paulinas III',s:'Apresentação'},
+  {l:'Índice das Duas Lições',s:'Apresentação'},
+  {l:'A Carta de Paulo aos Efésios',s:'Lição 1 · Efésios 1–3'},
+  {l:'As Prisões de Paulo',s:'Lição 1 · Efésios 1–3'},
+  {l:'Punições Romanas — Contexto',s:'Lição 1 · Efésios 1–3'},
+  {l:'Efésios 1:3 — Bênçãos em Cristo',s:'Lição 1 · Efésios 1–3'},
+  {l:'Efésios 1:4 — Eleição',s:'Lição 1 · Efésios 1–3'},
+  {l:'Efésios 1:5 — Predestinação',s:'Lição 1 · Efésios 1–3'},
+  {l:'Estrutura da Carta aos Efésios',s:'Lição 1 → Lição 2'},
+  {l:'Unidade da Fé — Efésios 4',s:'Lição 2 · Efésios 4–6'},
+  {l:'Família Cristã — Efésios 5–6',s:'Lição 2 · Efésios 4–6'},
+  {l:'A Armadura de Deus — Ef 6:13–17',s:'Lição 2 · Efésios 4–6'},
+  {l:'Conclusão — O Ensino de Paulo',s:'Conclusão'},
+];
+function gt(n){
+  sl[cur].classList.remove('active');sl[cur].classList.add('out');
+  const p=cur;cur=Math.max(0,Math.min(n,tot-1));
+  setTimeout(()=>sl[p].classList.remove('out'),400);
+  sl[cur].classList.add('active');
+  document.getElementById('ctr').textContent=`${cur+1} / ${tot}`;
+  document.getElementById('bar').style.width=`${((cur+1)/tot)*100}%`;
+}
+function go(d){gt(cur+d);}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(-1);
+  if(e.key==='Escape')closeMenu();
+});
+function fs(){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+function bm(){
+  const b=document.getElementById('mb');let h='',ls='';
+  idx.forEach((it,i)=>{
+    if(it.s!==ls){if(ls)h+='</div>';h+=`<div class="ms"><div class="msl">${it.s}</div>`;ls=it.s;}
+    h+=`<div class="mi ${i===cur?'cur':''}" onclick="gt(${i});closeMenu()"><span class="mn">${String(i+1).padStart(2,'0')}</span><span class="ml">${it.l}</span></div>`;
+  });
+  h+='</div>';b.innerHTML=h;
+}
+function om(){bm();document.getElementById('menu').classList.add('open');}
+function closeMenu(){document.getElementById('menu').classList.remove('open');}
+document.getElementById('bar').style.width=`${(1/tot)*100}%`;
+
+
+/* ── Bible Modal ── */
+const BIBLE_BOOKS = {
+  'gn':'GEN','genesis':'GEN','gênesis':'GEN','ex':'EXO','êxodo':'EXO',
+  'salmos':'PSA','salmo':'PSA','sl':'PSA','provérbios':'PRO','pv':'PRO',
+  'isaías':'ISA','is':'ISA','jeremias':'JER','jr':'JER',
+  'daniel':'DAN','dn':'DAN','ezequiel':'EZQ','ez':'EZQ',
+  'mateus':'MAT','mt':'MAT','marcos':'MRK','mc':'MRK',
+  'lucas':'LUK','lc':'LUK','joão':'JHN','jo':'JHN',
+  'atos':'ACT','at':'ACT','romanos':'ROM','ro':'ROM','rm':'ROM',
+  '1 coríntios':'1CO','1co':'1CO','2 coríntios':'2CO','2co':'2CO',
+  'gálatas':'GAL','gl':'GAL','efésios':'EPH','ef':'EPH',
+  'filipenses':'PHP','fp':'PHP','colossenses':'COL','cl':'COL',
+  '1 tessalonicenses':'1TH','2 tessalonicenses':'2TH',
+  '1 timóteo':'1TI','1ti':'1TI','2 timóteo':'2TI','2ti':'2TI',
+  'tito':'TIT','tt':'TIT','filemom':'PHM','fm':'PHM',
+  'hebreus':'HEB','hb':'HEB',
+  'tiago':'JAS','tg':'JAS',
+  '1 pedro':'1PE','1pe':'1PE','2 pedro':'2PE','2pe':'2PE',
+  '1 samuel':'1SA','1sm':'1SA','2 samuel':'2SA','2sm':'2SA',
+  '1 reis':'1KI','2 reis':'2KI',
+};
+
+
+
+document.getElementById('bmodal').addEventListener('click', function(e){
+  if(e.target === this) bClose();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape') bClose();
+});
+
+
+/* ── /Bible Modal ── */
+
+</script>
+
+
+<div id="VM" style="pointer-events:none;opacity:0;position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.78);transition:opacity .2s;">
+  <div id="VM-backdrop" style="position:absolute;inset:0;" onclick="VMclose()"></div>
+  <div style="position:relative;z-index:1;background:#1c1c1c;border:1px solid #404040;border-radius:14px;padding:28px 32px;max-width:560px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <button onclick="VMclose()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">×</button>
+    <div id="VM-ref" style="font-size:.65rem;font-family:monospace;color:#ffd166;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;"></div>
+    <div id="VM-txt" style="font-size:.95rem;line-height:1.85;color:#f0f0f0;font-style:italic;"></div>
+    <div id="VM-src" style="font-size:.6rem;font-family:monospace;color:#555;margin-top:14px;"></div>
+  </div>
+</div>
+
+<script>
+var VV=[["1 Samuel 12:23","Quanto a mim, longe de mim que eu peque contra o Senhor, deixando de orar por vós; antes vos ensinarei o caminho bom e direito."],["Atos 13:48","Os gentios, ouvindo isto, se alegravam e glorificavam a palavra do Senhor; e creram todos quantos estavam ordenados para a vida eterna."],["Colossenses 1:21-23","E a vós outros, que éreis outrora estranhos e inimigos no entendimento pelas obras más, agora vos reconciliou no corpo da sua carne, mediante a sua morte, para vos apresentar santos e irrepreensíveis diante dele."],["Efesios 1:3","Bendito o Deus e Pai de nosso Senhor Jesus Cristo, o qual nos abençoou com todas as bênçãos espirituais nos lugares celestiais em Cristo."],["Efesios 1:4","como também nos elegeu nele antes da fundação do mundo, para sermos santos e irrepreensíveis diante dele em amor."],["Efesios 1:5","predestinando-nos para sermos adotados como filhos por Jesus Cristo, para si mesmo, segundo o beneplácito de sua vontade."],["Efesios 1-3","Caps. 1-3: A História do Evangelho — eleição (1:4), predestinação (1:5), redenção (1:7), unidade de judeus e gentios em um só corpo (2:11-22) e Paulo como mensageiro para os gentios (cap. 3)."],["Efesios 1-6","A carta divide-se em doutrina (caps. 1-3) e prática (caps. 4-6). O portanto de 4:1 marca a grande virada."],["Efesios 4","Rogo-vos, pois, eu, o preso do Senhor, que andeis como é digno da vocação com que fostes chamados, com toda a humildade e mansidão, com longanimidade, suportando-vos uns aos outros em amor."],["Efesios 4:1-2","Rogo-vos, pois, eu, o preso do Senhor, que andeis como é digno da vocação com que fostes chamados, com toda a humildade e mansidão, suportando-vos uns aos outros em amor."],["Efesios 4:4-6","há um só corpo e um só Espírito, como também fostes chamados em uma só esperança da vossa vocação; um só Senhor, uma só fé, um só batismo; um só Deus e Pai de todos."],["Efesios 4-6","Caps. 4-6: unidade da fé (cap. 4), nova vida em Cristo, relações familiares (caps. 5-6) e a Armadura de Deus (6:10-20)."],["Efesios 5-6","Caps. 5-6: esposas (5:22-24), maridos (5:25-31), filhos (6:1-3), pais (6:4) e a Armadura de Deus (6:10-20)."],["Efesios 6:13","Portanto, tomai toda a armadura de Deus, para que possais resistir no dia mau e, havendo feito tudo, ficar firmes."],["Efesios 6:13-17","Portanto, tomai toda a armadura de Deus. Ficai firmes, tendo cingidos os lombos com a verdade, a couraça da justiça, os pés calçados com o evangelho da paz; tomando o escudo da fé, o capacete da salvação e a espada do Espírito, que é a palavra de Deus."],["Isaias 43:13","Ainda antes que houvesse dia, eu sou; e ninguém há que possa fazer escapar das minhas mãos; operando eu, quem impedirá?"],["Joao 1:12","Mas, a todos quantos o receberam, deu-lhes o poder de serem feitos filhos de Deus, aos que creem no seu nome."],["Joao 15:16-17","Não fostes vós que me escolhestes a mim; pelo contrário, eu vos escolhi a vós outros e vos designei para que vades e deis fruto, e o vosso fruto permaneça. Isto vos mando: que vos ameis uns aos outros."],["Romanos 3:23-24","pois todos pecaram e estão destituídos da glória de Deus, sendo justificados gratuitamente por sua graça, por meio da redenção que há em Cristo Jesus."],["Romanos 8:30-39","E aos que predestinou a estes também chamou; e aos que chamou a estes também justificou; e aos que justificou a estes também glorificou. Se Deus é por nós, quem será contra nós? Quem nos separará do amor de Cristo?"]];
+function VMopen(k){
+  var m=document.getElementById('VM');
+  m.style.pointerEvents='all';
+  m.style.opacity='1';
+  document.getElementById('VM-ref').textContent=k;
+  document.getElementById('VM-src').textContent='';
+  document.getElementById('VM-txt').textContent='';
+  function norm(s){
+    return s.toLowerCase()
+      .replace(/é|ê/g,"e").replace(/ã|â|à|á/g,"a")
+      .replace(/í/g,"i").replace(/ó|ô/g,"o")
+      .replace(/ú/g,"u").replace(/ç/g,"c")
+      .replace(/[–—]/g,"-").trim();
+  }
+  var found=null;
+  var nk=norm(k);
+  for(var i=0;i<VV.length;i++){
+    if(norm(VV[i][0])===nk){found=VV[i][1];break;}
+  }
+  if(found){
+    document.getElementById('VM-txt').innerHTML=found;
+    document.getElementById('VM-src').textContent='Almeida Revisada e Atualizada';
+  } else {
+    document.getElementById('VM-txt').innerHTML='Versículo não encontrado.';
+  }
+}
+function VMclose(){
+  var m=document.getElementById('VM');
+  m.style.opacity='0';
+  m.style.pointerEvents='none';
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')VMclose();});
+</script>
+
+
+</body></html>
