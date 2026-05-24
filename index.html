@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_16.html -->
+<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_17.html -->
 <html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -154,6 +154,10 @@ h2 em{color:var(--lime);font-style:normal;}
     <p>E quanto a mim, longe de mim que eu peque contra o Senhor, deixando de orar por vós; antes vos ensinarei o caminho bom e direito.</p>
     <div class="ref">1 Samuel 12:23</div>
   </div>
+
+  <button onclick="abrirCadastro()" style="margin-top:20px;background:linear-gradient(135deg,#ff6b35,#ff3577);color:#fff;border:none;border-radius:8px;padding:11px 28px;font-family:Archivo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,107,53,.35);letter-spacing:.5px;transition:opacity .2s;" onmouseover="this.style.opacity=&#39;.85&#39;" onmouseout="this.style.opacity=&#39;1&#39;">
+    📋 Cadastro de Alunos
+  </button>
 </div>
 
 <!-- S1 ÍNDICE DAS LIÇÕES -->
@@ -938,6 +942,160 @@ document.addEventListener('DOMContentLoaded', function() {
   setInterval(function() {
     if (typeof cur !== 'undefined' && cur === 13) qaCarregar();
   }, 10000);
+});
+</script>
+
+
+<!-- Modal Cadastro -->
+<div id="MC" style="pointer-events:none;opacity:0;position:fixed;top:0;left:0;width:100%;height:100%;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);transition:opacity .25s;">
+  <div style="position:relative;background:#1a1a1a;border:1px solid #3a3a3a;border-radius:14px;padding:30px 34px;max-width:540px;width:94%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.9);">
+    <button onclick="fecharCadastro()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#666;font-size:22px;cursor:pointer;">×</button>
+    <div style="font-family:Archivo Black,sans-serif;font-size:1.3rem;color:#ff6b35;margin-bottom:6px;">📋 Cadastro de Aluno</div>
+    <div style="font-family:monospace;font-size:.65rem;color:#555;margin-bottom:20px;letter-spacing:1px;">ENSINO TEOLÓGICO UNA</div>
+
+    <div id="MC-form">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">NOME COMPLETO *</label>
+          <input id="mc-nome" type="text" placeholder="Seu nome" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">IDADE *</label>
+          <input id="mc-idade" type="number" placeholder="Ex: 25" min="1" max="120" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">IGREJA QUE CONGREGA *</label>
+        <input id="mc-igreja" type="text" placeholder="Nome da sua igreja" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">TURMA *</label>
+          <input id="mc-turma" type="text" placeholder="Ex: Turma A / 2025" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">CIDADE *</label>
+          <input id="mc-cidade" type="text" placeholder="Sua cidade" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">WHATSAPP *</label>
+          <input id="mc-whatsapp" type="tel" placeholder="(11) 99999-9999" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">DEPARTAMENTO</label>
+          <input id="mc-depto" type="text" placeholder="Ex: Louvor, Jovens..." style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="font-size:.7rem;color:#777;font-family:monospace;display:block;margin-bottom:4px;">SENHA DE ACESSO *</label>
+        <input id="mc-senha" type="password" placeholder="Crie uma senha" style="width:100%;background:#252525;border:1px solid #333;border-radius:6px;padding:9px 12px;color:#f2f2f2;font-size:.83rem;outline:none;box-sizing:border-box;">
+      </div>
+
+      <div id="MC-status" style="font-size:.75rem;font-family:monospace;margin-bottom:12px;min-height:18px;"></div>
+
+      <button onclick="salvarCadastro()" style="width:100%;background:linear-gradient(135deg,#ff6b35,#ff3577);color:#fff;border:none;border-radius:8px;padding:11px;font-family:Archivo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .2s;" onmouseover="this.style.opacity=&#39;.85&#39;" onmouseout="this.style.opacity=&#39;1&#39;">
+        ✅ Cadastrar
+      </button>
+    </div>
+
+    <div id="MC-sucesso" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:2.5rem;margin-bottom:12px;">🎉</div>
+      <div style="font-family:Archivo Black,sans-serif;font-size:1.2rem;color:#c8f135;margin-bottom:8px;">Cadastro Realizado!</div>
+      <div style="font-size:.85rem;color:#999;margin-bottom:20px;">Bem-vindo ao Ensino Teológico UNA.</div>
+      <button onclick="fecharCadastro()" style="background:#c8f135;color:#0e0e0e;border:none;border-radius:8px;padding:10px 28px;font-family:Archivo,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;">
+        Continuar →
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Cadastro de Alunos ────────────────────────────────────────────────────────
+const SB_URL_C = 'https://xwrvstcthvnxzpsdycur.supabase.co';
+const SB_KEY_C = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3cnZzdGN0aHZueHpwc2R5Y3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjY4MjMsImV4cCI6MjA5NTE0MjgyM30.EyKZ9UCHOtvPS8nUb_8OiSgxOvqvbm6SFNDqL6pVGmc';
+
+function abrirCadastro() {
+  var m = document.getElementById('MC');
+  m.style.opacity = '1';
+  m.style.pointerEvents = 'all';
+  document.getElementById('MC-form').style.display = 'block';
+  document.getElementById('MC-sucesso').style.display = 'none';
+  document.getElementById('MC-status').textContent = '';
+}
+
+function fecharCadastro() {
+  var m = document.getElementById('MC');
+  m.style.opacity = '0';
+  m.style.pointerEvents = 'none';
+}
+
+async function salvarCadastro() {
+  var nome     = document.getElementById('mc-nome').value.trim();
+  var idade    = document.getElementById('mc-idade').value.trim();
+  var igreja   = document.getElementById('mc-igreja').value.trim();
+  var turma    = document.getElementById('mc-turma').value.trim();
+  var cidade   = document.getElementById('mc-cidade').value.trim();
+  var whatsapp = document.getElementById('mc-whatsapp').value.trim();
+  var depto    = document.getElementById('mc-depto').value.trim();
+  var senha    = document.getElementById('mc-senha').value.trim();
+  var status   = document.getElementById('MC-status');
+
+  if (!nome || !idade || !igreja || !turma || !cidade || !whatsapp || !senha) {
+    status.textContent = '⚠️ Preencha todos os campos obrigatórios (*)';
+    status.style.color = '#ff3577';
+    return;
+  }
+
+  status.textContent = 'Salvando...';
+  status.style.color = '#777';
+
+  try {
+    var r = await fetch(SB_URL_C + '/rest/v1/alunos', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY_C,
+        'Authorization': 'Bearer ' + SB_KEY_C,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        nome: nome,
+        idade: parseInt(idade),
+        igreja: igreja,
+        turma: turma,
+        cidade: cidade,
+        whatsapp: whatsapp,
+        departamento: depto,
+        senha: senha
+      })
+    });
+
+    if (r.ok) {
+      document.getElementById('MC-form').style.display = 'none';
+      document.getElementById('MC-sucesso').style.display = 'block';
+    } else {
+      var err = await r.text();
+      status.textContent = '❌ Erro: ' + err.slice(0, 100);
+      status.style.color = '#ff3577';
+    }
+  } catch(e) {
+    status.textContent = '❌ Sem conexão: ' + e.message;
+    status.style.color = '#ff3577';
+  }
+}
+
+// Fechar ao clicar fora
+document.getElementById('MC').addEventListener('click', function(e) {
+  if (e.target === this) fecharCadastro();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') fecharCadastro();
 });
 </script>
 
