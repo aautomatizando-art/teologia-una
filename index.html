@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_13.html -->
+<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_14.html -->
 <html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -119,7 +119,7 @@ h2 em{color:var(--lime);font-style:normal;}
 </style>
 </head>
 <body>
-<div id="bar" style="width: 7.69231%;"></div>
+<div id="bar" style="width: 7.14286%;"></div>
 
 <!-- Bible Modal -->
 
@@ -539,12 +539,65 @@ h2 em{color:var(--lime);font-style:normal;}
   </div>
 </div>
 
+
+<!-- S13 Q&A -->
+<div class="slide" id="s13">
+  <div class="tag">Perguntas &amp; Respostas</div>
+  <h2 class="w">💬 <em>Tire sua Dúvida</em></h2>
+
+  <!-- Enviar pergunta (público) -->
+  <div class="w" style="display:flex;gap:8px;margin-bottom:14px;">
+    <input id="qa-nome" type="text" placeholder="Seu nome (opcional)" style="flex:1;background:#1e1e1e;border:1px solid #303030;border-radius:6px;padding:9px 14px;color:#f2f2f2;font-family:Archivo,sans-serif;font-size:.83rem;outline:none;">
+    <input id="qa-q" type="text" placeholder="Digite sua pergunta..." style="flex:3;background:#1e1e1e;border:1px solid #303030;border-radius:6px;padding:9px 14px;color:#f2f2f2;font-family:Archivo,sans-serif;font-size:.83rem;outline:none;">
+    <button onclick="qaEnviar()" style="background:#c8f135;color:#0e0e0e;border:none;border-radius:6px;padding:9px 18px;font-family:monospace;font-size:.75rem;cursor:pointer;white-space:nowrap;font-weight:700;">
+      Enviar ↩
+    </button>
+  </div>
+
+  <!-- Status -->
+  <div id="qa-status" class="w" style="font-size:.75rem;font-family:monospace;color:#777;margin-bottom:10px;min-height:18px;"></div>
+
+  <!-- Lista de perguntas -->
+  <div id="qa-lista" class="w" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"><div style="color:#777;font-family:monospace;font-size:.75rem;text-align:center;padding:20px 0;">Nenhuma pergunta ainda. Seja o primeiro!</div></div>
+
+  <!-- Botão admin -->
+  <div style="position:absolute;bottom:70px;right:24px;">
+    <button onclick="qaAbrirAdmin()" style="background:#1e1e1e;border:1px solid #303030;color:#777;border-radius:6px;padding:5px 12px;font-family:monospace;font-size:.65rem;cursor:pointer;">
+      🔑 Professor
+    </button>
+  </div>
+
+  <!-- Painel admin -->
+  <div id="qa-admin" style="display:none;position:fixed;inset:0;background:rgba(10,10,10,.96);backdrop-filter:blur(20px);z-index:300;align-items:center;justify-content:center;">
+    <div style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:12px;padding:30px 34px;width:400px;max-width:92vw;">
+      <div style="font-family:Archivo Black,sans-serif;font-size:1.3rem;color:#c8f135;margin-bottom:18px;">🔐 Acesso Professor</div>
+      <div id="qa-login-area">
+        <input id="adm-u" type="text" placeholder="Usuário" style="width:100%;background:#252525;border:1px solid #303030;border-radius:6px;padding:9px 14px;color:#f2f2f2;font-size:.85rem;outline:none;margin-bottom:10px;box-sizing:border-box;">
+        <input id="adm-p" type="password" placeholder="Senha" onkeydown="if(event.key===&#39;Enter&#39;)qaLogin()" style="width:100%;background:#252525;border:1px solid #303030;border-radius:6px;padding:9px 14px;color:#f2f2f2;font-size:.85rem;outline:none;margin-bottom:12px;box-sizing:border-box;">
+        <div id="adm-err" style="color:#ff3577;font-size:.75rem;margin-bottom:10px;display:none;">Usuário ou senha incorretos.</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="qaLogin()" style="flex:1;background:#c8f135;color:#0e0e0e;border:none;border-radius:6px;padding:9px;font-family:monospace;font-size:.75rem;cursor:pointer;font-weight:700;">Entrar</button>
+          <button onclick="qaFecharAdmin()" style="flex:1;background:#252525;color:#777;border:1px solid #303030;border-radius:6px;padding:9px;font-family:monospace;font-size:.75rem;cursor:pointer;">Cancelar</button>
+        </div>
+      </div>
+      <div id="qa-admin-area" style="display:none;">
+        <div style="color:#c8f135;font-size:.75rem;font-family:monospace;margin-bottom:14px;">✅ Professor Antônio</div>
+        <div id="qa-resp-area"><div style="color:#777;font-size:.8rem;">Feche e clique em <strong style="color:#c8f135;">Responder</strong> em uma pergunta.</div></div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button onclick="qaFecharAdmin()" style="flex:1;background:#c8f135;color:#0e0e0e;border:none;border-radius:6px;padding:8px;font-family:monospace;font-size:.72rem;cursor:pointer;font-weight:700;">✕ Fechar</button>
+          <button onclick="qaLogout()" style="flex:1;background:#252525;color:#777;border:1px solid #303030;border-radius:6px;padding:8px;font-family:monospace;font-size:.72rem;cursor:pointer;">Sair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /deck -->
 
 <div id="nav">
   <button onclick="om()">☰</button>
   <button onclick="go(-1)">←</button>
-  <span id="ctr">1 / 13</span>
+  <span id="ctr">1 / 14</span>
   <button onclick="go(1)">→</button>
   <button onclick="fs()">⛶</button>
 </div>
@@ -566,6 +619,7 @@ const idx=[
   {l:'Família Cristã — Efésios 5–6',s:'Lição 2 · Efésios 4–6'},
   {l:'A Armadura de Deus — Ef 6:13–17',s:'Lição 2 · Efésios 4–6'},
   {l:'Conclusão — O Ensino de Paulo',s:'Conclusão'},
+  {l:'Perguntas & Respostas',s:'Q&A'},
 ];
 function gt(n){
   sl[cur].classList.remove('active');sl[cur].classList.add('out');
@@ -677,6 +731,186 @@ function VMclose(){
 }
 document.addEventListener('keydown',function(e){if(e.key==='Escape')VMclose();});
 </script>
+
+<script>
+// ════════════════════════════════════════════════════════
+// ⚙️ CONFIGURE AQUI após criar o projeto no Supabase:
+const SB_URL = 'https://xwrvstcthvnxzpsdycur.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3cnZzdGN0aHZueHpwc2R5Y3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjY4MjMsImV4cCI6MjA5NTE0MjgyM30.EyKZ9UCHOtvPS8nUb_8OiSgxOvqvbm6SFNDqL6pVGmc';
+// ════════════════════════════════════════════════════════
+
+const ADMIN_USER = 'Professor Antônio';
+const ADMIN_PASS = 'toninho';
+let adminLogado = false;
+let respondendoId = null;
+
+// ── API helpers ───────────────────────────────────────────
+async function sbGet() {
+  const r = await fetch(SB_URL + '/rest/v1/perguntas?order=id.desc', {
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+  });
+  return r.ok ? await r.json() : [];
+}
+
+async function sbPost(nome, pergunta) {
+  const r = await fetch(SB_URL + '/rest/v1/perguntas', {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json', 'Prefer': 'return=representation'
+    },
+    body: JSON.stringify({ nome: nome, pergunta: pergunta, resposta: '' })
+  });
+  return r.ok ? (await r.json())[0] : null;
+}
+
+async function sbPut(id, resposta) {
+  const r = await fetch(SB_URL + '/rest/v1/perguntas?id=eq.' + id, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json', 'Prefer': 'return=representation'
+    },
+    body: JSON.stringify({ resposta: resposta })
+  });
+  return r.ok;
+}
+
+async function sbDelete(id) {
+  const r = await fetch(SB_URL + '/rest/v1/perguntas?id=eq.' + id, {
+    method: 'DELETE',
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+  });
+  return r.ok;
+}
+
+// ── Render ────────────────────────────────────────────────
+function qaRender(items) {
+  const lista = document.getElementById('qa-lista');
+  if (!items.length) {
+    lista.innerHTML = '<div style="color:#777;font-family:monospace;font-size:.75rem;text-align:center;padding:20px 0;">Nenhuma pergunta ainda. Seja o primeiro!</div>';
+    return;
+  }
+  lista.innerHTML = items.map(it => `
+    <div style="background:#1e1e1e;border:1px solid #303030;border-radius:8px;padding:12px 16px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-family:monospace;font-size:.65rem;color:#c8f135;flex-shrink:0;margin-top:2px;">Q</span>
+        <div style="flex:1;">
+          <span style="font-size:.84rem;color:#f2f2f2;">${esc(it.pergunta)}</span>
+          ${it.nome ? '<span style="font-size:.68rem;color:#777;margin-left:8px;">— ' + esc(it.nome) + '</span>' : ''}
+        </div>
+        ${adminLogado ? `
+          <button onclick="qaIniciarResposta(${it.id})" style="background:rgba(200,241,53,.1);border:1px solid rgba(200,241,53,.3);color:#c8f135;border-radius:4px;padding:3px 8px;font-family:monospace;font-size:.6rem;cursor:pointer;">${it.resposta ? 'Editar' : 'Responder'}</button>
+          <button onclick="qaExcluir(${it.id})" style="background:rgba(255,53,119,.1);border:1px solid rgba(255,53,119,.3);color:#ff3577;border-radius:4px;padding:3px 8px;font-family:monospace;font-size:.6rem;cursor:pointer;margin-left:4px;">✕</button>
+        ` : ''}
+      </div>
+      ${it.resposta ? `
+        <div style="display:flex;gap:10px;padding-top:10px;margin-top:8px;border-top:1px solid #303030;">
+          <span style="font-family:monospace;font-size:.65rem;color:#ff6b35;flex-shrink:0;margin-top:2px;">R</span>
+          <div style="flex:1;">
+            <span style="font-size:.82rem;color:#999;line-height:1.6;">${esc(it.resposta)}</span>
+            <div style="font-size:.65rem;color:#ff6b35;font-family:monospace;margin-top:4px;">— Prof. Antônio</div>
+          </div>
+        </div>` : ''}
+    </div>`).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ── Carregar ──────────────────────────────────────────────
+async function qaCarregar() {
+  if (SB_URL === 'COLE_SUA_SUPABASE_URL_AQUI') {
+    document.getElementById('qa-status').textContent = '⚠️ Configure o Supabase no arquivo HTML.';
+    return;
+  }
+  const items = await sbGet();
+  qaRender(items);
+}
+
+// ── Enviar pergunta ───────────────────────────────────────
+async function qaEnviar() {
+  const q = document.getElementById('qa-q').value.trim();
+  const n = document.getElementById('qa-nome').value.trim();
+  if (!q) return;
+  if (SB_URL === 'COLE_SUA_SUPABASE_URL_AQUI') {
+    document.getElementById('qa-status').textContent = '⚠️ Configure o Supabase primeiro.';
+    return;
+  }
+  document.getElementById('qa-status').textContent = 'Enviando...';
+  const novo = await sbPost(n, q);
+  if (novo) {
+    document.getElementById('qa-q').value = '';
+    document.getElementById('qa-nome').value = '';
+    document.getElementById('qa-status').textContent = '✅ Pergunta enviada!';
+    setTimeout(() => document.getElementById('qa-status').textContent = '', 3000);
+    qaCarregar();
+  } else {
+    document.getElementById('qa-status').textContent = '❌ Erro ao enviar. Verifique a configuração.';
+  }
+}
+
+// ── Admin ─────────────────────────────────────────────────
+function qaAbrirAdmin() {
+  const p = document.getElementById('qa-admin');
+  p.style.display = 'flex';
+  if (adminLogado) { mostrarAreaAdmin(); }
+  else {
+    document.getElementById('qa-login-area').style.display = 'block';
+    document.getElementById('qa-admin-area').style.display = 'none';
+    document.getElementById('adm-err').style.display = 'none';
+  }
+}
+function qaFecharAdmin() {
+  document.getElementById('qa-admin').style.display = 'none';
+  respondendoId = null;
+}
+function qaLogout() { adminLogado = false; qaFecharAdmin(); qaCarregar(); }
+function mostrarAreaAdmin() {
+  document.getElementById('qa-login-area').style.display = 'none';
+  document.getElementById('qa-admin-area').style.display = 'block';
+}
+function qaLogin() {
+  const u = document.getElementById('adm-u').value.trim();
+  const p = document.getElementById('adm-p').value;
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    adminLogado = true;
+    document.getElementById('adm-err').style.display = 'none';
+    mostrarAreaAdmin();
+    qaCarregar();
+  } else {
+    document.getElementById('adm-err').style.display = 'block';
+  }
+}
+function qaIniciarResposta(id) {
+  respondendoId = id;
+  qaAbrirAdmin();
+  mostrarAreaAdmin();
+  document.getElementById('qa-resp-area').innerHTML = `
+    <textarea id="adm-resp" rows="4" placeholder="Digite a resposta..."
+      style="width:100%;background:#252525;border:1px solid #303030;border-radius:6px;padding:9px 14px;color:#f2f2f2;font-size:.83rem;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+    <button onclick="qaSalvarResposta()" style="margin-top:10px;width:100%;background:#c8f135;color:#0e0e0e;border:none;border-radius:6px;padding:9px;font-family:monospace;font-size:.75rem;cursor:pointer;font-weight:700;">💾 Salvar</button>`;
+}
+async function qaSalvarResposta() {
+  const resp = document.getElementById('adm-resp').value.trim();
+  const ok = await sbPut(respondendoId, resp);
+  if (ok) { qaFecharAdmin(); qaCarregar(); }
+  else { alert('Erro ao salvar resposta.'); }
+}
+async function qaExcluir(id) {
+  if (!confirm('Excluir esta pergunta permanentemente?')) return;
+  const ok = await sbDelete(id);
+  if (ok) qaCarregar();
+  else alert('Erro ao excluir.');
+}
+
+// Carregar ao entrar no slide Q&A
+document.addEventListener('DOMContentLoaded', function() {
+  setInterval(function() {
+    if (typeof cur !== 'undefined' && cur === 13) qaCarregar();
+  }, 10000);
+});
+</script>
+
 
 
 </body></html>
