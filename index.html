@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_14.html -->
+<!-- saved from url=(0063)file:///C:/Users/alexp/Downloads/epistolas_paulinas_III_15.html -->
 <html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -558,7 +558,7 @@ h2 em{color:var(--lime);font-style:normal;}
   <div id="qa-status" class="w" style="font-size:.75rem;font-family:monospace;color:#777;margin-bottom:10px;min-height:18px;"></div>
 
   <!-- Lista de perguntas -->
-  <div id="qa-lista" class="w" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"><div style="color:#777;font-family:monospace;font-size:.75rem;text-align:center;padding:20px 0;">Nenhuma pergunta ainda. Seja o primeiro!</div></div>
+  <div id="qa-lista" class="w" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
 
   <!-- Botão admin -->
   <div style="position:absolute;bottom:70px;right:24px;">
@@ -628,6 +628,7 @@ function gt(n){
   sl[cur].classList.add('active');
   document.getElementById('ctr').textContent=`${cur+1} / ${tot}`;
   document.getElementById('bar').style.width=`${((cur+1)/tot)*100}%`;
+  if(cur===13 && typeof qaCarregar==='function') qaCarregar();
 }
 function go(d){gt(cur+d);}
 document.addEventListener('keydown',e=>{
@@ -746,22 +747,49 @@ let respondendoId = null;
 
 // ── API helpers ───────────────────────────────────────────
 async function sbGet() {
-  const r = await fetch(SB_URL + '/rest/v1/perguntas?order=id.desc', {
-    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-  });
-  return r.ok ? await r.json() : [];
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/perguntas?order=id.desc&select=*', {
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      document.getElementById('qa-status').textContent = '❌ Erro ' + r.status + ': ' + err.slice(0,80);
+      return [];
+    }
+    return await r.json();
+  } catch(e) {
+    document.getElementById('qa-status').textContent = '❌ Sem conexão: ' + e.message;
+    return [];
+  }
 }
 
 async function sbPost(nome, pergunta) {
-  const r = await fetch(SB_URL + '/rest/v1/perguntas', {
-    method: 'POST',
-    headers: {
-      'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type': 'application/json', 'Prefer': 'return=representation'
-    },
-    body: JSON.stringify({ nome: nome, pergunta: pergunta, resposta: '' })
-  });
-  return r.ok ? (await r.json())[0] : null;
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/perguntas', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ nome: nome, pergunta: pergunta, resposta: '' })
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      document.getElementById('qa-status').textContent = '❌ Erro ao salvar: ' + err.slice(0,100);
+      return null;
+    }
+    const data = await r.json();
+    return Array.isArray(data) ? data[0] : data;
+  } catch(e) {
+    document.getElementById('qa-status').textContent = '❌ ' + e.message;
+    return null;
+  }
 }
 
 async function sbPut(id, resposta) {
@@ -905,6 +933,7 @@ async function qaExcluir(id) {
 
 // Carregar ao entrar no slide Q&A
 document.addEventListener('DOMContentLoaded', function() {
+  // Reload Q&A every 10s if on that slide
   setInterval(function() {
     if (typeof cur !== 'undefined' && cur === 13) qaCarregar();
   }, 10000);
