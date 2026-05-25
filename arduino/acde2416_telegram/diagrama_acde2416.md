@@ -17,8 +17,9 @@ qualquer loja de eletrônica. Custo: R$ 5–10.
 Encaixe no soquete **C16** da placa com o entalhe voltado para o lado
 marcado na silkscreen.
 
-> Os capacitores do circuito de carga (charge pump) já estão soldados
-> na placa ao redor do C16 — só o chip mesmo que falta.
+> Os capacitores do MAX232 **também precisam ser instalados**.
+> São 4 capacitores de **100nF (marcados como `104`)** nos pads ao redor do C16.
+> Verifique se há pads/furos vazios próximos ao C16 antes de comprar o chip.
 
 ---
 
@@ -151,6 +152,7 @@ Central: ASCAEL ACDE 24/16
 | Item | Qtd | Observação |
 |------|-----|------------|
 | MAX232 / MAX232A | 1 | instalar no soquete C16 da placa da central |
+| Capacitor 100nF (código `104`) | 4 | instalar nos pads ao redor do C16 |
 | MAX3232 (módulo externo) | 1 | conversor RS232→3.3V para o ESP32 |
 | ESP32 (DevKit) | 1 | qualquer modelo |
 | Fios finos | 2 | soldar nos pads do DB9 (pinos 2 e 5) |
