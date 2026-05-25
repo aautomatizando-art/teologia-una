@@ -14,8 +14,9 @@
 #define PIN_TX2       17      // não usado
 
 // ── Cooldown e filtros ────────────────────────────
-#define COOLDOWN_MS    60000UL
-#define ENVIAR_NORMAL  true   // envia "normalizado" quando alarme cessa
+#define COOLDOWN_MS           60000UL
+#define TIMEOUT_NORMAL_CONFIG 30000UL  // 30s sem byte de alarme → normalizado
+#define ENVIAR_NORMAL         true     // envia "normalizado" quando alarme cessa
 
 // ── RAW MODE ─────────────────────────────────────
 // true  → imprime cada byte no Monitor Serial (diagnóstico)

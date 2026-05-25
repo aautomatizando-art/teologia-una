@@ -37,8 +37,11 @@ unsigned long tEnvioAlarme       = 0;
 unsigned long tEnvioNormal       = 0;
 unsigned long tUltimaReconexao   = 0;
 
-// Tempo sem byte de alarme para considerar normalizado
-#define TIMEOUT_NORMAL_MS  800UL
+// Tempo sem byte de alarme para considerar normalizado.
+// O painel envia 0xBF em bursts periódicos enquanto o alarme está ativo.
+// Esse valor deve ser maior que o intervalo entre bursts do painel.
+// Aumente se receber "NORMALIZADO" com botoeira ainda pressionada.
+#define TIMEOUT_NORMAL_MS  TIMEOUT_NORMAL_CONFIG
 
 // ── Nome do dispositivo ───────────────────────────
 const char* nomeDispositivo(int endereco) {
