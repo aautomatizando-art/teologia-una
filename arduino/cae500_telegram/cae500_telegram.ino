@@ -14,12 +14,10 @@
  */
 
 #include <WiFi.h>
-#include <WiFiUDP.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <map>
-#include "lwip/dns.h"    // acesso direto à pilha de rede
 #include "config.h"
 
 // ── Globals ───────────────────────────────────────
@@ -229,15 +227,6 @@ void enviarConectado() {
 // ── WiFi ──────────────────────────────────────────
 // Sobrescreve o DNS diretamente na pilha lwIP,
 // após o DHCP terminar (garante que não será sobrescrito)
-void forceDNS() {
-    ip_addr_t dns1, dns2;
-    ipaddr_aton("8.8.8.8", &dns1);   // Google DNS primário
-    ipaddr_aton("8.8.4.4", &dns2);   // Google DNS secundário
-    dns_setserver(0, &dns1);
-    dns_setserver(1, &dns2);
-    Serial.println("[DNS] Servidores forçados: 8.8.8.8 / 8.8.4.4");
-}
-
 void conectarWiFi() {
     Serial.print("[WiFi] Conectando a ");
     Serial.print(WIFI_SSID);
@@ -253,8 +242,15 @@ void conectarWiFi() {
     }
 
     if (WiFi.status() == WL_CONNECTED) {
+        // Reconfigura com o mesmo IP do DHCP mas força DNS do Google
+        // Isso sobrescreve o DNS ruim fornecido pelo hotspot/roteador
+        WiFi.config(WiFi.localIP(),
+                    WiFi.gatewayIP(),
+                    WiFi.subnetMask(),
+                    IPAddress(8, 8, 8, 8),   // DNS primário: Google
+                    IPAddress(8, 8, 4, 4));  // DNS secundário: Google
         Serial.println("\n[WiFi] Conectado! IP: " + WiFi.localIP().toString());
-        forceDNS();      // sobrescreve DNS do DHCP antes de qualquer requisição
+        Serial.println("[DNS] Forçado: 8.8.8.8 / 8.8.4.4");
         enviarConectado();
     } else {
         Serial.println("\n[WiFi] Falha na conexão.");
