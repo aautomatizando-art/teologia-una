@@ -1,72 +1,112 @@
 # Diagrama – ASCAEL ACDE 24/16 → ESP32 → Telegram
 
-## Ligação física
+## Informações da placa (confirmadas na inspeção física)
 
-```
-┌──────────────────┐  RS232 DB9   ┌──────────┐  GPIO16  ┌──────────┐
-│  ACDE 24/16      │─────────────►│ MAX3232  │─────────►│  ESP32   │──► Telegram
-│  DB9 pino 2 (TX) │              │ (3.3V)   │          │          │
-│  DB9 pino 5 (GND)│──────────────│ GND      │          │          │
-└──────────────────┘              └──────────┘          └──────────┘
-```
-
-> **ATENÇÃO:** Use MAX3232 (3.3V), NÃO MAX232 (5V).
-> O ESP32 opera em 3.3V — tensão de 5V destrói o pino GPIO.
+- **Microcontrolador:** PIC18F4520-I/PQ (Microchip)
+- **MAX232 (CI C16):** footprint presente na placa, **não instalado de fábrica**
+- **Conector DB9:** footprint presente na placa (pads CN8), **não instalado de fábrica**
+- **RS232 é opcional** — a Ascael fornece como acessório pago
 
 ---
 
-## Tabela de conexões
+## Passo 1 — Instalar o MAX232 na placa
 
-| ACDE 24/16 DB9 | MAX3232 | ESP32 |
-|----------------|---------|-------|
-| Pino 2 – TX    | R1IN    | —     |
-| Pino 5 – GND   | GND     | GND   |
-| —              | R1OUT   | GPIO16 (RX2) |
-| —              | VCC     | 3.3V  |
-| —              | GND     | GND   |
+Compre o chip **MAX232** (ou equivalente: MAX232A, ST232, ICL232) em
+qualquer loja de eletrônica. Custo: R$ 5–10.
 
-*Pino 3 (RX da central) não é necessário se só quisermos receber eventos.*
+Encaixe no soquete **C16** da placa com o entalhe voltado para o lado
+marcado na silkscreen.
+
+> Os capacitores do circuito de carga (charge pump) já estão soldados
+> na placa ao redor do C16 — só o chip mesmo que falta.
 
 ---
 
-## Passo 1 — Descobrir o formato da central (RAW_MODE)
+## Passo 2 — Soldar fios nos pads do DB9
 
-A ASCAEL ACDE 24/16 envia eventos em ASCII via RS232, mas o formato
-exato (ordem dos campos, separadores) varia conforme a versão do firmware.
-Use o RAW_MODE para capturar a saída real:
+O conector DB9 não está instalado, mas os **pads (furos) estão na placa**.
+Solde fios diretamente nesses dois pads:
 
-### 1. Configure `config.h`
+```
+Pad DB9 nº 2  (TX da central)  ──► fio vermelho
+Pad DB9 nº 5  (GND)            ──► fio preto
+```
+
+### Como identificar os pads do DB9
+
+O DB9 tem 9 pinos em dois fileiras (5 em cima + 4 embaixo):
+
+```
+  1   2   3   4   5      ← fileira de cima
+    6   7   8   9        ← fileira de baixo
+```
+
+- **Pino 2** = segundo furo da fileira de cima (TX — sinal da central)
+- **Pino 5** = quinto furo da fileira de cima (GND)
+
+---
+
+## Passo 3 — Ligar ao ESP32 via MAX3232
+
+Use o módulo **MAX3232** (conversor RS232 → 3.3V) para conectar ao ESP32:
+
+```
+┌──────────────────┐        ┌──────────┐        ┌──────────┐
+│  ACDE 24/16      │        │ MAX3232  │        │  ESP32   │
+│  (placa interna) │        │ módulo   │        │          │
+│                  │        │          │        │          │
+│  DB9 pad 2 (TX) ─┼──────►─┤ R1IN     │        │          │
+│  DB9 pad 5 (GND)─┼──┐    │ R1OUT   ─┼───────►─┤ GPIO16   │
+└──────────────────┘  │    │ VCC      ├── 3.3V ─┤ 3.3V    │
+                      └───►─┤ GND      ├── GND ──┤ GND     │
+                            └──────────┘        └──────────┘
+```
+
+### Tabela de conexões
+
+| DB9 pad (placa) | MAX3232 | ESP32 |
+|-----------------|---------|-------|
+| Pad 2 – TX      | R1IN    | —     |
+| Pad 5 – GND     | GND     | GND   |
+| —               | R1OUT   | GPIO16 (RX2) |
+| —               | VCC     | 3.3V  |
+| —               | GND     | GND   |
+
+> **ATENÇÃO:** Use MAX3232 (3.3V) para o módulo externo.
+> O MAX232 interno à placa converte para RS232 (±12V).
+> O MAX3232 externo converte de volta para 3.3V (para o ESP32).
+
+---
+
+## Passo 4 — Verificar o formato (RAW_MODE)
+
+Com tudo ligado, grave o sketch com `RAW_MODE true` em `config.h`:
+
 ```cpp
-#define BAUD_CENTRAL  9600   // tente também: 2400, 4800, 19200
+#define BAUD_CENTRAL  9600
 #define RAW_MODE      true
 ```
 
-### 2. Grave no ESP32 e abra o Monitor Serial (115200 baud)
+Abra o Monitor Serial (115200 baud), acione uma botoeira e observe:
 
-### 3. Acione uma botoeira ou gere um evento na central
-
-### 4. Observe a saída no Monitor Serial — você verá algo como:
 ```
-[RAW] 01 ALARME INCENDIO 14:32:10
-      HEX: 30 31 20 41 4C 41 52 4D 45 20 49 4E 43 45 4E 44 49 4F 20 31 34 3A 33 32 3A 31 30
+[RAW] 01 ALARME BOTOEIRA PAV1 14:32:10
+      HEX: 30 31 20 41 4C 41 52 4D 45 ...
 ```
 
-### 5. Copie a saída e informe para ajustar o parser em `acde2416_telegram.ino`
-
-### 6. Após ajustar, mude `RAW_MODE false` e regrave
+Copie a saída para ajustar o parser e depois mude `RAW_MODE false`.
 
 ---
 
-## Passo 2 — Configurar zonas (opcional)
+## Passo 5 — Configurar zonas (opcional)
 
-Em `config.h`, preencha o array `ZONAS[]` com os nomes das zonas:
+Em `config.h`, preencha com os nomes dos seus dispositivos:
 
 ```cpp
 const ZonaInfo ZONAS[] = {
-    {  1, "ZONA 1 – PAV TÉRREO"    },
-    {  2, "ZONA 2 – PAV SUPERIOR"  },
-    {  3, "ZONA 3 – SUBSOLO"       },
-    {  0, nullptr }   // sentinel
+    {  1, "BOTOEIRA PAV TERREO"   },
+    {  2, "BOTOEIRA PAV SUPERIOR" },
+    {  0, nullptr }
 };
 ```
 
@@ -77,8 +117,8 @@ const ZonaInfo ZONAS[] = {
 ```
 🔥 ALARME DE INCÊNDIO
 
-📍 Zona: 01 — ZONA 1 – PAV TÉRREO
-📋 01 ALARME INCENDIO 14:32:10
+📍 Zona: 01 — BOTOEIRA PAV TERREO
+📋 01 ALARME BOTOEIRA 14:32:10
 🕐 14:32:10
 
 Central: ASCAEL ACDE 24/16
@@ -87,34 +127,22 @@ Central: ASCAEL ACDE 24/16
 ```
 ✅ NORMALIZADO
 
-📍 Zona: 01 — ZONA 1 – PAV TÉRREO
+📍 Zona: 01 — BOTOEIRA PAV TERREO
 📋 01 NORMAL 14:35:00
-🕐 14:35:00
-
-Central: ASCAEL ACDE 24/16
-```
-
-```
-⚠️ FALHA
-
-📍 Zona: 02 — ZONA 2 – PAV SUPERIOR
-📋 02 FALHA SUPERVISAO 14:40:00
 
 Central: ASCAEL ACDE 24/16
 ```
 
 ---
 
-## Baud rates para testar
+## Baud rates para testar (se RAW_MODE não mostrar nada)
 
-Se RAW_MODE não exibir nada, tente cada baud rate em `config.h`:
-
-| Baud | Comando |
-|------|---------|
-| 9600 | `#define BAUD_CENTRAL 9600` |
-| 4800 | `#define BAUD_CENTRAL 4800` |
-| 2400 | `#define BAUD_CENTRAL 2400` |
-| 19200 | `#define BAUD_CENTRAL 19200` |
+| Tentativa | config.h |
+|-----------|----------|
+| 1ª | `#define BAUD_CENTRAL 9600` |
+| 2ª | `#define BAUD_CENTRAL 4800` |
+| 3ª | `#define BAUD_CENTRAL 19200` |
+| 4ª | `#define BAUD_CENTRAL 2400` |
 
 ---
 
@@ -122,10 +150,10 @@ Se RAW_MODE não exibir nada, tente cada baud rate em `config.h`:
 
 | Item | Qtd | Observação |
 |------|-----|------------|
-| ESP32 (DevKit) | 1 | qualquer modelo com 38 ou 30 pinos |
-| MAX3232 (módulo) | 1 | **NÃO** usar MAX232 (5V) |
-| Cabo DB9 macho | 1 | para conectar na saída RS232 da central |
-| Jumpers / fios | 4 | VCC, GND, TX→R1IN, R1OUT→GPIO16 |
+| MAX232 / MAX232A | 1 | instalar no soquete C16 da placa da central |
+| MAX3232 (módulo externo) | 1 | conversor RS232→3.3V para o ESP32 |
+| ESP32 (DevKit) | 1 | qualquer modelo |
+| Fios finos | 2 | soldar nos pads do DB9 (pinos 2 e 5) |
 
 ---
 
