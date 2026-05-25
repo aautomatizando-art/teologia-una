@@ -8,47 +8,40 @@
 #define TELEGRAM_TOKEN   "SEU_TOKEN_AQUI"
 #define TELEGRAM_CHAT_ID "-1001234567890"
 
-// ── Serial RS232 ──────────────────────────────────
-#define BAUD_CENTRAL  9600     // baud padrão ASCAEL — tente também 2400, 4800, 19200
-#define PIN_RX2       16       // ESP32 GPIO16 ← MAX3232 R1OUT
-#define PIN_TX2       17       // ESP32 GPIO17 → MAX3232 T1IN (não usado, pode deixar)
+// ── Serial (pino 39 do PIC18F4520) ───────────────
+#define BAUD_CENTRAL  4800    // confirmado
+#define PIN_RX2       16      // ESP32 GPIO16 ← pino 39 do PIC (via resistor 1kΩ)
+#define PIN_TX2       17      // não usado
 
 // ── Cooldown e filtros ────────────────────────────
-#define COOLDOWN_MS    60000UL  // pausa mínima entre msgs do mesmo evento (ms)
-#define ENVIAR_ALARME  true     // notifica alarme de incêndio
-#define ENVIAR_FALHA   true     // notifica falha
-#define ENVIAR_NORMAL  true     // notifica normalização/retorno
+#define COOLDOWN_MS    60000UL
+#define ENVIAR_NORMAL  true   // envia "normalizado" quando alarme cessa
 
 // ── RAW MODE ─────────────────────────────────────
-// Mude para TRUE para capturar e exibir tudo que a central envia via RS232.
-// Use para descobrir o formato das mensagens antes de configurar o parser.
-//
-// Como usar:
-//   1. Conecte o MAX3232 entre a RS232 DB9 da ACDE 24/16 e o ESP32
-//   2. Ative RAW_MODE true e grave no ESP32
-//   3. Abra o Monitor Serial (115200 baud)
-//   4. Acione uma botoeira ou gere um alarme na central
-//   5. Copie a saída exibida e informe para ajustar o parser
-//   6. Após identificar o formato, defina RAW_MODE false e regrave
-#define RAW_MODE  true
+// true  → imprime cada byte no Monitor Serial (diagnóstico)
+// false → parser ativo, envia notificações ao Telegram
+#define RAW_MODE  false
 
-// ── Mapeamento de zonas (opcional) ───────────────
-// Preencha com os nomes das zonas da sua instalação.
-// Se a central enviar apenas o número da zona sem descrição, esses
-// nomes serão adicionados automaticamente na mensagem do Telegram.
+// ── Mapa de dispositivos ──────────────────────────
+// Como descobrir o endereço de cada botoeira:
+//   1. Grave com RAW_MODE false
+//   2. Acione cada botoeira
+//   3. O Telegram mostra "Endereço XX" — anote esse número
+//   4. Preencha abaixo com o endereço e o nome do local
 //
-// Formato: { numero_da_zona, "descrição" }
-// Deixe o array vazio ({ { 0, nullptr } }) para desativar.
+// O endereço depende das chaves DIP da botoeira:
+//   Chave 1 ligada = bit 0 → end. 1  (byte 0xFE)
+//   Chave 2 ligada = bit 1 → end. 2  (byte 0xFD)
+//   Chave 3 ligada = bit 2 → end. 3  (byte 0xFB)
+//   Chave 1+2+3    = bits 0,1,2 → end. 7  (byte 0xBF)
 
-struct ZonaInfo {
-    int         numero;
-    const char* descricao;
+struct Dispositivo {
+    int         endereco;   // 1–16
+    const char* nome;
 };
 
-const ZonaInfo ZONAS[] = {
-    {  1, "ZONA 1 – PAV TÉRREO"    },
-    {  2, "ZONA 2 – PAV SUPERIOR"  },
-    {  3, "ZONA 3 – SUBSOLO"       },
-    // adicione quantas zonas precisar
-    {  0, nullptr }   // sentinel – não remova
+const Dispositivo DISPOSITIVOS[] = {
+    //  { endereco, "nome do local"               }
+    {  7, "BOTOEIRA PAV T\xC3\x89RREO"           },  // exemplo — ajuste!
+    {  0, nullptr }   // sentinel — não remova
 };
