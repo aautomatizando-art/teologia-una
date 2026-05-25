@@ -174,8 +174,28 @@ bool podEnviar(const String& chave) {
     return (millis() - it->second) >= COOLDOWN_MS;
 }
 
+// ── Modo scanner: imprime no Serial qualquer bit que mudou ───────────────
+void runScanner() {
+    for (int r = 0; r < 256; r++) {
+        if (regAtual[r] == regAnterior[r]) continue;
+        uint16_t mudou = regAtual[r] ^ regAnterior[r];
+        for (int b = 0; b < 16; b++) {
+            if (!(mudou & (1 << b))) continue;
+            bool ativou = (regAtual[r] >> b) & 1;
+            uint16_t codigo = r * 8 + b;   // fórmula inversa
+            Serial.printf(
+                "[SCANNER] Reg:%-4d Bit:%-2d Mask:0x%02X  codigo=%d  %s → %s\n",
+                r, b, (1 << b), codigo,
+                ativou ? "0" : "1", ativou ? "1" : "0");
+        }
+    }
+}
+
 // ── Analisa mudanças e notifica ───────────────────
 void analisarMudancas() {
+    if (SCANNER_MODE) { runScanner(); goto salvarSnapshot; }
+
+    {
     // 1. Verifica contadores de resumo
     uint16_t alarmeAtual = regAtual[REG_TOTAL_ALARMES];
     uint16_t falhaAtual  = regAtual[REG_TOTAL_FALHAS];
@@ -236,6 +256,8 @@ void analisarMudancas() {
     }
 
     // 3. Salva snapshot atual
+    }
+    salvarSnapshot:
     memcpy(regAnterior, regAtual, sizeof(regAtual));
 }
 

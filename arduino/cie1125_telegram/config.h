@@ -9,56 +9,53 @@
 #define TELEGRAM_CHAT_ID "-1001234567890"
 
 // ── CIE 1125 – Rede ───────────────────────────────
-// Configure IP fixo na central (Menu → Rede → Modo Fixo)
-// Padrão de fábrica: DHCP (descubra o IP no roteador após conectar)
-#define CIE_IP    "192.168.1.50"   // ajuste para o IP da sua central
-#define CIE_PORT  502              // porta Modbus UDP (padrão)
-#define MODBUS_UNIT_ID  0x01       // ID escravo da central (padrão = 1)
+#define CIE_IP         "192.168.1.50"  // IP fixo configurado na central
+#define CIE_PORT       502             // porta Modbus UDP (padrão Intelbras)
+#define MODBUS_UNIT_ID 0x01            // ID escravo (padrão = 1)
 
 // ── Polling ───────────────────────────────────────
-#define POLL_INTERVAL_MS  2000    // consulta a central a cada 2 s
-#define COOLDOWN_MS       60000UL // pausa entre mensagens do mesmo evento
+#define POLL_INTERVAL_MS  2000         // consulta a cada 2 s
+#define COOLDOWN_MS       60000UL      // pausa mín. entre msgs do mesmo evento
 
-// ── Filtros de evento ─────────────────────────────
-#define ENVIAR_ALARME    true
-#define ENVIAR_FALHA     true
-#define ENVIAR_NORMAL    true   // normalização (evento limpo)
+// ── Filtros ───────────────────────────────────────
+#define ENVIAR_ALARME  true
+#define ENVIAR_FALHA   true
+#define ENVIAR_NORMAL  true
+
+// ── MODO SCANNER ──────────────────────────────────
+// Mude para TRUE para descobrir os registradores das botoeiras/detectores.
+// Com SCANNER_MODE true:
+//   1. Abra o Monitor Serial (115200 baud)
+//   2. Acione uma botoeira na central
+//   3. O ESP32 imprime qual registrador/bit mudou:
+//      [SCANNER] Reg:62 Bit:4 Mask:0x10  → MUDOU 0→16
+//   4. Anote esses valores e preencha o array DISPOSITIVOS[] abaixo
+//   5. Mude SCANNER_MODE para false e regrave
+#define SCANNER_MODE  false
 
 // ── Mapa de dispositivos ──────────────────────────
-// Cada dispositivo é identificado por: registrador Modbus + máscara de bit
+// Preencha após rodar o SCANNER_MODE para descobrir os valores corretos.
 //
-// FÓRMULA (do manual CIE 1125 – Anexo A):
-//   reg_addr = codigo_evento / 8
-//   bit_mask = 1 << (codigo_evento % 8)
+// Fórmula confirmada no manual Intelbras CIE 1125 (Anexo A):
+//   reg_addr  = codigo_evento / 8      (divisão inteira)
+//   bit_mask  = 1 << (codigo_evento % 8)
 //
-// Exemplos verificados no manual Intelbras (Anexo A):
-//   Código 19  → reg 2,   máscara 0x08
-//   Código 942 → reg 117, máscara 0x40
-//   Código 1500→ reg 187, máscara 0x10
+// Exemplo confirmado: Falha Dispositivo 1 Loop 1 → reg 62, mask 0x10 (bit 4)
+//   codigo_evento = 62*8 + 4 = 500
 //
-// Registradores de resumo (sem máscara):
-//   reg 200 = total de alarmes ativos (uint16)
-//   reg 202 = total de falhas ativas  (uint16)
-//
-// CONSULTE O ANEXO A DO MANUAL para obter os códigos exatos
-// de cada botoeira/detector da sua instalação e preencha abaixo.
+// Para alarme de incêndio o código de evento é diferente do de falha.
+// Use o SCANNER_MODE para descobrir sem precisar do manual.
 
 struct Dispositivo {
-    uint16_t    regAddr;   // endereço do registrador
-    uint8_t     bitMask;   // máscara do bit (ex: 0x01, 0x02, 0x04...)
-    const char* nome;      // descrição livre
-    const char* tipoEvento;// "ALARME" ou "FALHA"
+    uint16_t    regAddr;
+    uint8_t     bitMask;
+    const char* nome;
+    const char* tipoEvento;   // "ALARME" ou "FALHA"
 };
 
-// Preencha com os dispositivos da sua instalação.
-// Deixe a última linha com nullptr para indicar fim da lista.
+// Preencha com os valores descobertos pelo SCANNER_MODE:
 const Dispositivo DISPOSITIVOS[] = {
-    // { reg, mask, "descrição",   "tipo"   }
-    // Substitua pelos valores do Anexo A do seu manual:
-    { 2,   0x08, "BOTOEIRA PAV 1",     "ALARME" },
-    { 2,   0x10, "BOTOEIRA PAV 2",     "ALARME" },
-    { 3,   0x01, "DETECTOR SALA 101",  "ALARME" },
-    { 3,   0x02, "DETECTOR CORREDOR",  "ALARME" },
-    { 117, 0x40, "MODULO SAIDA 1",     "FALHA"  },
-    { 0,   0x00, nullptr,              nullptr  }   // sentinel – não remover
+    // { reg,  mask,   "nome",              "tipo"   }
+    {  62, 0x10, "BOTOEIRA / DISP. 1",  "ALARME" },   // exemplo – ajuste!
+    {   0, 0x00, nullptr,               nullptr  }    // sentinel
 };
