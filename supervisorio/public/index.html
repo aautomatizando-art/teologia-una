@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema Supervisório – CAE-500 XMAX</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────── -->
+  <header>
+    <div class="header-left">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path d="M12 6v6l4 2"/>
+      </svg>
+      <div>
+        <h1>Sistema Supervisório</h1>
+        <span class="subtitle">Ilumac CAE-500 XMAX</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="connection-badge" id="connBadge">
+        <span class="conn-dot" id="connDot"></span>
+        <span id="connLabel">Conectando…</span>
+      </div>
+      <button class="btn btn-mute" id="btnMute" title="Silenciar alarme sonoro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path id="muteX" d="M23 9l-6 6M17 9l6 6" style="display:none"/>
+          <path id="soundWave" d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+      </button>
+      <button class="btn btn-clear" id="btnClear" title="Limpar histórico de eventos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+          <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+      </button>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- ── STATS ──────────────────────────────────── -->
+  <section class="stats-row">
+    <div class="stat-card alarm">
+      <div class="stat-value" id="statAlarms">0</div>
+      <div class="stat-label">Alarmes Ativos</div>
+    </div>
+    <div class="stat-card fault">
+      <div class="stat-value" id="statFaults">0</div>
+      <div class="stat-label">Falhas Ativas</div>
+    </div>
+    <div class="stat-card normal">
+      <div class="stat-value" id="statHistory">0</div>
+      <div class="stat-label">Eventos no Histórico</div>
+    </div>
+    <div class="stat-card info">
+      <div class="stat-value" id="statLast">—</div>
+      <div class="stat-label">Último Evento</div>
+    </div>
+  </section>
+
+  <!-- ── MAIN GRID ───────────────────────────────── -->
+  <main class="main-grid">
+
+    <!-- Alarmes ativos -->
+    <section class="panel panel-alarms">
+      <div class="panel-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Pontos em Alarme / Falha
+      </div>
+      <div class="alarm-list" id="alarmList">
+        <div class="empty-state" id="emptyAlarms">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+          </svg>
+          <span>Nenhum ponto em alarme</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Histórico de eventos -->
+    <section class="panel panel-history">
+      <div class="panel-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Histórico de Eventos
+      </div>
+      <div class="table-wrap">
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>Data / Hora</th>
+              <th>Tipo</th>
+              <th>Endereço</th>
+              <th>Descrição</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="4" class="empty-row">Aguardando eventos…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── OVERLAY DE ALARME ──────────────────────── -->
+  <div class="alarm-overlay" id="alarmOverlay">
+    <div class="overlay-content">
+      <div class="overlay-icon">🔥</div>
+      <div class="overlay-title">ALARME DE INCÊNDIO</div>
+      <div class="overlay-addr" id="overlayAddr">END: —</div>
+      <div class="overlay-desc" id="overlayDesc">—</div>
+      <button class="btn-overlay" id="btnDismissOverlay">Reconhecer</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
