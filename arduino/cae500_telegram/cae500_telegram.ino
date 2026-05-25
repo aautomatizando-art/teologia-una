@@ -116,38 +116,44 @@ String montarMensagem(const Evento& ev) {
 
 // ── Envia mensagem ao Telegram ────────────────────
 bool enviarTelegram(const String& mensagem) {
-    WiFiClientSecure cliente;
-    cliente.setInsecure();   // aceita qualquer certificado TLS
-    cliente.setTimeout(15);  // 15 s para o handshake SSL
-
-    HTTPClient http;
-    String url = "https://api.telegram.org/bot";
-    url += TELEGRAM_TOKEN;
-    url += "/sendMessage";
-
-    http.begin(cliente, url);
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(15000);  // 15 s para resposta HTTP
-
-    // Serializa JSON com ArduinoJson para escapar automaticamente
     StaticJsonDocument<1024> doc;
     doc["chat_id"]    = TELEGRAM_CHAT_ID;
     doc["text"]       = mensagem;
     doc["parse_mode"] = "HTML";
-
     String body;
     serializeJson(doc, body);
 
-    int code = http.POST(body);
-    http.end();
+    String url = "https://api.telegram.org/bot";
+    url += TELEGRAM_TOKEN;
+    url += "/sendMessage";
 
-    if (code == 200) {
-        Serial.println("[TG] Mensagem enviada.");
-        return true;
-    } else {
-        Serial.printf("[TG] Erro HTTP: %d\n", code);
-        return false;
+    for (int tentativa = 1; tentativa <= 3; tentativa++) {
+        Serial.printf("[TG] Tentativa %d/3  heap livre: %d bytes\n",
+                      tentativa, ESP.getFreeHeap());
+
+        WiFiClientSecure cliente;
+        cliente.setInsecure();
+        cliente.setTimeout(15);
+
+        HTTPClient http;
+        http.begin(cliente, url);
+        http.addHeader("Content-Type", "application/json");
+        http.setTimeout(15000);
+
+        int code = http.POST(body);
+        http.end();
+
+        if (code == 200) {
+            Serial.println("[TG] Mensagem enviada.");
+            return true;
+        }
+
+        Serial.printf("[TG] Falhou (HTTP %d). %s\n",
+                      code,
+                      tentativa < 3 ? "Aguardando 4 s..." : "Desistindo.");
+        if (tentativa < 3) delay(4000);
     }
+    return false;
 }
 
 // ── Verifica cooldown do endereço ─────────────────
@@ -197,7 +203,7 @@ void processar(const String& linha) {
 // ── Notifica conexão ao Telegram ──────────────────
 void enviarConectado() {
     // Aguarda a pilha TCP/IP estabilizar antes do primeiro HTTPS
-    delay(2000);
+    delay(4000);
 
     String ip  = WiFi.localIP().toString();
     String msg = "\xF0\x9F\x9F\xA2 <b>CENTRAL CONECTADA</b>\n\n";
