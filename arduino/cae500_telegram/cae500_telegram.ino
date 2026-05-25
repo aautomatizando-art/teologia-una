@@ -231,8 +231,8 @@ void enviarConectado() {
 // após o DHCP terminar (garante que não será sobrescrito)
 void forceDNS() {
     ip_addr_t dns1, dns2;
-    IP4_ADDR(&dns1, 8, 8, 8, 8);   // Google DNS primário
-    IP4_ADDR(&dns2, 8, 8, 4, 4);   // Google DNS secundário
+    ipaddr_aton("8.8.8.8", &dns1);   // Google DNS primário
+    ipaddr_aton("8.8.4.4", &dns2);   // Google DNS secundário
     dns_setserver(0, &dns1);
     dns_setserver(1, &dns2);
     Serial.println("[DNS] Servidores forçados: 8.8.8.8 / 8.8.4.4");
