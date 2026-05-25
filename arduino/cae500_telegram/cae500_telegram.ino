@@ -118,6 +118,7 @@ String montarMensagem(const Evento& ev) {
 bool enviarTelegram(const String& mensagem) {
     WiFiClientSecure cliente;
     cliente.setInsecure();   // aceita qualquer certificado TLS
+    cliente.setTimeout(15);  // 15 s para o handshake SSL
 
     HTTPClient http;
     String url = "https://api.telegram.org/bot";
@@ -126,7 +127,7 @@ bool enviarTelegram(const String& mensagem) {
 
     http.begin(cliente, url);
     http.addHeader("Content-Type", "application/json");
-    http.setTimeout(10000);
+    http.setTimeout(15000);  // 15 s para resposta HTTP
 
     // Serializa JSON com ArduinoJson para escapar automaticamente
     StaticJsonDocument<1024> doc;
@@ -195,6 +196,9 @@ void processar(const String& linha) {
 
 // ── Notifica conexão ao Telegram ──────────────────
 void enviarConectado() {
+    // Aguarda a pilha TCP/IP estabilizar antes do primeiro HTTPS
+    delay(2000);
+
     String ip  = WiFi.localIP().toString();
     String msg = "\xF0\x9F\x9F\xA2 <b>CENTRAL CONECTADA</b>\n\n";
     msg += "\xF0\x9F\x93\xA1 Sistema supervisório <b>online</b>\n";
