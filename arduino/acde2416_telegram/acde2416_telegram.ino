@@ -70,19 +70,23 @@ String htmlEsc(const String& s) {
 }
 
 // ── Monta mensagem Telegram ───────────────────────
-String montarMensagem(bool alarme, int endereco) {
+String montarMensagem(bool alarme, int endereco, uint8_t byteRaw) {
     String emoji  = alarme ? "\xF0\x9F\x94\xA5" : "\xE2\x9C\x85";
     String titulo = alarme ? "ALARME DE INC\xC3\x8ANDIO" : "NORMALIZADO";
 
-    String endStr = String(endereco);
-    while (endStr.length() < 2) endStr = "0" + endStr;
-
     String msg = emoji + " <b>" + titulo + "</b>\n\n";
-    msg += "\xF0\x9F\x93\x8D <b>Endere\xC3\xA7o:</b> <code>" + endStr + "</code>";
 
     const char* nome = nomeDispositivo(endereco);
-    if (nome) msg += " \xE2\x80\x94 " + htmlEsc(String(nome));
-    msg += "\n";
+    if (nome) {
+        String endStr = String(endereco);
+        while (endStr.length() < 2) endStr = "0" + endStr;
+        msg += "\xF0\x9F\x93\x8D <b>Dispositivo:</b> <code>" + endStr + "</code> \xE2\x80\x94 " + htmlEsc(String(nome)) + "\n";
+    } else {
+        char buf[8];
+        snprintf(buf, sizeof(buf), "0x%02X", byteRaw);
+        msg += "\xF0\x9F\x93\x8D <b>Byte de alarme:</b> <code>" + String(buf) + "</code>\n";
+        msg += "<i>(configure o nome em config.h)</i>\n";
+    }
 
     msg += "\n<i>Central: ASCAEL ACDE 24/16</i>";
     return msg;
@@ -140,7 +144,7 @@ void processarByte(uint8_t b) {
         Serial.printf("[ALARME] Byte: 0x%02X → Endereço %02d\n", b, enderecoDoAlarme);
 
         if (millis() - tEnvioAlarme >= COOLDOWN_MS) {
-            if (enviarTelegram(montarMensagem(true, enderecoDoAlarme))) {
+            if (enviarTelegram(montarMensagem(true, enderecoDoAlarme, b))) {
                 tEnvioAlarme = millis();
             }
         }
@@ -156,7 +160,7 @@ void verificarNormal() {
     Serial.printf("[NORMAL] Endereço %02d restaurado\n", enderecoDoAlarme);
 
     if (ENVIAR_NORMAL && millis() - tEnvioNormal >= COOLDOWN_MS) {
-        if (enviarTelegram(montarMensagem(false, enderecoDoAlarme))) {
+        if (enviarTelegram(montarMensagem(false, enderecoDoAlarme, byteDoAlarme))) {
             tEnvioNormal = millis();
         }
     }
