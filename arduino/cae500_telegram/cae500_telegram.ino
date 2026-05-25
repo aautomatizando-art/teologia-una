@@ -193,6 +193,18 @@ void processar(const String& linha) {
     }
 }
 
+// ── Notifica conexão ao Telegram ──────────────────
+void enviarConectado() {
+    String ip  = WiFi.localIP().toString();
+    String msg = "\xF0\x9F\x9F\xA2 <b>CENTRAL CONECTADA</b>\n\n";
+    msg += "\xF0\x9F\x93\xA1 Sistema supervisório <b>online</b>\n";
+    msg += "\xF0\x9F\x8C\x90 IP: <code>" + ip + "</code>\n";
+    msg += "\xF0\x9F\x93\x8B Central: CAE-500 XMAX\n";
+    msg += "\n<i>Monitoramento ativo. Aguardando eventos.</i>";
+    Serial.println("[TG] Enviando notificação de conexão...");
+    enviarTelegram(msg);
+}
+
 // ── WiFi ──────────────────────────────────────────
 void conectarWiFi() {
     Serial.print("[WiFi] Conectando a ");
@@ -210,6 +222,7 @@ void conectarWiFi() {
 
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\n[WiFi] Conectado! IP: " + WiFi.localIP().toString());
+        enviarConectado();
     } else {
         Serial.println("\n[WiFi] Falha na conexão.");
     }
