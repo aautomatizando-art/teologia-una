@@ -202,8 +202,17 @@ void processar(const String& linha) {
 
 // ── Notifica conexão ao Telegram ──────────────────
 void enviarConectado() {
-    // Aguarda a pilha TCP/IP estabilizar antes do primeiro HTTPS
     delay(4000);
+
+    // Testa resolução DNS antes de tentar o Telegram
+    IPAddress ipTelegram;
+    Serial.print("[DNS] Resolvendo api.telegram.org... ");
+    if (WiFi.hostByName("api.telegram.org", ipTelegram)) {
+        Serial.println("OK → " + ipTelegram.toString());
+    } else {
+        Serial.println("FALHOU! Verifique a rede.");
+        return;
+    }
 
     String ip  = WiFi.localIP().toString();
     String msg = "\xF0\x9F\x9F\xA2 <b>CENTRAL CONECTADA</b>\n\n";
@@ -221,6 +230,10 @@ void conectarWiFi() {
     Serial.print(WIFI_SSID);
 
     WiFi.mode(WIFI_STA);
+    // Força DNS do Google — ignora o DNS fornecido pelo roteador/hotspot
+    WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE,
+                IPAddress(8, 8, 8, 8),   // DNS primário: Google
+                IPAddress(8, 8, 4, 4));  // DNS secundário: Google
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
     int tentativas = 0;
