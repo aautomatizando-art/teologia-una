@@ -18,29 +18,26 @@
 #define BAUD_RS485  9600
 
 // ── Cooldown ──────────────────────────────────────
-#define COOLDOWN_MS   60000UL   // intervalo mín. entre msgs do mesmo evento
-
-// ── Localização geral ─────────────────────────────
-#define NOME_LOCAL    "EDIF\xC3\x8DCIO"   // aparece nas mensagens de alarme sem device
+// Intervalo mínimo entre mensagens do mesmo Laço.
+#define COOLDOWN_MS   60000UL
 
 // ── Mapa de dispositivos ──────────────────────────
-// Preencha com os valores confirmados pelo cie1125_rs485_raw:
-//   byte[28] = Laço     (hex, ex: 0x04)
-//   byte[29] = Endereço (hex, ex: 0x04)
-//   nome     = texto que aparece na notificação Telegram
+// Identificação pelo LAÇO (byte[28]) — o End address (byte[29])
+// varia conforme o dispositivo sendo polled no momento do alarme.
 //
-// Valores confirmados em campo:
-//   Botoeira Térreo  → Laço 0x04, End. 0x04
-//   Botoeira Superior→ Laço 0x05, End. 0x29
+// Laços confirmados em campo:
+//   Botoeira Térreo   → Laço 0x04
+//   Botoeira Superior → Laço 0x05
+//
+// Adicione outros laços conforme necessário.
 
 struct Dispositivo {
-    uint8_t     laco;
-    uint8_t     endereco;
-    const char* nome;
+    uint8_t     laco;   // byte[28] do frame RS485
+    const char* nome;   // texto que aparece no Telegram
 };
 
 const Dispositivo DISPOSITIVOS[] = {
-    { 0x04, 0x04, "BOTOEIRA PAV T\xC3\x89RREO"    },
-    { 0x05, 0x29, "BOTOEIRA PAV SUPERIOR"          },
-    { 0x00, 0x00, nullptr }   // sentinel – não remova
+    { 0x04, "BOTOEIRA PAV T\xC3\x89RREO"    },
+    { 0x05, "BOTOEIRA PAV SUPERIOR"          },
+    { 0x00, nullptr }   // sentinel – não remova
 };
