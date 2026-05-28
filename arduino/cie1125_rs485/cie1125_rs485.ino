@@ -6,11 +6,14 @@
  * e 0x7C (fim).
  *
  * Posições relevantes no frame (índice 0 = primeiro byte após 0x7E):
- *   [8]  → tipo de frame: 0x18 = poll normal | 0x28 = frame de evento
- *   [10] → contador de alarmes ativos (0 = sem alarme, N = N alarmes)
- *   [28] → Laço do dispositivo que acionou
- *   [29] → Endereço do dispositivo que acionou
+ *   [8]  → tipo de frame: 0x18 = poll normal | 0x28 = EVENTO deste dispositivo
+ *   [10] → contador de alarmes ativos no sistema (0 = sem alarme, N = N alarmes)
+ *   [28] → Laço do dispositivo DESTE frame (não necessariamente o que acionou)
+ *   [29] → Endereço do dispositivo DESTE frame
  *   [36] → flag global de alarme (0 = normal, 1 = alarme ativo)
+ *
+ * Identificação: byte[8]==0x28 indica que O DISPOSITIVO EM bytes[28][29] está em alarme.
+ * byte[10] é apenas contador total — NÃO identifica qual dispositivo acionou.
  *
  * Ligação:
  *   CIE D+ → MAX485 A (borne verde)
@@ -39,22 +42,25 @@
 #define FRAME_END     0x7C
 #define FRAME_LEN     42      // bytes entre START e END (inclusive os dois)
 
-#define IDX_TIPO      8       // 0x18=normal | 0x28=evento
-#define IDX_ALARMES   10      // contador de alarmes ativos
-#define IDX_LACO      28      // laço do dispositivo acionado
-#define IDX_ENDERECO  29      // endereço do dispositivo acionado
+#define IDX_TIPO      8       // 0x18=poll normal | 0x28=este dispositivo em evento
+#define IDX_ALARMES   10      // contador total de alarmes no sistema
+#define IDX_LACO      28      // laço do dispositivo deste frame
+#define IDX_ENDERECO  29      // endereço do dispositivo deste frame
 #define IDX_FLAG      36      // flag global de alarme (0/1)
+
+#define TIPO_NORMAL   0x18
+#define TIPO_EVENTO   0x28
 
 // ── Globals ───────────────────────────────────────
 uint8_t       frameBuf[FRAME_LEN];
-int           framePos       = -1;   // -1 = aguardando START
-bool          alarmAtivo     = false;
-uint8_t       lacoAlarme     = 0;
-uint8_t       endAlarme      = 0;
-uint8_t       ctAlarmesAnt   = 0;
+int           framePos        = -1;    // -1 = aguardando START
+bool          inicializado    = false; // ignora primeiro ciclo (sem notificação)
+bool          alarmAtivo      = false;
+uint8_t       lacoAlarme      = 0;
+uint8_t       endAlarme       = 0;
 
 unsigned long tUltimaReconexao = 0;
-unsigned long tUltimoEnvio    = 0;
+unsigned long tUltimoEnvio     = 0;
 
 // ── Lookup de dispositivo ─────────────────────────
 const char* nomePorEndereco(uint8_t laco, uint8_t end) {
@@ -133,28 +139,41 @@ bool enviarTelegram(const String& mensagem) {
 
 // ── Processa frame completo ───────────────────────
 void processarFrame() {
+    uint8_t tipo      = frameBuf[IDX_TIPO];
     uint8_t ctAlarmes = frameBuf[IDX_ALARMES];
     uint8_t laco      = frameBuf[IDX_LACO];
     uint8_t end_      = frameBuf[IDX_ENDERECO];
 
-    // Alarme: contador passou de 0 para N
-    if (!alarmAtivo && ctAlarmes > 0) {
-        alarmAtivo   = true;
-        lacoAlarme   = laco;
-        endAlarme    = end_;
-        ctAlarmesAnt = ctAlarmes;
-
-        const char* nome = nomePorEndereco(laco, end_);
-        Serial.printf("[ALARME] La\xC3\xA7o=0x%02X End=0x%02X  %s\n",
-                      laco, end_, nome ? nome : "(n\xC3\xA3o mapeado)");
-
-        if (millis() - tUltimoEnvio >= COOLDOWN_MS) {
-            if (enviarTelegram(montarMensagem(true, nome, laco, end_)))
-                tUltimoEnvio = millis();
-        }
+    // Primeiro ciclo: inicializa estado sem enviar nada
+    if (!inicializado) {
+        alarmAtivo = (tipo == TIPO_EVENTO) && (ctAlarmes > 0);
+        if (alarmAtivo) { lacoAlarme = laco; endAlarme = end_; }
+        inicializado = true;
+        Serial.printf("[INIT] tipo=0x%02X alarmes=%d  la\xC3\xA7o=0x%02X end=0x%02X\n",
+                      tipo, ctAlarmes, laco, end_);
+        return;
     }
 
-    // Normal: contador voltou a 0
+    // byte[8]==TIPO_EVENTO: este dispositivo específico está em alarme
+    if (tipo == TIPO_EVENTO && ctAlarmes > 0) {
+        if (!alarmAtivo) {
+            alarmAtivo = true;
+            lacoAlarme = laco;
+            endAlarme  = end_;
+
+            const char* nome = nomePorEndereco(laco, end_);
+            Serial.printf("[ALARME] La\xC3\xA7o=0x%02X End=0x%02X  %s\n",
+                          laco, end_, nome ? nome : "(n\xC3\xA3o mapeado)");
+
+            if (millis() - tUltimoEnvio >= COOLDOWN_MS) {
+                if (enviarTelegram(montarMensagem(true, nome, laco, end_)))
+                    tUltimoEnvio = millis();
+            }
+        }
+        return;
+    }
+
+    // Contador global voltou a zero: sistema normalizado
     if (alarmAtivo && ctAlarmes == 0) {
         alarmAtivo = false;
         Serial.println("[NORMAL] Restaurado.");
@@ -165,8 +184,6 @@ void processarFrame() {
                 tUltimoEnvio = millis();
         }
     }
-
-    ctAlarmesAnt = ctAlarmes;
 }
 
 // ── Parser de frame byte a byte ───────────────────
