@@ -134,13 +134,10 @@ void processarFrame() {
                 prevLaco = laco; prevEnd = end_;
             }
             // Alarme genérico: byte[36]=1 ininterrupto por mais de 3 s
+            // Apenas Serial — sem Telegram (supervisão periódica dispara falsos alarmes)
             if (tFlag1Start > 0 && millis() - tFlag1Start > 3000) {
                 gAlarmAtivo = true;
                 Serial.println("[ALARME GERAL] Sistema em alarme (dispositivo nao mapeado).");
-                if (millis() - tEnvioGenerico >= COOLDOWN_MS) {
-                    if (enviarTelegram(montarMensagem(true, "ALARME GERAL")))
-                        tEnvioGenerico = millis();
-                }
             }
         }
         return;
@@ -160,14 +157,10 @@ void processarFrame() {
         }
     }
 
-    // Normal genérico: 5 s sem nenhum byte[36]=1
+    // Normal genérico: 5 s sem nenhum byte[36]=1 — apenas Serial
     if (gAlarmAtivo && tUltimoFlag1 > 0 && millis() - tUltimoFlag1 > 5000) {
         gAlarmAtivo = false;
         Serial.println("[NORMAL GERAL] Sistema normalizado.");
-        if (millis() - tEnvioGenerico >= COOLDOWN_MS) {
-            if (enviarTelegram(montarMensagem(false, nullptr)))
-                tEnvioGenerico = millis();
-        }
     }
 }
 
