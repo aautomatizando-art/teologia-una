@@ -33,11 +33,15 @@
 uint8_t  frameBuf[FRAME_LEN];
 int      framePos = -1;
 
-bool     sistemaPronto = false;
-bool     alarmAtivo    = false;
-uint8_t  lacoAlarme    = 0;
-uint8_t  endAlarme     = 0;
+bool     sistemaPronto  = false;
+bool     alarmAtivo     = false;   // alarme em dispositivo mapeado
+bool     gAlarmAtivo    = false;   // alarme genérico (dispositivo não mapeado)
+uint8_t  lacoAlarme     = 0;
+uint8_t  endAlarme      = 0;
 unsigned long tEnvio[256];
+unsigned long tEnvioGenerico  = 0;
+unsigned long tFlag1Start     = 0;  // quando byte[36]=1 contínuo começou
+unsigned long tUltimoFlag1    = 0;  // último momento com byte[36]=1
 unsigned long tUltimaReconexao = 0;
 
 // ── Lookup ────────────────────────────────────────
@@ -90,16 +94,11 @@ void processarFrame() {
     uint8_t end_ = frameBuf[IDX_B29];
 
 #if DIAG_MODE
-    // Imprime APENAS frames com byte[36]=1 (dispositivo em alarme).
-    // Acione a botoeira e veja qual b28 aparece.
-    if (flag == 1) {
+    if (flag == 1)
         Serial.printf("[D] b28=0x%02X  b29=0x%02X  b8=0x%02X  b10=0x%02X\n",
                       laco, end_, frameBuf[IDX_B8], frameBuf[IDX_B10]);
-    }
     return;
 #endif
-
-    // ── Operação normal ───────────────────────────
 
     // Aguarda sistema limpo antes de monitorar
     if (!sistemaPronto) {
@@ -110,32 +109,64 @@ void processarFrame() {
         return;
     }
 
-    // Alarme: byte[36]=1 e dispositivo mapeado
-    if (!alarmAtivo && flag == 1) {
+    // ── Frame com alarme (byte[36]=1) ─────────────────
+    if (flag == 1) {
+        if (tFlag1Start == 0) tFlag1Start = millis();
+        tUltimoFlag1 = millis();
+
         const char* nome = nomePorLaco(laco);
-        if (nome) {
-            alarmAtivo = true;
-            lacoAlarme = laco;
-            endAlarme  = end_;
+        if (nome && !alarmAtivo) {
+            // Dispositivo mapeado em alarme
+            alarmAtivo  = true;
+            lacoAlarme  = laco;
+            endAlarme   = end_;
+            tFlag1Start = 0;   // alarme específico assumiu; reset timer genérico
             Serial.printf("[ALARME] b28=0x%02X b29=0x%02X \xE2\x86\x92 %s\n", laco, end_, nome);
             if (millis() - tEnvio[laco] >= COOLDOWN_MS) {
                 if (enviarTelegram(montarMensagem(true, nome)))
                     tEnvio[laco] = millis();
             }
-        } else {
-            // Dispositivo não mapeado — imprime para diagnóstico sem notificar
-            Serial.printf("[SCAN] b28=0x%02X b29=0x%02X (nao mapeado)\n", laco, end_);
+        } else if (!nome && !alarmAtivo && !gAlarmAtivo) {
+            // Dispositivo não mapeado — [SCAN] apenas na troca de endereço
+            static uint8_t prevLaco = 0xFF, prevEnd = 0xFF;
+            if (laco != prevLaco || end_ != prevEnd) {
+                Serial.printf("[SCAN] b28=0x%02X b29=0x%02X (nao mapeado)\n", laco, end_);
+                prevLaco = laco; prevEnd = end_;
+            }
+            // Alarme genérico: byte[36]=1 ininterrupto por mais de 3 s
+            if (tFlag1Start > 0 && millis() - tFlag1Start > 3000) {
+                gAlarmAtivo = true;
+                Serial.println("[ALARME GERAL] Sistema em alarme (dispositivo nao mapeado).");
+                if (millis() - tEnvioGenerico >= COOLDOWN_MS) {
+                    if (enviarTelegram(montarMensagem(true, "ALARME GERAL")))
+                        tEnvioGenerico = millis();
+                }
+            }
         }
+        return;
     }
 
-    // Normal: o MESMO dispositivo que alarmou voltou a byte[36]=0
-    if (alarmAtivo && flag == 0 && laco == lacoAlarme) {
+    // ── Frame normal (byte[36]=0) ─────────────────────
+    tFlag1Start = 0;   // qualquer frame normal reseta o contador genérico
+
+    // Normal específico: mesmo dispositivo que alarmou
+    if (alarmAtivo && laco == lacoAlarme) {
         alarmAtivo = false;
         const char* nome = nomePorLaco(lacoAlarme);
         Serial.printf("[NORMAL] b28=0x%02X restaurado.\n", lacoAlarme);
         if (millis() - tEnvio[lacoAlarme] >= COOLDOWN_MS) {
             if (enviarTelegram(montarMensagem(false, nome)))
                 tEnvio[lacoAlarme] = millis();
+        }
+    }
+
+    // Normal genérico: 5 s sem nenhum byte[36]=1
+    if (gAlarmAtivo && tUltimoFlag1 > 0 && millis() - tUltimoFlag1 > 5000) {
+        gAlarmAtivo = false;
+        Serial.println("[NORMAL GERAL] Sistema normalizado.");
+        if (millis() - tEnvioGenerico >= COOLDOWN_MS) {
+            if (enviarTelegram(montarMensagem(false, nullptr)))
+                tEnvioGenerico = millis();
         }
     }
 }
