@@ -1,36 +1,19 @@
 /*
  * CIE 1125 (Intelbras) RS485 Repetidora → Telegram  |  ESP32
  *
- * Lê o barramento RS485 da saída Repetidora (bornes D+ / D-) da CIE 1125.
- * Protocolo confirmado em campo: frames de 42 bytes, delimitados por 0x7E (início)
- * e 0x7C (fim).
- *
- * Posições relevantes no frame (índice 0 = byte START inclusive):
- *   [10] → contador global de alarmes ativos (0 = sem alarme, N = N alarmes)
- *   [28] → Laço do dispositivo deste frame  ← usado para identificação
- *   [29] → Endereço dentro do Laço          (auxiliar — varia com o poll)
- *
- * Estratégia de detecção:
- *   - Aguarda ctAlarmes=0 ao menos uma vez (sistemaPronto) antes de monitorar.
- *   - Quando ctAlarmes passa de 0→N, varre frames até encontrar Laço mapeado.
- *   - Quando ctAlarmes volta a 0, envia NORMALIZADO.
- *   - Cooldown independente por Laço — eventos de laços desconhecidos não
- *     bloqueiam a notificação dos laços mapeados.
+ * DIAG_MODE = true  → imprime bytes-chave de cada frame (sem enviar Telegram).
+ *                      Acione a botoeira e observe quais bytes mudam.
+ *                      Anote os valores e ajuste IDX_ALARME e DISPOSITIVOS.
+ * DIAG_MODE = false → operação normal.
  *
  * Ligação:
  *   CIE D+ → MAX485 A (borne verde)
  *   CIE D- → MAX485 B (borne verde)
  *   MAX485 RO    → ESP32 GPIO16
  *   MAX485 RE+DE → GND  (recepção permanente)
- *   MAX485 VCC   → 3.3V
- *   MAX485 GND   → GND
  *
  * Pré-requisito na central:
  *   Sistema → Configurações → Habilitar Repetidoras → R1 = ON
- *
- * Bibliotecas:
- *   ArduinoJson (Benoit Blanchon) – instalar via Gerenciar Bibliotecas
- *   WiFi, WiFiClientSecure, HTTPClient – inclusas no core ESP32
  */
 
 #include <WiFi.h>
@@ -40,30 +23,35 @@
 #include "config.h"
 
 // ── Protocolo RS485 ───────────────────────────────
-#define FRAME_START   0x7E
-#define FRAME_END     0x7C
-#define FRAME_LEN     42
+#define FRAME_START  0x7E
+#define FRAME_END    0x7C
+#define FRAME_LEN    42
 
-#define IDX_ALARMES   10    // contador global de alarmes
-#define IDX_LACO      28    // Laço do dispositivo neste frame
-#define IDX_ENDERECO  29    // Endereço do dispositivo neste frame
+// Posições a observar no DIAG_MODE (ajuste após análise):
+#define IDX_B8    8
+#define IDX_B10   10
+#define IDX_B28   28
+#define IDX_B29   29
+#define IDX_B36   36
+
+// Byte que indica alarme ATIVO (ajuste após diagnóstico):
+// Na versão atual usamos byte[36]; mude para o byte correto após ver o DIAG.
+#define IDX_ALARME   36
+#define VAL_ALARME   1    // valor que indica alarme (ajuste se necessário)
 
 // ── Globals ───────────────────────────────────────
 uint8_t  frameBuf[FRAME_LEN];
 int      framePos = -1;
 
-bool     sistemaPronto = false;   // true após primeiro ctAlarmes==0
+// Operação normal
+bool     sistemaPronto = false;
 bool     alarmAtivo    = false;
-bool     buscando      = false;   // ctAlarmes>0 mas Laço ainda não identificado
 uint8_t  lacoAlarme    = 0;
 uint8_t  endAlarme     = 0;
-
-// Cooldown independente por Laço (índice = número do Laço, 0-255)
 unsigned long tEnvio[256];
-
 unsigned long tUltimaReconexao = 0;
 
-// ── Lookup de dispositivo por Laço ────────────────
+// ── Lookup de dispositivo por byte[28] ────────────
 const char* nomePorLaco(uint8_t laco) {
     for (int i = 0; DISPOSITIVOS[i].nome != nullptr; i++) {
         if (DISPOSITIVOS[i].laco == laco) return DISPOSITIVOS[i].nome;
@@ -73,141 +61,128 @@ const char* nomePorLaco(uint8_t laco) {
 
 // ── Telegram ──────────────────────────────────────
 String htmlEsc(const String& s) {
-    String r = s;
-    r.replace("&", "&amp;");
-    r.replace("<", "&lt;");
-    r.replace(">", "&gt;");
+    String r = s; r.replace("&","&amp;"); r.replace("<","&lt;"); r.replace(">","&gt;");
     return r;
 }
 
 String montarMensagem(bool alarme, const char* nomeDisp) {
     String emoji  = alarme ? "\xF0\x9F\x94\xA5" : "\xE2\x9C\x85";
     String titulo = alarme ? "ALARME DE INC\xC3\x8ANDIO" : "NORMALIZADO";
-
-    String msg = emoji + " <b>" + titulo + "</b>\n\n";
-    if (nomeDisp) {
+    String msg    = emoji + " <b>" + titulo + "</b>\n\n";
+    if (nomeDisp)
         msg += "\xF0\x9F\x93\x8B " + htmlEsc(String(nomeDisp)) + "\n";
-    }
-
-    char uptime[10];
-    unsigned long s = millis() / 1000;
-    snprintf(uptime, sizeof(uptime), "%02lu:%02lu:%02lu",
-             s / 3600, (s % 3600) / 60, s % 60);
-    msg += "\xF0\x9F\x95\x90 Uptime: " + String(uptime) + "\n";
+    char up[10]; unsigned long s = millis()/1000;
+    snprintf(up, sizeof(up), "%02lu:%02lu:%02lu", s/3600, (s%3600)/60, s%60);
+    msg += "\xF0\x9F\x95\x90 Uptime: " + String(up) + "\n";
     msg += "\n<i>Central: CIE 1125 | Intelbras</i>";
     return msg;
 }
 
 bool enviarTelegram(const String& mensagem) {
-    String url = "https://api.telegram.org/bot";
-    url += TELEGRAM_TOKEN;
-    url += "/sendMessage";
-
+    String url = "https://api.telegram.org/bot"; url += TELEGRAM_TOKEN; url += "/sendMessage";
     for (int t = 1; t <= 3; t++) {
         Serial.printf("[TG] Tentativa %d/3\n", t);
-        WiFiClientSecure c;
-        c.setInsecure();
-        c.setTimeout(15);
-        HTTPClient http;
-        http.begin(c, url);
-        http.addHeader("Content-Type", "application/json");
-        http.setTimeout(15000);
-
+        WiFiClientSecure c; c.setInsecure(); c.setTimeout(15);
+        HTTPClient http; http.begin(c, url);
+        http.addHeader("Content-Type","application/json"); http.setTimeout(15000);
         StaticJsonDocument<512> doc;
-        doc["chat_id"]    = TELEGRAM_CHAT_ID;
-        doc["text"]       = mensagem;
-        doc["parse_mode"] = "HTML";
-        String body;
-        serializeJson(doc, body);
-
-        int code = http.POST(body);
-        http.end();
-
+        doc["chat_id"] = TELEGRAM_CHAT_ID; doc["text"] = mensagem; doc["parse_mode"] = "HTML";
+        String body; serializeJson(doc, body);
+        int code = http.POST(body); http.end();
         if (code == 200) { Serial.println("[TG] Enviado."); return true; }
-        Serial.printf("[TG] Erro %d.%s\n", code, t < 3 ? " Aguardando 4s..." : "");
+        Serial.printf("[TG] Erro %d.%s\n", code, t < 3 ? " 4s..." : "");
         if (t < 3) delay(4000);
     }
     return false;
 }
 
-// ── Processa frame completo ───────────────────────
-void processarFrame() {
-    uint8_t ctAlarmes = frameBuf[IDX_ALARMES];
-    uint8_t laco      = frameBuf[IDX_LACO];
-    uint8_t end_      = frameBuf[IDX_ENDERECO];
+// ── Diagnóstico: mostra bytes-chave quando mudam ──
+void diagnosticoFrame() {
+    static uint8_t prev[5] = {0xFF,0xFF,0xFF,0xFF,0xFF};
+    uint8_t cur[5] = {
+        frameBuf[IDX_B8],
+        frameBuf[IDX_B10],
+        frameBuf[IDX_B28],
+        frameBuf[IDX_B29],
+        frameBuf[IDX_B36]
+    };
 
-    // Fase 1: aguarda sistema em estado limpo antes de monitorar
+    if (memcmp(cur, prev, 5) == 0) return;   // sem mudança — não imprime
+
+    Serial.printf("[D] b8=%02X  b10=%02X  b28=%02X  b29=%02X  b36=%02X",
+                  cur[0], cur[1], cur[2], cur[3], cur[4]);
+
+    // Marca quais bytes mudaram em relação ao frame anterior
+    if (prev[0] != 0xFF) {
+        Serial.print("   <<");
+        if (cur[0]!=prev[0]) Serial.printf(" b8:%02X→%02X", prev[0], cur[0]);
+        if (cur[1]!=prev[1]) Serial.printf(" b10:%02X→%02X", prev[1], cur[1]);
+        if (cur[2]!=prev[2]) Serial.printf(" b28:%02X→%02X", prev[2], cur[2]);
+        if (cur[3]!=prev[3]) Serial.printf(" b29:%02X→%02X", prev[3], cur[3]);
+        if (cur[4]!=prev[4]) Serial.printf(" b36:%02X→%02X", prev[4], cur[4]);
+        Serial.print(" >>");
+    }
+    Serial.println();
+    memcpy(prev, cur, 5);
+}
+
+// ── Operação normal ───────────────────────────────
+void operacaoNormal() {
+    uint8_t flagAlarme = frameBuf[IDX_ALARME];
+    uint8_t laco       = frameBuf[IDX_B28];
+    uint8_t end_       = frameBuf[IDX_B29];
+
     if (!sistemaPronto) {
-        if (ctAlarmes == 0) {
+        if (flagAlarme == 0) {
             sistemaPronto = true;
             Serial.println("[INIT] Sistema normal. Monitoramento ativo.");
-        } else {
-            Serial.printf("[INIT] Aguardando (alarmes=%d la\xC3\xA7o=%02X)...\n",
-                          ctAlarmes, laco);
         }
         return;
     }
 
-    // Fase 2: detecção de início de alarme
-    if (ctAlarmes > 0 && !alarmAtivo) {
-        buscando = true;
-    }
-
-    // Fase 3: varre frames para encontrar Laço mapeado
-    if (buscando && ctAlarmes > 0) {
+    // Alarme detectado
+    if (!alarmAtivo && flagAlarme == VAL_ALARME) {
+        alarmAtivo = true;
+        lacoAlarme = laco;
+        endAlarme  = end_;
         const char* nome = nomePorLaco(laco);
-        if (nome) {
-            buscando   = false;
-            alarmAtivo = true;
-            lacoAlarme = laco;
-            endAlarme  = end_;
-
-            Serial.printf("[ALARME] La\xC3\xA7o=0x%02X End=0x%02X \xE2\x86\x92 %s\n",
-                          laco, end_, nome);
-
-            if (millis() - tEnvio[laco] >= COOLDOWN_MS) {
-                if (enviarTelegram(montarMensagem(true, nome)))
-                    tEnvio[laco] = millis();
-            }
-        } else {
-            Serial.printf("[SCAN] La\xC3\xA7o=0x%02X End=0x%02X (n\xC3\xA3o mapeado)\n",
-                          laco, end_);
+        Serial.printf("[ALARME] b28=0x%02X b29=0x%02X → %s\n",
+                      laco, end_, nome ? nome : "(não mapeado)");
+        if (millis() - tEnvio[laco] >= COOLDOWN_MS) {
+            if (enviarTelegram(montarMensagem(true, nome)))
+                tEnvio[laco] = millis();
         }
     }
 
-    // Fase 4: sistema normalizado
-    if (ctAlarmes == 0) {
-        buscando = false;
-        if (alarmAtivo) {
-            alarmAtivo = false;
-            const char* nome = nomePorLaco(lacoAlarme);
-            Serial.printf("[NORMAL] La\xC3\xA7o=0x%02X restaurado.\n", lacoAlarme);
-
-            if (millis() - tEnvio[lacoAlarme] >= COOLDOWN_MS) {
-                if (enviarTelegram(montarMensagem(false, nome)))
-                    tEnvio[lacoAlarme] = millis();
-            }
+    // Normalizado
+    if (alarmAtivo && flagAlarme == 0) {
+        alarmAtivo = false;
+        const char* nome = nomePorLaco(lacoAlarme);
+        Serial.printf("[NORMAL] b28=0x%02X restaurado.\n", lacoAlarme);
+        if (millis() - tEnvio[lacoAlarme] >= COOLDOWN_MS) {
+            if (enviarTelegram(montarMensagem(false, nome)))
+                tEnvio[lacoAlarme] = millis();
         }
     }
 }
 
+// ── Processa frame completo ───────────────────────
+void processarFrame() {
+#if DIAG_MODE
+    diagnosticoFrame();
+#else
+    operacaoNormal();
+#endif
+}
+
 // ── Parser de frame byte a byte ───────────────────
 void parseByte(uint8_t b) {
-    if (b == FRAME_START) {
-        framePos    = 0;
-        frameBuf[0] = b;
-        return;
-    }
+    if (b == FRAME_START) { framePos = 0; frameBuf[0] = b; return; }
     if (framePos < 0) return;
-
     framePos++;
     if (framePos >= FRAME_LEN) { framePos = -1; return; }
     frameBuf[framePos] = b;
-
-    if (b == FRAME_END && framePos == FRAME_LEN - 1) {
-        processarFrame();
-        framePos = -1;
-    }
+    if (b == FRAME_END && framePos == FRAME_LEN - 1) { processarFrame(); framePos = -1; }
 }
 
 // ── WiFi ──────────────────────────────────────────
@@ -215,31 +190,27 @@ void enviarConectado() {
     delay(3000);
     IPAddress ip;
     if (!WiFi.hostByName("api.telegram.org", ip)) return;
-
     String msg = "\xF0\x9F\x9F\xA2 <b>SUPERVISOR CONECTADO</b>\n\n";
     msg += "\xF0\x9F\x8C\x90 IP: <code>" + WiFi.localIP().toString() + "</code>\n";
+#if DIAG_MODE
+    msg += "<i>DIAG_MODE ativo — sem notificações de alarme.</i>";
+#else
     msg += "<i>CIE 1125 RS485 | aguardando eventos.</i>";
+#endif
     enviarTelegram(msg);
 }
 
 void conectarWiFi() {
     Serial.print("[WiFi] Conectando");
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
+    WiFi.mode(WIFI_STA); WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     int t = 0;
-    while (WiFi.status() != WL_CONNECTED && t < 40) {
-        delay(500); Serial.print("."); t++;
-    }
-
+    while (WiFi.status() != WL_CONNECTED && t < 40) { delay(500); Serial.print("."); t++; }
     if (WiFi.status() == WL_CONNECTED) {
         WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(),
-                    IPAddress(8, 8, 8, 8), IPAddress(8, 8, 4, 4));
+                    IPAddress(8,8,8,8), IPAddress(8,8,4,4));
         Serial.println("\n[WiFi] IP: " + WiFi.localIP().toString());
         enviarConectado();
-    } else {
-        Serial.println("\n[WiFi] Falha.");
-    }
+    } else { Serial.println("\n[WiFi] Falha."); }
     tUltimaReconexao = millis();
 }
 
@@ -250,17 +221,19 @@ void setup() {
     Serial2.begin(BAUD_RS485, SERIAL_8N1, PIN_RX, PIN_TX);
     Serial.println("\n=== CIE 1125 RS485 \xE2\x86\x92 Telegram ===");
     Serial.printf("[RS485] %d bps  RX=GPIO%d\n", BAUD_RS485, PIN_RX);
+#if DIAG_MODE
+    Serial.println("[DIAG] Modo diagnóstico ativo.");
+    Serial.println("[DIAG] Acione a botoeira e observe quais bytes mudam.");
+    Serial.println("[DIAG] Formato: b8  b10  b28  b29  b36");
+    Serial.println("[DIAG] << mudancas marcadas com >> \n");
+#endif
     conectarWiFi();
     Serial.println("[OK] Aguardando frames RS485...\n");
 }
 
 // ── Loop ──────────────────────────────────────────
 void loop() {
-    if (WiFi.status() != WL_CONNECTED) {
+    if (WiFi.status() != WL_CONNECTED)
         if (millis() - tUltimaReconexao > 30000) conectarWiFi();
-    }
-
-    while (Serial2.available()) {
-        parseByte((uint8_t)Serial2.read());
-    }
+    while (Serial2.available()) parseByte((uint8_t)Serial2.read());
 }

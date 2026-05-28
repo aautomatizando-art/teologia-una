@@ -21,23 +21,26 @@
 // Intervalo mínimo entre mensagens do mesmo Laço.
 #define COOLDOWN_MS   60000UL
 
+// ── MODO DIAGNÓSTICO ──────────────────────────────
+// true  → imprime bytes-chave de cada frame no Monitor Serial.
+//         Acione uma botoeira e veja quais bytes mudam.
+//         Não envia notificações ao Telegram durante o diagnóstico.
+// false → operação normal (após entender o protocolo).
+#define DIAG_MODE  true
+
 // ── Mapa de dispositivos ──────────────────────────
-// Identificação pelo LAÇO (byte[28]) — o End address (byte[29])
-// varia conforme o dispositivo sendo polled no momento do alarme.
+// Preencha APÓS rodar o DIAG_MODE e identificar o byte correto.
+// O campo `laco` corresponde ao byte[28] do frame quando o alarme ocorre.
 //
-// Laços confirmados em campo:
-//   Botoeira Térreo   → Laço 0x04
-//   Botoeira Superior → Laço 0x05
-//
-// Adicione outros laços conforme necessário.
+// Exemplo (ajuste com os valores reais do DIAG):
+//   { 0x1C, "BOTOEIRA PAV TÉRREO" }
 
 struct Dispositivo {
-    uint8_t     laco;   // byte[28] do frame RS485
-    const char* nome;   // texto que aparece no Telegram
+    uint8_t     laco;   // byte[28] do frame RS485 no momento do alarme
+    const char* nome;
 };
 
 const Dispositivo DISPOSITIVOS[] = {
-    { 0x04, "BOTOEIRA PAV T\xC3\x89RREO"    },
-    { 0x05, "BOTOEIRA PAV SUPERIOR"          },
+    { 0x1C, "BOTOEIRA PAV T\xC3\x89RREO"    },   // ajuste após DIAG
     { 0x00, nullptr }   // sentinel – não remova
 };
