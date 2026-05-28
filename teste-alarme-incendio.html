@@ -615,9 +615,11 @@
 <header class="site-header">
   <div class="header-inner">
     <div class="header-brand">
+      <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">← Voltar</a>
       <div class="header-icon">🔥</div>
       <div>
-        <div class="header-title">Teste de <span>Alarme de Incêndio</span></div>
+        <div class="header-title" id="headerTitle">Teste de <span>Alarme de Incêndio</span></div>
+        <div style="font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;" id="headerEmpresa"></div>
       </div>
     </div>
     <div class="header-actions">
@@ -795,12 +797,28 @@
 
 <script>
 // ── STATE ──────────────────────────────────────────────────────────────────
-let tests = JSON.parse(localStorage.getItem('fire_tests') || '[]');
+const PARAMS      = new URLSearchParams(location.search);
+const EMPRESA_ID  = PARAMS.get('empresa') || 'default';
+const EMPRESA_NOME = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
+const STORAGE_KEY = 'fire_tests_' + EMPRESA_ID;
+
+let tests = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let photosTemp = { botoeira: null, central: null, sirene: null };
 let chartPie = null, chartBar = null;
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 (function init() {
+  // auth guard
+  if (sessionStorage.getItem('fire_auth') !== '1') {
+    location.href = 'index.html';
+    return;
+  }
+
+  // show company in header
+  const headerEl = document.getElementById('headerEmpresa');
+  if (headerEl) headerEl.textContent = EMPRESA_NOME;
+  document.title = EMPRESA_NOME + ' · Teste de Alarme';
+
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
   document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
@@ -1171,7 +1189,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLight
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function save() {
-  localStorage.setItem('fire_tests', JSON.stringify(tests));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tests));
 }
 
 function formatDate(d) {
