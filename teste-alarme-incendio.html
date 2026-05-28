@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste de Alarme de Incêndio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --bg2: #161616;
+    --bg3: #1e1e1e;
+    --bg4: #262626;
+    --border: #2e2e2e;
+    --text: #f2f2f2;
+    --muted: #888;
+    --lime: #c8f135;
+    --orange: #ff6b35;
+    --sky: #35c8ff;
+    --rose: #ff3577;
+    --gold: #ffd166;
+    --ok: #4ade80;
+    --fail: #ff3577;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,.5);
+    --transition: .2s ease;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Archivo', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 clamp(16px,4vw,48px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: var(--rose);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(14px, 2vw, 18px);
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .header-title span { color: var(--rose); }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-family: 'Archivo', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: var(--transition);
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--lime); color: #0e0e0e; }
+  .btn-primary:hover { background: #d4f54d; transform: translateY(-1px); }
+  .btn-danger { background: var(--rose); color: #fff; }
+  .btn-danger:hover { background: #ff4d88; transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--bg3); }
+  .btn-sky { background: var(--sky); color: #0e0e0e; }
+  .btn-sky:hover { background: #52d4ff; transform: translateY(-1px); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn-lg { padding: 13px 28px; font-size: 16px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px clamp(16px,4vw,48px) 80px; }
+  .section-title {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(18px, 2.5vw, 24px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .section-title .badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-family: 'Fira Code', monospace;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: var(--muted);
+  }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .card + .card { margin-top: 16px; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .form-group label span { color: var(--rose); }
+  .form-control {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    transition: var(--transition);
+    outline: none;
+    width: 100%;
+  }
+  .form-control:focus { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(200,241,53,.1); }
+  textarea.form-control { resize: vertical; min-height: 80px; }
+
+  /* ── PHOTO UPLOAD GRID ── */
+  .photos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 4px; }
+  .photo-card {
+    background: var(--bg3);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .photo-card:hover { border-color: var(--lime); }
+  .photo-card.has-image { border-style: solid; border-color: var(--lime); }
+  .photo-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .photo-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .photo-label .icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .icon-botoeira { background: rgba(255,107,53,.15); }
+  .icon-central  { background: rgba(53,200,255,.15); }
+  .icon-sirene   { background: rgba(255,209,102,.15); }
+  .photo-drop {
+    position: relative;
+    cursor: pointer;
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    transition: var(--transition);
+    background: var(--bg4);
+    overflow: hidden;
+  }
+  .photo-drop:hover { background: #2c2c2c; color: var(--text); }
+  .photo-drop input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .photo-drop .drop-icon { font-size: 32px; opacity: .5; }
+  .photo-drop img.preview {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .photo-drop .remove-btn {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: rgba(0,0,0,.7);
+    border: none;
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 14px;
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 2;
+    transition: var(--transition);
+  }
+  .photo-drop .remove-btn:hover { background: var(--rose); }
+  .photo-card.has-image .remove-btn { display: flex; }
+
+  /* ── STATUS TOGGLE ── */
+  .status-group { margin-top: 24px; }
+  .status-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: block;
+  }
+  .status-toggle {
+    display: inline-flex;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .status-toggle input[type="radio"] { display: none; }
+  .status-toggle label {
+    padding: 8px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--muted);
+    user-select: none;
+  }
+  .status-toggle input[value="ok"]:checked + label {
+    background: var(--ok);
+    color: #0e0e0e;
+    box-shadow: 0 2px 12px rgba(74,222,128,.3);
+  }
+  .status-toggle input[value="falha"]:checked + label {
+    background: var(--fail);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(255,53,119,.3);
+  }
+
+  /* ── ADD TEST FOOTER ── */
+  .form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+  }
+  .form-footer .hint { font-size: 12px; color: var(--muted); }
+
+  /* ── TESTS LIST ── */
+  .tests-list { display: flex; flex-direction: column; gap: 16px; }
+  .test-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .test-item.status-ok { border-left: 4px solid var(--ok); }
+  .test-item.status-falha { border-left: 4px solid var(--fail); }
+  .test-item-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .test-num {
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .test-info { flex: 1; min-width: 0; }
+  .test-location { font-weight: 700; font-size: 15px; }
+  .test-meta { font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    flex-shrink: 0;
+  }
+  .status-badge.ok { background: rgba(74,222,128,.15); color: var(--ok); border: 1px solid rgba(74,222,128,.3); }
+  .status-badge.falha { background: rgba(255,53,119,.15); color: var(--fail); border: 1px solid rgba(255,53,119,.3); }
+  .test-photos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 0 20px 16px;
+  }
+  .test-photo-slot {
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+  }
+  .test-photo-slot .slot-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    padding: 6px 8px 4px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .test-photo-slot .slot-img {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .test-photo-slot .slot-img img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+  .test-photo-slot .slot-img .no-img { font-size: 11px; color: var(--muted); opacity: .6; }
+  .test-notes {
+    padding: 0 20px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .test-notes strong { color: var(--text); font-style: normal; }
+  .test-item-actions { display: flex; gap: 8px; padding: 0 20px 16px; }
+
+  /* ── REPORT MODAL ── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 900px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.6);
+    animation: modalIn .25s ease;
+    margin: auto;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .modal-header {
+    padding: 24px 28px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { font-family: 'Archivo Black', sans-serif; font-size: 20px; }
+  .modal-close {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: var(--transition);
+  }
+  .modal-close:hover { background: var(--rose); border-color: var(--rose); }
+  .modal-body { padding: 24px 28px; }
+
+  /* ── REPORT STATS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .stat-card .stat-value {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-card .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .stat-total .stat-value { color: var(--sky); }
+  .stat-ok .stat-value { color: var(--ok); }
+  .stat-fail .stat-value { color: var(--fail); }
+  .stat-rate .stat-value { color: var(--lime); }
+
+  /* ── CHARTS ── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+  @media (max-width: 600px) { .charts-grid { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .chart-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .chart-wrapper { position: relative; height: 220px; }
+
+  /* ── REPORT TEST ITEMS ── */
+  .report-items { display: flex; flex-direction: column; gap: 14px; }
+  .report-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .report-item.ok { border-left: 3px solid var(--ok); }
+  .report-item.falha { border-left: 3px solid var(--fail); }
+  .report-item-head {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .report-item-photos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .report-photo {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg4);
+    aspect-ratio: 4/3;
+    display: flex; flex-direction: column;
+  }
+  .report-photo .rp-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 5px 7px 3px;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .report-photo .rp-img { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .report-photo .rp-img img { width: 100%; height: 100%; object-fit: cover; }
+  .report-photo .rp-img .rp-empty { font-size: 11px; color: var(--muted); opacity: .5; }
+  .report-notes-row { padding: 0 16px 12px; font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* ── REPORT FOOTER ── */
+  .report-footer {
+    padding: 20px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .report-stamp { font-size: 12px; color: var(--muted); font-family: 'Fira Code', monospace; }
+
+  /* ── LIGHTBOX ── */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.93);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 90vh; border-radius: var(--radius); object-fit: contain; }
+  .lightbox-close {
+    position: fixed; top: 16px; right: 16px;
+    background: rgba(0,0,0,.7);
+    border: 1px solid var(--border);
+    color: #fff;
+    font-size: 22px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+  }
+  .lightbox-close:hover { background: var(--rose); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: .4; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: #fff; color: #111; }
+    .site-header, .modal-close, .btn, .form-actions, #formSection { display: none !important; }
+    .modal-backdrop {
+      position: static !important;
+      background: transparent !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      display: block !important;
+    }
+    .modal {
+      box-shadow: none !important;
+      border: none !important;
+      max-width: 100% !important;
+      animation: none !important;
+    }
+    .stat-card, .chart-card, .report-item { background: #f8f8f8; border-color: #ddd; }
+    .stat-card .stat-value { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .chart-wrapper { height: 180px; }
+    .report-item.ok { border-left: 3px solid #4ade80; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .report-item.falha { border-left: 3px solid #ff3577; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .report-footer { display: flex !important; }
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 12px 20px; border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    z-index: 400;
+    transition: transform .3s ease, opacity .3s ease;
+    opacity: 0;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--ok); color: var(--ok); }
+  #toast.error { border-color: var(--fail); color: var(--fail); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 540px) {
+    .test-photos { grid-template-columns: 1fr; }
+    .report-item-photos { grid-template-columns: 1fr; }
+    .form-footer { flex-direction: column; align-items: stretch; }
+    .form-footer .btn { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-icon">🔥</div>
+      <div>
+        <div class="header-title">Teste de <span>Alarme de Incêndio</span></div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="clearAll()">🗑 Limpar tudo</button>
+      <button class="btn btn-sky btn-sm" onclick="openReport()" id="btnReport" disabled>📊 Gerar Relatório</button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="page">
+
+  <!-- FORM SECTION -->
+  <section id="formSection">
+    <div class="section-title">
+      ➕ Novo Registro de Teste
+    </div>
+
+    <div class="card">
+      <!-- INFO ROW -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Data <span>*</span></label>
+          <input type="date" class="form-control" id="fDate">
+        </div>
+        <div class="form-group">
+          <label>Hora <span>*</span></label>
+          <input type="time" class="form-control" id="fTime">
+        </div>
+        <div class="form-group">
+          <label>Local / Pavimento <span>*</span></label>
+          <input type="text" class="form-control" id="fLocal" placeholder="Ex: Térreo, 3° andar…">
+        </div>
+        <div class="form-group">
+          <label>Técnico Responsável</label>
+          <input type="text" class="form-control" id="fTecnico" placeholder="Nome do técnico">
+        </div>
+        <div class="form-group">
+          <label>Nº Botoeira</label>
+          <input type="text" class="form-control" id="fBotoNum" placeholder="Ex: B-07">
+        </div>
+        <div class="form-group">
+          <label>Zona / Loop</label>
+          <input type="text" class="form-control" id="fZona" placeholder="Ex: Zona 3">
+        </div>
+      </div>
+
+      <!-- PHOTOS -->
+      <hr class="divider" style="margin: 24px 0;">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">📷 Evidências Fotográficas</p>
+      <div class="photos-grid">
+        <!-- BOTOEIRA -->
+        <div class="photo-card" id="pc-botoeira">
+          <div class="photo-header">
+            <div class="photo-label">
+              <div class="icon icon-botoeira">🚨</div>
+              Botoeira Acionada
+            </div>
+          </div>
+          <div class="photo-drop" id="pd-botoeira" onclick="triggerInput('fi-botoeira',event)">
+            <input type="file" id="fi-botoeira" accept="image/*" onchange="handlePhoto(this,'pd-botoeira','pc-botoeira','prev-botoeira')">
+            <span class="drop-icon">📤</span>
+            <span>Clique para adicionar foto</span>
+            <img class="preview" id="prev-botoeira" style="display:none;">
+            <button class="remove-btn" onclick="removePhoto('fi-botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
+          </div>
+        </div>
+        <!-- CENTRAL -->
+        <div class="photo-card" id="pc-central">
+          <div class="photo-header">
+            <div class="photo-label">
+              <div class="icon icon-central">🖥️</div>
+              Central de Alarme
+            </div>
+          </div>
+          <div class="photo-drop" id="pd-central" onclick="triggerInput('fi-central',event)">
+            <input type="file" id="fi-central" accept="image/*" onchange="handlePhoto(this,'pd-central','pc-central','prev-central')">
+            <span class="drop-icon">📤</span>
+            <span>Clique para adicionar foto</span>
+            <img class="preview" id="prev-central" style="display:none;">
+            <button class="remove-btn" onclick="removePhoto('fi-central','pd-central','pc-central','prev-central',event)">✕</button>
+          </div>
+        </div>
+        <!-- SIRENE -->
+        <div class="photo-card" id="pc-sirene">
+          <div class="photo-header">
+            <div class="photo-label">
+              <div class="icon icon-sirene">🔔</div>
+              Sirene Disparada
+            </div>
+          </div>
+          <div class="photo-drop" id="pd-sirene" onclick="triggerInput('fi-sirene',event)">
+            <input type="file" id="fi-sirene" accept="image/*" onchange="handlePhoto(this,'pd-sirene','pc-sirene','prev-sirene')">
+            <span class="drop-icon">📤</span>
+            <span>Clique para adicionar foto</span>
+            <img class="preview" id="prev-sirene" style="display:none;">
+            <button class="remove-btn" onclick="removePhoto('fi-sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATUS -->
+      <div class="status-group">
+        <span class="status-label">Resultado do teste <span style="color:var(--rose)">*</span></span>
+        <div class="status-toggle">
+          <input type="radio" name="status" id="s-ok" value="ok" checked>
+          <label for="s-ok">✅ Funcionamento OK</label>
+          <input type="radio" name="status" id="s-fail" value="falha">
+          <label for="s-fail">❌ Falha</label>
+        </div>
+      </div>
+
+      <!-- OBSERVATIONS -->
+      <div class="form-group" style="margin-top:20px;">
+        <label>Observações</label>
+        <textarea class="form-control" id="fObs" placeholder="Descreva anomalias, tempo de resposta, condições do ambiente…"></textarea>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="form-footer">
+        <span class="hint">* Campos obrigatórios</span>
+        <button class="btn btn-primary btn-lg" onclick="addTest()">➕ Adicionar Teste</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- TESTS LIST -->
+  <section id="listSection">
+    <div class="section-title">
+      📋 Registros de Teste
+      <span class="badge" id="countBadge">0 registros</span>
+    </div>
+
+    <div id="testsList">
+      <div class="empty-state">
+        <div class="empty-icon">🧯</div>
+        <p>Nenhum teste registrado ainda.<br>Preencha o formulário acima e clique em <strong>Adicionar Teste</strong>.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- REPORT MODAL -->
+<div class="modal-backdrop" id="reportModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2>📊 Relatório de Testes de Alarme</h2>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;" id="reportSubtitle"></p>
+      </div>
+      <button class="modal-close" onclick="closeReport()">✕</button>
+    </div>
+    <div class="modal-body" id="reportBody"></div>
+    <div class="report-footer">
+      <span class="report-stamp" id="reportStamp"></span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="closeReport()">Fechar</button>
+        <button class="btn btn-primary" onclick="printReport()">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let tests = JSON.parse(localStorage.getItem('fire_tests') || '[]');
+let photosTemp = { botoeira: null, central: null, sirene: null };
+let chartPie = null, chartBar = null;
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+(function init() {
+  const now = new Date();
+  document.getElementById('fDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
+  renderList();
+})();
+
+// ── PHOTO HANDLING ─────────────────────────────────────────────────────────
+function triggerInput(inputId, e) {
+  if (e && e.target.classList.contains('remove-btn')) return;
+  const el = document.getElementById(inputId);
+  if (el) el.click();
+}
+
+function handlePhoto(input, dropId, cardId, prevId) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Arquivo inválido. Use uma imagem.', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const key = cardId.replace('pc-', '');
+    photosTemp[key] = e.target.result;
+    const prev = document.getElementById(prevId);
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+    document.getElementById(cardId).classList.add('has-image');
+    const drop = document.getElementById(dropId);
+    drop.querySelector('.drop-icon').style.display = 'none';
+    drop.querySelector('span:not(.drop-icon)').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto(inputId, dropId, cardId, prevId, e) {
+  if (e) e.stopPropagation();
+  const key = cardId.replace('pc-', '');
+  photosTemp[key] = null;
+  document.getElementById(inputId).value = '';
+  const prev = document.getElementById(prevId);
+  prev.src = ''; prev.style.display = 'none';
+  document.getElementById(cardId).classList.remove('has-image');
+  const drop = document.getElementById(dropId);
+  drop.querySelector('.drop-icon').style.display = '';
+  drop.querySelector('span:not(.drop-icon)').style.display = '';
+}
+
+// ── ADD TEST ───────────────────────────────────────────────────────────────
+function addTest() {
+  const date = document.getElementById('fDate').value;
+  const time = document.getElementById('fTime').value;
+  const local = document.getElementById('fLocal').value.trim();
+
+  if (!date) { showToast('Informe a data do teste.', 'error'); return; }
+  if (!time) { showToast('Informe o horário do teste.', 'error'); return; }
+  if (!local) { showToast('Informe o local / pavimento.', 'error'); return; }
+
+  const status = document.querySelector('input[name="status"]:checked').value;
+  const test = {
+    id: Date.now(),
+    date, time, local,
+    tecnico: document.getElementById('fTecnico').value.trim(),
+    botoNum: document.getElementById('fBotoNum').value.trim(),
+    zona: document.getElementById('fZona').value.trim(),
+    status,
+    obs: document.getElementById('fObs').value.trim(),
+    photos: { ...photosTemp }
+  };
+  tests.push(test);
+  save();
+  renderList();
+  resetForm();
+  showToast('Teste adicionado com sucesso!', 'success');
+  document.getElementById('listSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetForm() {
+  document.getElementById('fLocal').value = '';
+  document.getElementById('fTecnico').value = '';
+  document.getElementById('fBotoNum').value = '';
+  document.getElementById('fZona').value = '';
+  document.getElementById('fObs').value = '';
+  document.getElementById('s-ok').checked = true;
+  ['botoeira','central','sirene'].forEach(k => {
+    photosTemp[k] = null;
+    const inputEl = document.getElementById('fi-'+k);
+    if (inputEl) inputEl.value = '';
+    const prev = document.getElementById('prev-'+k);
+    if (prev) { prev.src = ''; prev.style.display = 'none'; }
+    const card = document.getElementById('pc-'+k);
+    if (card) card.classList.remove('has-image');
+    const drop = document.getElementById('pd-'+k);
+    if (drop) {
+      drop.querySelector('.drop-icon').style.display = '';
+      drop.querySelector('span:not(.drop-icon)').style.display = '';
+    }
+  });
+  const now = new Date();
+  document.getElementById('fDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
+}
+
+// ── RENDER LIST ────────────────────────────────────────────────────────────
+function renderList() {
+  const container = document.getElementById('testsList');
+  const badge = document.getElementById('countBadge');
+  badge.textContent = tests.length + ' registro' + (tests.length !== 1 ? 's' : '');
+
+  const btnReport = document.getElementById('btnReport');
+  btnReport.disabled = tests.length === 0;
+
+  if (tests.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🧯</div>
+      <p>Nenhum teste registrado ainda.<br>Preencha o formulário acima e clique em <strong>Adicionar Teste</strong>.</p>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = '<div class="tests-list">' + tests.map((t, i) => `
+    <div class="test-item status-${t.status}" id="ti-${t.id}">
+      <div class="test-item-header">
+        <span class="test-num">#${String(i+1).padStart(2,'0')}</span>
+        <div class="test-info">
+          <div class="test-location">${esc(t.local)}</div>
+          <div class="test-meta">
+            <span>📅 ${formatDate(t.date)} às ${t.time}</span>
+            ${t.tecnico ? `<span>👤 ${esc(t.tecnico)}</span>` : ''}
+            ${t.botoNum ? `<span>🚨 ${esc(t.botoNum)}</span>` : ''}
+            ${t.zona ? `<span>📡 ${esc(t.zona)}</span>` : ''}
+          </div>
+        </div>
+        <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
+      </div>
+      <div class="test-photos">
+        ${photoSlot(t.photos.botoeira, '🚨 Botoeira')}
+        ${photoSlot(t.photos.central, '🖥️ Central')}
+        ${photoSlot(t.photos.sirene, '🔔 Sirene')}
+      </div>
+      ${t.obs ? `<div class="test-notes"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
+      <div class="test-item-actions">
+        <button class="btn btn-ghost btn-sm" onclick="deleteTest(${t.id})">🗑 Excluir</button>
+      </div>
+    </div>
+  `).join('') + '</div>';
+
+  // bind photo clicks
+  container.querySelectorAll('.slot-img img').forEach(img => {
+    img.onclick = () => openLightbox(img.src);
+  });
+}
+
+function photoSlot(src, label) {
+  return `<div class="test-photo-slot">
+    <div class="slot-label">${label}</div>
+    <div class="slot-img">
+      ${src
+        ? `<img src="${src}" alt="${label}" loading="lazy">`
+        : `<span class="no-img">Sem foto</span>`}
+    </div>
+  </div>`;
+}
+
+// ── DELETE ─────────────────────────────────────────────────────────────────
+function deleteTest(id) {
+  if (!confirm('Excluir este registro?')) return;
+  tests = tests.filter(t => t.id !== id);
+  save();
+  renderList();
+  showToast('Registro excluído.', 'success');
+}
+
+function clearAll() {
+  if (tests.length === 0) return;
+  if (!confirm('Excluir TODOS os registros? Esta ação não pode ser desfeita.')) return;
+  tests = [];
+  save();
+  renderList();
+  showToast('Todos os registros foram removidos.', 'success');
+}
+
+// ── REPORT ─────────────────────────────────────────────────────────────────
+function openReport() {
+  if (tests.length === 0) return;
+  buildReport();
+  document.getElementById('reportModal').classList.add('open');
+}
+
+function closeReport() {
+  document.getElementById('reportModal').classList.remove('open');
+  if (chartPie) { chartPie.destroy(); chartPie = null; }
+  if (chartBar) { chartBar.destroy(); chartBar = null; }
+}
+
+function buildReport() {
+  const total = tests.length;
+  const okCount = tests.filter(t => t.status === 'ok').length;
+  const failCount = total - okCount;
+  const rate = total ? Math.round((okCount / total) * 100) : 0;
+
+  // date range
+  const sorted = [...tests].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+  const first = sorted[0], last = sorted[sorted.length-1];
+  const rangeStr = total > 1
+    ? `${formatDate(first.date)} → ${formatDate(last.date)}`
+    : formatDate(first.date);
+
+  document.getElementById('reportSubtitle').textContent = `${total} teste(s) · ${rangeStr}`;
+  document.getElementById('reportStamp').textContent = `Gerado em ${new Date().toLocaleString('pt-BR')}`;
+
+  // stats
+  const statsHTML = `
+    <div class="stats-grid">
+      <div class="stat-card stat-total"><div class="stat-value">${total}</div><div class="stat-label">Total de Testes</div></div>
+      <div class="stat-card stat-ok"><div class="stat-value">${okCount}</div><div class="stat-label">Funcionamento OK</div></div>
+      <div class="stat-card stat-fail"><div class="stat-value">${failCount}</div><div class="stat-label">Falhas</div></div>
+      <div class="stat-card stat-rate"><div class="stat-value">${rate}%</div><div class="stat-label">Taxa de Aprovação</div></div>
+    </div>`;
+
+  // charts
+  const chartsHTML = `
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>Resultado Geral</h4>
+        <div class="chart-wrapper"><canvas id="chartPie"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Testes por Local</h4>
+        <div class="chart-wrapper"><canvas id="chartBar"></canvas></div>
+      </div>
+    </div>`;
+
+  // test items
+  const itemsHTML = `
+    <div class="section-title" style="font-size:15px;margin-bottom:16px;">📋 Detalhamento dos Testes</div>
+    <div class="report-items">
+      ${sorted.map((t,i) => `
+        <div class="report-item ${t.status}">
+          <div class="report-item-head">
+            <span class="test-num">#${String(i+1).padStart(2,'0')}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;">${esc(t.local)}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                ${formatDate(t.date)} ${t.time}
+                ${t.tecnico ? ' · ' + esc(t.tecnico) : ''}
+                ${t.botoNum ? ' · ' + esc(t.botoNum) : ''}
+                ${t.zona ? ' · ' + esc(t.zona) : ''}
+              </div>
+            </div>
+            <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
+          </div>
+          <div class="report-item-photos">
+            ${reportPhoto(t.photos.botoeira, '🚨 Botoeira')}
+            ${reportPhoto(t.photos.central, '🖥️ Central')}
+            ${reportPhoto(t.photos.sirene, '🔔 Sirene')}
+          </div>
+          ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+
+  document.getElementById('reportBody').innerHTML = statsHTML + chartsHTML + itemsHTML;
+
+  // bind lightbox on report photos
+  document.querySelectorAll('.rp-img img').forEach(img => {
+    img.style.cursor = 'pointer';
+    img.onclick = () => openLightbox(img.src);
+  });
+
+  // render charts after DOM ready
+  requestAnimationFrame(() => {
+    // pie
+    const ctxPie = document.getElementById('chartPie').getContext('2d');
+    chartPie = new Chart(ctxPie, {
+      type: 'doughnut',
+      data: {
+        labels: ['Funcionando OK', 'Falha'],
+        datasets: [{
+          data: [okCount, failCount],
+          backgroundColor: ['#4ade80', '#ff3577'],
+          borderColor: ['#0e0e0e'],
+          borderWidth: 3,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#f2f2f2', padding: 16, font: { family: 'Archivo', size: 13 } }
+          },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/total*100)}%)` } }
+        },
+        cutout: '60%'
+      }
+    });
+
+    // bar — group by local
+    const locals = {};
+    tests.forEach(t => {
+      const k = t.local;
+      if (!locals[k]) locals[k] = { ok: 0, falha: 0 };
+      locals[k][t.status]++;
+    });
+    const labels = Object.keys(locals);
+    const okData = labels.map(l => locals[l].ok);
+    const failData = labels.map(l => locals[l].falha);
+
+    const ctxBar = document.getElementById('chartBar').getContext('2d');
+    chartBar = new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'OK', data: okData, backgroundColor: '#4ade80', borderRadius: 6 },
+          { label: 'Falha', data: failData, backgroundColor: '#ff3577', borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: false,
+            ticks: { color: '#888', font: { family: 'Archivo', size: 11 }, maxRotation: 30 },
+            grid: { color: 'rgba(255,255,255,.05)' }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#888', stepSize: 1, font: { family: 'Archivo' } },
+            grid: { color: 'rgba(255,255,255,.07)' }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#f2f2f2', padding: 16, font: { family: 'Archivo', size: 13 } }
+          }
+        }
+      }
+    });
+  });
+}
+
+function reportPhoto(src, label) {
+  return `<div class="report-photo">
+    <div class="rp-label">${label}</div>
+    <div class="rp-img">
+      ${src
+        ? `<img src="${src}" alt="${label}" loading="lazy">`
+        : `<span class="rp-empty">Sem foto</span>`}
+    </div>
+  </div>`;
+}
+
+function printReport() {
+  window.print();
+}
+
+// ── LIGHTBOX ───────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); } });
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem('fire_tests', JSON.stringify(tests));
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>
