@@ -34,14 +34,10 @@ uint8_t  frameBuf[FRAME_LEN];
 int      framePos = -1;
 
 bool     sistemaPronto  = false;
-bool     alarmAtivo     = false;   // alarme em dispositivo mapeado
-bool     gAlarmAtivo    = false;   // alarme genérico (dispositivo não mapeado)
+bool     alarmAtivo     = false;
 uint8_t  lacoAlarme     = 0;
 uint8_t  endAlarme      = 0;
 unsigned long tEnvio[256];
-unsigned long tEnvioGenerico  = 0;
-unsigned long tFlag1Start     = 0;  // quando byte[36]=1 contínuo começou
-unsigned long tUltimoFlag1    = 0;  // último momento com byte[36]=1
 unsigned long tUltimaReconexao = 0;
 
 // ── Lookup ────────────────────────────────────────
@@ -100,7 +96,6 @@ void processarFrame() {
     return;
 #endif
 
-    // Aguarda sistema limpo antes de monitorar
     if (!sistemaPronto) {
         if (flag == 0) {
             sistemaPronto = true;
@@ -109,44 +104,22 @@ void processarFrame() {
         return;
     }
 
-    // ── Frame com alarme (byte[36]=1) ─────────────────
     if (flag == 1) {
-        if (tFlag1Start == 0) tFlag1Start = millis();
-        tUltimoFlag1 = millis();
-
         const char* nome = nomePorLaco(laco);
         if (nome && !alarmAtivo) {
-            // Dispositivo mapeado em alarme
-            alarmAtivo  = true;
-            lacoAlarme  = laco;
-            endAlarme   = end_;
-            tFlag1Start = 0;   // alarme específico assumiu; reset timer genérico
+            alarmAtivo = true;
+            lacoAlarme = laco;
+            endAlarme  = end_;
             Serial.printf("[ALARME] b28=0x%02X b29=0x%02X \xE2\x86\x92 %s\n", laco, end_, nome);
             if (millis() - tEnvio[laco] >= COOLDOWN_MS) {
                 if (enviarTelegram(montarMensagem(true, nome)))
                     tEnvio[laco] = millis();
             }
-        } else if (!nome && !alarmAtivo && !gAlarmAtivo) {
-            // Dispositivo não mapeado — [SCAN] apenas na troca de endereço
-            static uint8_t prevLaco = 0xFF, prevEnd = 0xFF;
-            if (laco != prevLaco || end_ != prevEnd) {
-                Serial.printf("[SCAN] b28=0x%02X b29=0x%02X (nao mapeado)\n", laco, end_);
-                prevLaco = laco; prevEnd = end_;
-            }
-            // Alarme genérico: byte[36]=1 ininterrupto por mais de 3 s
-            // Apenas Serial — sem Telegram (supervisão periódica dispara falsos alarmes)
-            if (tFlag1Start > 0 && millis() - tFlag1Start > 3000) {
-                gAlarmAtivo = true;
-                Serial.println("[ALARME GERAL] Sistema em alarme (dispositivo nao mapeado).");
-            }
         }
         return;
     }
 
-    // ── Frame normal (byte[36]=0) ─────────────────────
-    tFlag1Start = 0;   // qualquer frame normal reseta o contador genérico
-
-    // Normal específico: mesmo dispositivo que alarmou
+    // flag == 0
     if (alarmAtivo && laco == lacoAlarme) {
         alarmAtivo = false;
         const char* nome = nomePorLaco(lacoAlarme);
@@ -155,12 +128,6 @@ void processarFrame() {
             if (enviarTelegram(montarMensagem(false, nome)))
                 tEnvio[lacoAlarme] = millis();
         }
-    }
-
-    // Normal genérico: 5 s sem nenhum byte[36]=1 — apenas Serial
-    if (gAlarmAtivo && tUltimoFlag1 > 0 && millis() - tUltimoFlag1 > 5000) {
-        gAlarmAtivo = false;
-        Serial.println("[NORMAL GERAL] Sistema normalizado.");
     }
 }
 
