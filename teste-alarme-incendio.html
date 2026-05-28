@@ -40,6 +40,10 @@
   }
 
   /* ── HEADER ── */
+  /* logo pill */
+  .logo-pill { background:#fff; border-radius:8px; padding:4px 9px; display:inline-flex; align-items:center; justify-content:center; }
+  .logo-pill img { display:block; }
+
   .site-header {
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
@@ -52,7 +56,7 @@
   .header-inner {
     max-width: 1100px;
     margin: 0 auto;
-    height: 64px;
+    height: 68px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -73,12 +77,18 @@
   }
   .header-title {
     font-family: 'Archivo Black', sans-serif;
-    font-size: clamp(14px, 2vw, 18px);
+    font-size: clamp(13px, 1.8vw, 16px);
     color: var(--text);
     line-height: 1.2;
   }
   .header-title span { color: var(--rose); }
   .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* page footer */
+  .site-footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 16px clamp(16px,4vw,48px); margin-top: 40px; }
+  .site-footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .footer-logos { display: flex; align-items: center; gap: 12px; }
+  .footer-copy { font-size: 11px; color: var(--muted); font-family: 'Fira Code',monospace; }
 
   /* ── BUTTONS ── */
   .btn {
@@ -615,14 +625,15 @@
 <header class="site-header">
   <div class="header-inner">
     <div class="header-brand">
+      <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="32"></div>
       <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">← Voltar</a>
-      <div class="header-icon">🔥</div>
       <div>
-        <div class="header-title" id="headerTitle">Teste de <span>Alarme de Incêndio</span></div>
+        <div class="header-title">Dashboard <span>Alarme de Incêndio</span></div>
         <div style="font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;" id="headerEmpresa"></div>
       </div>
     </div>
     <div class="header-actions">
+      <div class="logo-pill" style="display:none" id="voltLogo"><img src="logo-volt.svg" alt="Volt Energy" height="26" style="filter:invert(1) brightness(0.3)"></div>
       <button class="btn btn-ghost btn-sm" onclick="clearAll()">🗑 Limpar tudo</button>
       <button class="btn btn-sky btn-sm" onclick="openReport()" id="btnReport" disabled>📊 Gerar Relatório</button>
     </div>
@@ -786,6 +797,17 @@
   </div>
 </div>
 
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="footer-logos">
+      <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="26"></div>
+      <div class="logo-pill"><img src="logo-volt.svg" alt="Volt Energy" height="22" style="filter:invert(1) brightness(0.3)"></div>
+    </div>
+    <span class="footer-copy">© 2025 Pro Hid · Tecnologia em Engenharia de Incêndio</span>
+  </div>
+</footer>
+
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -817,7 +839,9 @@ let chartPie = null, chartBar = null;
   // show company in header
   const headerEl = document.getElementById('headerEmpresa');
   if (headerEl) headerEl.textContent = EMPRESA_NOME;
-  document.title = EMPRESA_NOME + ' · Teste de Alarme';
+  document.title = EMPRESA_NOME + ' · Dashboard Alarme de Incêndio';
+  const voltLogo = document.getElementById('voltLogo');
+  if (voltLogo) voltLogo.style.display = 'inline-flex';
 
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);

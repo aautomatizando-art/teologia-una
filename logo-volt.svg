@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 68">
+  <!-- Circle outline -->
+  <circle cx="34" cy="34" r="30" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5"/>
+  <circle cx="34" cy="34" r="22" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <!-- Lightning bolt -->
+  <polygon points="39,10 24,36 33,36 28,58 43,30 34,30" fill="#FFB800"/>
+  <!-- VOLT -->
+  <text x="76" y="30" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="24" fill="white" letter-spacing="3">VOLT</text>
+  <!-- ENERGY -->
+  <text x="76" y="52" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="24" fill="white" letter-spacing="1.5">ENERGY</text>
+  <!-- ENGENHARIA -->
+  <text x="77" y="63" font-family="Arial,sans-serif" font-weight="400" font-size="8" fill="rgba(255,255,255,0.5)" letter-spacing="4.5">ENGENHARIA</text>
+</svg>

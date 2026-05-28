@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70">
+  <!-- Flame outer (dark body) -->
+  <path d="M26,62 C12,62 4,52 4,40 C4,28 10,20 16,14
+           C14,22 18,27 22,22 C22,37 28,43 31,39
+           C27,30 32,22 35,17 C32,30 37,38 40,34
+           C42,22 37,10 31,4 C40,9 48,22 47,36
+           C49,28 47,18 42,11 C50,18 53,30 51,42
+           C53,36 53,27 48,20 C53,26 55,35 53,44
+           C50,55 42,62 31,62 Z" fill="#1a0000"/>
+  <!-- Flame inner red -->
+  <path d="M27,56 C17,56 11,48 11,39 C11,30 16,23 21,18
+           C19,25 23,29 26,24 C26,37 31,42 34,38
+           C31,29 35,22 38,18 C35,29 39,36 42,31
+           C43,21 39,12 35,7 C42,12 48,23 47,34
+           C48,27 47,19 43,13 C49,19 51,29 50,38
+           C51,33 51,25 47,19 C51,24 52,32 51,40
+           C48,50 42,56 32,56 Z" fill="#CC1500"/>
+  <!-- Flame highlight orange -->
+  <path d="M30,50 C23,50 18,44 18,37 C18,30 22,24 26,20
+           C25,25 28,28 30,24 C30,35 34,39 36,36
+           C34,28 37,23 40,19 C38,28 41,34 43,30
+           C44,22 41,15 38,11 C43,15 47,24 46,33
+           C47,27 46,21 43,16 C47,21 48,29 47,36
+           C45,44 40,50 33,50 Z" fill="#FF4400" opacity="0.7"/>
+  <!-- PRO text -->
+  <text x="66" y="42" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="34" fill="#111111">PRO</text>
+  <!-- HID text -->
+  <text x="145" y="42" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="34" fill="#CC1500">HID</text>
+  <!-- Registered -->
+  <text x="218" y="18" font-family="Arial,sans-serif" font-size="12" fill="#999">®</text>
+  <!-- Tagline -->
+  <text x="66" y="57" font-family="Arial,sans-serif" font-weight="600" font-size="7.5" fill="#CC1500" letter-spacing="1.5">TECNOLOGIA EM ENGENHARIA DE INCÊNDIO</text>
+</svg>
