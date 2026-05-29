@@ -214,39 +214,26 @@
   .icon-sirene      { background: rgba(255,209,102,.15); }
   .icon-dispositivo { background: rgba(180,122,255,.15); }
 
-  /* botão editar foto */
-  .btn-edit-photo {
-    padding: 4px 10px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
+  /* ── EDIT RECORD PHOTOS (modal) ── */
+  .edit-photos-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  @media (max-width:480px) { .edit-photos-grid { grid-template-columns:repeat(2,1fr); } }
+  .edit-photo-thumb {
+    position:relative; aspect-ratio:4/3;
+    background:var(--bg4); border:1.5px dashed var(--border);
+    border-radius:var(--radius-sm); overflow:hidden; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:var(--transition);
   }
-  .btn-edit-photo:hover { border-color: var(--sky); color: var(--sky); }
-
-  /* estado bloqueado da central */
-  .photo-drop.locked { cursor: default; }
-  .photo-drop.locked input[type="file"] { pointer-events: none; }
-  .lock-overlay {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 6px; color: var(--muted);
-    position: absolute; inset: 0;
-    background: rgba(14,14,14,.55);
-    backdrop-filter: blur(2px);
-    z-index: 1;
+  .edit-photo-thumb:hover { border-color:var(--sky); }
+  .edit-photo-thumb input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .edit-photo-thumb .eth-label { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); text-align:center; padding:4px; z-index:1; }
+  .edit-photo-thumb .eth-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .edit-photo-thumb .eth-overlay {
+    position:absolute; inset:0; background:rgba(0,0,0,.55);
+    display:none; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#fff; z-index:2;
   }
-  .photo-drop.has-image .lock-overlay { background: rgba(14,14,14,.72); }
-  .lock-icon-lg { font-size: 28px; }
-  .lock-hint { font-size: 10px; opacity: .65; }
+  .edit-photo-thumb:hover .eth-overlay { display:flex; }
 
   .photo-drop {
     position: relative;
@@ -769,22 +756,18 @@
             <button class="remove-btn" onclick="removePhoto('fi-botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
           </div>
         </div>
-        <!-- CENTRAL DE ALARME (restrito) -->
+        <!-- CENTRAL -->
         <div class="photo-card" id="pc-central">
           <div class="photo-header">
             <div class="photo-label">
               <div class="icon icon-central">🖥️</div>
               Central de Alarme
             </div>
-            <button class="btn-edit-photo" onclick="openCentralEdit()">✏️ Editar</button>
           </div>
-          <div class="photo-drop locked" id="pd-central">
+          <div class="photo-drop" id="pd-central">
             <input type="file" id="fi-central" accept="image/*">
-            <div class="lock-overlay">
-              <span class="lock-icon-lg">🔒</span>
-              <span>Acesso restrito</span>
-              <span class="lock-hint">Use o botão Editar acima</span>
-            </div>
+            <span class="drop-icon">📤</span>
+            <span>Toque para adicionar foto</span>
             <img class="preview" id="prev-central" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-central','pd-central','pc-central','prev-central',event)">✕</button>
           </div>
@@ -888,23 +871,118 @@
   </div>
 </div>
 
-<!-- CENTRAL EDIT MODAL -->
-<div class="del-backdrop" id="centralEditModal">
-  <div class="del-modal">
-    <div class="del-header">
-      <h3>🔒 Editar Central de Alarme</h3>
-      <button class="del-close" onclick="closeCentralEditModal()">✕</button>
+<!-- EDIT RECORD MODAL -->
+<div class="del-backdrop" id="editModal">
+  <div class="del-modal" style="max-width:620px;width:95%;">
+    <!-- PASSO 1: senha -->
+    <div id="editAuthStep">
+      <div class="del-header">
+        <h3>✏️ Editar Registro</h3>
+        <button class="del-close" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="del-body">
+        <p class="del-warn">Digite a senha de <strong>administrador</strong> para editar este registro.</p>
+        <div class="del-error" id="editAuthError">⚠️ Senha incorreta. Tente novamente.</div>
+        <form onsubmit="confirmEditAuth(event)">
+          <div class="form-group">
+            <label>Senha do administrador</label>
+            <input type="password" class="form-control" id="editAuthInput" placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn-del-confirm" style="background:var(--sky);color:#0e0e0e;">✏️ Autenticar e Editar</button>
+        </form>
+      </div>
     </div>
-    <div class="del-body">
-      <p class="del-warn">Acesso restrito ao administrador. Digite a senha para desbloquear a edição da foto da Central de Alarme.</p>
-      <div class="del-error" id="ceError">⚠️ Senha incorreta. Tente novamente.</div>
-      <form onsubmit="confirmCentralEdit(event)">
-        <div class="form-group">
-          <label>Senha do administrador</label>
-          <input type="password" class="form-control" id="ceInput" placeholder="••••••••">
-        </div>
-        <button type="submit" class="btn-del-confirm" style="background:var(--sky);color:#0e0e0e;">🔓 Desbloquear edição</button>
-      </form>
+    <!-- PASSO 2: formulário de edição -->
+    <div id="editFormStep" style="display:none">
+      <div class="del-header">
+        <h3>✏️ Editar Registro <span id="editRecordNum" style="font-size:12px;color:var(--muted);font-family:'Fira Code',monospace;font-weight:400;"></span></h3>
+        <button class="del-close" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="del-body" style="max-height:72vh;overflow-y:auto;padding-right:18px;">
+        <form onsubmit="saveEdit(event)" id="editForm">
+          <div class="form-grid" style="margin-bottom:14px;">
+            <div class="form-group">
+              <label>Data <span style="color:var(--rose)">*</span></label>
+              <input type="date" class="form-control" id="eDate">
+            </div>
+            <div class="form-group">
+              <label>Hora <span style="color:var(--rose)">*</span></label>
+              <input type="time" class="form-control" id="eTime">
+            </div>
+            <div class="form-group">
+              <label>Local / Pavimento <span style="color:var(--rose)">*</span></label>
+              <input type="text" class="form-control" id="eLocal">
+            </div>
+            <div class="form-group">
+              <label>Técnico</label>
+              <select class="form-control" id="eTecnico">
+                <option value="">Selecione…</option>
+                <option value="Antônio">Antônio</option>
+                <option value="Sandro">Sandro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nº Botoeira</label>
+              <input type="text" class="form-control" id="eBotoNum">
+            </div>
+            <div class="form-group">
+              <label>Laço</label>
+              <select class="form-control" id="eZona">
+                <option value="">Selecione…</option>
+                <option value="Laço 1">Laço 1</option>
+                <option value="Laço 2">Laço 2</option>
+                <option value="Laço 3">Laço 3</option>
+                <option value="Laço 4">Laço 4</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tipo de Dispositivo</label>
+              <select class="form-control" id="eTipo">
+                <option value="">Selecione…</option>
+                <option value="Botoeira">Botoeira</option>
+                <option value="Detector de Fumaça">Detector de Fumaça</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <span class="status-label">Resultado</span>
+            <div class="status-toggle">
+              <input type="radio" name="estatus" id="es-ok" value="ok">
+              <label for="es-ok">✅ Funcionamento OK</label>
+              <input type="radio" name="estatus" id="es-fail" value="falha">
+              <label for="es-fail">❌ Falha</label>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Observações</label>
+            <textarea class="form-control" id="eObs" rows="2"></textarea>
+          </div>
+          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">📷 Fotos — clique para trocar</p>
+          <div class="edit-photos-grid">
+            <div class="edit-photo-thumb" id="eth-botoeira">
+              <input type="file" id="efi-botoeira" accept="image/*">
+              <span class="eth-label">🚨 Dispositivo</span>
+              <span class="eth-overlay">Trocar</span>
+            </div>
+            <div class="edit-photo-thumb" id="eth-central">
+              <input type="file" id="efi-central" accept="image/*">
+              <span class="eth-label">🖥️ Central</span>
+              <span class="eth-overlay">Trocar</span>
+            </div>
+            <div class="edit-photo-thumb" id="eth-sirene">
+              <input type="file" id="efi-sirene" accept="image/*">
+              <span class="eth-label">🔔 Sirene</span>
+              <span class="eth-overlay">Trocar</span>
+            </div>
+            <div class="edit-photo-thumb" id="eth-dispositivo">
+              <input type="file" id="efi-dispositivo" accept="image/*">
+              <span class="eth-label">📷 Atual</span>
+              <span class="eth-overlay">Trocar</span>
+            </div>
+          </div>
+          <button type="submit" class="btn-del-confirm" style="background:var(--lime);color:#0e0e0e;">💾 Salvar alterações</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -994,9 +1072,9 @@ let pendingDeleteId = null;
 function bindPhotoInputs() {
   [
     ['fi-botoeira',    'pd-botoeira',    'pc-botoeira',    'prev-botoeira'],
+    ['fi-central',     'pd-central',     'pc-central',     'prev-central'],
     ['fi-sirene',      'pd-sirene',      'pc-sirene',      'prev-sirene'],
     ['fi-dispositivo', 'pd-dispositivo', 'pc-dispositivo', 'prev-dispositivo']
-    // fi-central é vinculado somente após autenticação admin
   ].forEach(([inputId, dropId, cardId, prevId]) => {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -1006,44 +1084,6 @@ function bindPhotoInputs() {
       }, { passive: true })
     );
   });
-}
-
-// ── CENTRAL DE ALARME (acesso restrito) ───────────────────────────────────
-let centralBound = false;
-
-function openCentralEdit() {
-  document.getElementById('ceInput').value = '';
-  document.getElementById('ceError').classList.remove('show');
-  document.getElementById('centralEditModal').classList.add('open');
-  setTimeout(() => document.getElementById('ceInput').focus(), 100);
-}
-function closeCentralEditModal() {
-  document.getElementById('centralEditModal').classList.remove('open');
-}
-function confirmCentralEdit(e) {
-  e.preventDefault();
-  if (document.getElementById('ceInput').value === SENHA_ADMIN) {
-    closeCentralEditModal();
-    unlockCentral();
-  } else {
-    const err = document.getElementById('ceError');
-    err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
-    document.getElementById('ceInput').value = '';
-    document.getElementById('ceInput').focus();
-  }
-}
-function unlockCentral() {
-  document.getElementById('pd-central').classList.remove('locked');
-  if (!centralBound) {
-    centralBound = true;
-    const input = document.getElementById('fi-central');
-    ['change', 'input'].forEach(evt =>
-      input.addEventListener(evt, function () {
-        handlePhoto(this, 'pd-central', 'pc-central', 'prev-central');
-      }, { passive: true })
-    );
-  }
-  showToast('Central desbloqueada para edição.', 'success');
 }
 
 // redimensiona via canvas — resolve fotos grandes do iPhone (HEIC→JPEG, max 1200px)
@@ -1098,10 +1138,6 @@ function handlePhoto(input, dropId, cardId, prevId) {
 
 function removePhoto(inputId, dropId, cardId, prevId, e) {
   if (e) e.stopPropagation();
-  if (cardId === 'pc-central' && document.getElementById(dropId).classList.contains('locked')) {
-    showToast('Use o botão Editar para modificar a Central.', 'error');
-    return;
-  }
   const key = cardId.replace('pc-', '');
   photosTemp[key] = null;
   document.getElementById(inputId).value = '';
@@ -1110,7 +1146,7 @@ function removePhoto(inputId, dropId, cardId, prevId, e) {
   document.getElementById(cardId).classList.remove('has-image');
   const drop = document.getElementById(dropId);
   const icon = drop.querySelector('.drop-icon');
-  const txt  = drop.querySelector('span:not(.drop-icon):not(.lock-hint)');
+  const txt  = drop.querySelector('span:not(.drop-icon)');
   if (icon) icon.style.display = '';
   if (txt)  txt.style.display  = '';
 }
@@ -1154,8 +1190,7 @@ function resetForm() {
   document.getElementById('fObs').value = '';
   document.getElementById('s-ok').checked = true;
 
-  // reset fotos normais
-  ['botoeira','sirene','dispositivo'].forEach(k => {
+  ['botoeira','central','sirene','dispositivo'].forEach(k => {
     photosTemp[k] = null;
     const inputEl = document.getElementById('fi-'+k);
     if (inputEl) inputEl.value = '';
@@ -1171,16 +1206,6 @@ function resetForm() {
       if (txt)  txt.style.display  = '';
     }
   });
-
-  // re-trava central
-  photosTemp.central = null;
-  const ciEl = document.getElementById('fi-central');
-  if (ciEl) ciEl.value = '';
-  const cprev = document.getElementById('prev-central');
-  if (cprev) { cprev.src = ''; cprev.style.display = 'none'; }
-  document.getElementById('pc-central').classList.remove('has-image');
-  document.getElementById('pd-central').classList.add('locked');
-  centralBound = false;
 
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
@@ -1228,6 +1253,7 @@ function renderList() {
       </div>
       ${t.obs ? `<div class="test-notes"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
       <div class="test-item-actions">
+        <button class="btn btn-sky btn-sm" onclick="editTest(${t.id})">✏️ Editar</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteTest(${t.id})">🗑 Excluir</button>
       </div>
     </div>
@@ -1248,6 +1274,134 @@ function photoSlot(src, label) {
         : `<span class="no-img">Sem foto</span>`}
     </div>
   </div>`;
+}
+
+// ── EDIT RECORD (requer senha admin) ──────────────────────────────────────
+let pendingEditId = null;
+let editPhotosTemp = {};
+
+function editTest(id) {
+  pendingEditId = id;
+  document.getElementById('editAuthInput').value = '';
+  document.getElementById('editAuthError').classList.remove('show');
+  document.getElementById('editAuthStep').style.display = '';
+  document.getElementById('editFormStep').style.display = 'none';
+  document.getElementById('editModal').classList.add('open');
+  setTimeout(() => document.getElementById('editAuthInput').focus(), 100);
+}
+
+function confirmEditAuth(e) {
+  e.preventDefault();
+  if (document.getElementById('editAuthInput').value === SENHA_ADMIN) {
+    const test = tests.find(t => t.id === pendingEditId);
+    if (!test) return;
+    fillEditForm(test);
+    document.getElementById('editAuthStep').style.display = 'none';
+    document.getElementById('editFormStep').style.display = '';
+  } else {
+    const err = document.getElementById('editAuthError');
+    err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
+    document.getElementById('editAuthInput').value = '';
+    document.getElementById('editAuthInput').focus();
+  }
+}
+
+function fillEditForm(test) {
+  document.getElementById('eDate').value    = test.date    || '';
+  document.getElementById('eTime').value    = test.time    || '';
+  document.getElementById('eLocal').value   = test.local   || '';
+  document.getElementById('eTecnico').value = test.tecnico || '';
+  document.getElementById('eBotoNum').value = test.botoNum || '';
+  document.getElementById('eZona').value    = test.zona    || '';
+  document.getElementById('eTipo').value    = test.tipo    || '';
+  document.getElementById('eObs').value     = test.obs     || '';
+  document.getElementById(test.status === 'ok' ? 'es-ok' : 'es-fail').checked = true;
+
+  editPhotosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, ...(test.photos || {}) };
+
+  ['botoeira','central','sirene','dispositivo'].forEach(k => {
+    const thumb = document.getElementById('eth-' + k);
+    // remove old image if any
+    const oldImg = thumb.querySelector('.eth-img');
+    if (oldImg) oldImg.remove();
+    if (editPhotosTemp[k]) {
+      const img = document.createElement('img');
+      img.className = 'eth-img';
+      img.src = editPhotosTemp[k];
+      thumb.insertBefore(img, thumb.querySelector('input'));
+    }
+    // rebind file input (clone to remove old listeners)
+    const oldInput = document.getElementById('efi-' + k);
+    const fresh = oldInput.cloneNode(true);
+    oldInput.parentNode.replaceChild(fresh, oldInput);
+    ['change','input'].forEach(evt =>
+      fresh.addEventListener(evt, function() { handleEditPhoto(this, k); }, { passive: true })
+    );
+  });
+
+  const idx = tests.findIndex(t => t.id === pendingEditId);
+  document.getElementById('editRecordNum').textContent = idx >= 0 ? '#' + String(idx+1).padStart(2,'0') : '';
+}
+
+function handleEditPhoto(input, key) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(objUrl);
+    const MAX = 1200;
+    let w = img.naturalWidth || img.width;
+    let h = img.naturalHeight || img.height;
+    if (w > MAX || h > MAX) { const r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    editPhotosTemp[key] = dataUrl;
+    const thumb = document.getElementById('eth-' + key);
+    let imgEl = thumb.querySelector('.eth-img');
+    if (!imgEl) { imgEl = document.createElement('img'); imgEl.className = 'eth-img'; thumb.insertBefore(imgEl, thumb.querySelector('input')); }
+    imgEl.src = dataUrl;
+  };
+  img.onerror = () => { URL.revokeObjectURL(objUrl); showToast('Erro ao carregar imagem.', 'error'); };
+  img.src = objUrl;
+}
+
+function saveEdit(e) {
+  e.preventDefault();
+  const date  = document.getElementById('eDate').value;
+  const time  = document.getElementById('eTime').value;
+  const local = document.getElementById('eLocal').value.trim();
+  if (!date)  { showToast('Informe a data.', 'error'); return; }
+  if (!time)  { showToast('Informe o horário.', 'error'); return; }
+  if (!local) { showToast('Informe o local.', 'error'); return; }
+
+  const idx = tests.findIndex(t => t.id === pendingEditId);
+  if (idx < 0) return;
+
+  tests[idx] = {
+    ...tests[idx],
+    date, time, local,
+    tecnico: document.getElementById('eTecnico').value.trim(),
+    botoNum: document.getElementById('eBotoNum').value.trim(),
+    zona:    document.getElementById('eZona').value.trim(),
+    tipo:    document.getElementById('eTipo').value.trim(),
+    status:  document.querySelector('input[name="estatus"]:checked').value,
+    obs:     document.getElementById('eObs').value.trim(),
+    photos:  { ...editPhotosTemp }
+  };
+
+  save();
+  renderList();
+  closeEditModal();
+  showToast('Registro atualizado com sucesso!', 'success');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  pendingEditId = null;
+  editPhotosTemp = {};
 }
 
 // ── DELETE (requer senha admin) ────────────────────────────────────────────
@@ -1479,7 +1633,7 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightboxImg').src = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); closeCentralEditModal(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); closeEditModal(); } });
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function save() {
