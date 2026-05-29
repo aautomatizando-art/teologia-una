@@ -659,6 +659,15 @@
   .btn-del-confirm { width:100%;padding:12px;background:var(--fail);color:#fff;font-family:'Archivo Black',sans-serif;font-size:14px;border:none;border-radius:var(--radius-sm);cursor:pointer;margin-top:8px;transition:var(--transition); }
   .btn-del-confirm:hover { background:#ff4d88;transform:translateY(-1px); }
 
+  /* ── SESSION START ── */
+  .ss-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
+    border:1px solid var(--border);
+  }
+  .ss-badge.ok  { border-color:var(--ok);  color:var(--ok); }
+  .ss-badge.warn{ border-color:var(--gold);color:var(--gold); }
+
   /* ── TOAST ── */
   #toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
@@ -706,6 +715,85 @@
 
 <!-- MAIN -->
 <main class="page">
+
+  <!-- SESSION START SECTION -->
+<section id="sessionSection">
+  <div class="section-title">🔍 Status Início de Teste</div>
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" class="form-control" id="ssDate" readonly style="cursor:default;">
+      </div>
+      <div class="form-group">
+        <label>Hora</label>
+        <input type="time" class="form-control" id="ssTime" readonly style="cursor:default;">
+      </div>
+      <div class="form-group" style="grid-column:span 2">
+        <label>Responsável Acompanhando os Testes</label>
+        <input type="text" class="form-control" id="ssResponsavel" placeholder="Nome completo do responsável">
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:14px;">
+      <div class="form-group">
+        <label>CPF do Responsável</label>
+        <input type="text" class="form-control" id="ssCpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>Celular do Responsável</label>
+        <input type="text" class="form-control" id="ssCelular" placeholder="(00) 00000-0000" maxlength="15" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>Status da Central</label>
+        <select class="form-control" id="ssStatusCentral">
+          <option value="">Selecione…</option>
+          <option value="Sistema OK">✅ Sistema OK</option>
+          <option value="Avaria">⚠️ Avaria</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status dos Dispositivos</label>
+        <select class="form-control" id="ssStatusDispositivos">
+          <option value="">Selecione…</option>
+          <option value="Normal">✅ Normal</option>
+          <option value="Anulado">🔴 Anulado</option>
+          <option value="Parcialmente Anulado">🟡 Parcialmente Anulado</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;">
+      <p class="photos-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;">📷 Foto — Status Atual da Central</p>
+      <div class="photos-grid" style="grid-template-columns:minmax(220px,320px);">
+        <div class="photo-card" id="pc-ss-central">
+          <div class="photo-header">
+            <div class="photo-label"><div class="icon icon-central">🖥️</div>Central de Alarme</div>
+          </div>
+          <div class="photo-drop" id="pd-ss-central">
+            <input type="file" id="fi-ss-central-cam" accept="image/*" capture="environment" style="display:none">
+            <input type="file" id="fi-ss-central-gal" accept="image/*" style="display:none">
+            <span class="drop-icon">📤</span>
+            <div class="photo-src-btns">
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ss-central-cam').click()">📷 Câmera</button>
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ss-central-gal').click()">🖼️ Galeria</button>
+            </div>
+            <img class="preview" id="prev-ss-central" style="display:none;">
+            <button class="remove-btn" onclick="removeSsPhoto(event)">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:14px;">
+      <label>Observações</label>
+      <textarea class="form-control" id="ssObs" rows="3" placeholder="Condições gerais, anomalias identificadas…"></textarea>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;align-items:center;">
+      <button type="button" class="btn btn-primary" onclick="saveSessionStart()">💾 Salvar Status Inicial</button>
+      <span id="ssSavedLabel" style="display:none;font-size:12px;color:var(--ok);font-weight:700;">✅ Salvo</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
 
   <!-- FORM SECTION -->
   <section id="formSection">
@@ -1228,10 +1316,19 @@ let pendingDeleteId = null;
   if (voltLogo) voltLogo.style.display = 'inline-flex';
 
   const now = new Date();
-  document.getElementById('fDate').value = now.toISOString().slice(0, 10);
-  document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
+  document.getElementById('fDate').value  = now.toISOString().slice(0, 10);
+  document.getElementById('fTime').value  = now.toTimeString().slice(0, 5);
+  document.getElementById('ssDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ssTime').value = now.toTimeString().slice(0, 5);
   populateTecnicoSelects();
   bindPhotoInputs();
+  ['fi-ss-central-cam','fi-ss-central-gal'].forEach(id => {
+    const inp = document.getElementById(id); if (!inp) return;
+    ['change','input'].forEach(e => inp.addEventListener(e, function(){ handleSsPhoto(this); }, { passive:true }));
+  });
+  document.getElementById('ssCpf').addEventListener('input', function(){ this.value = maskCpf(this.value); });
+  document.getElementById('ssCelular').addEventListener('input', function(){ this.value = maskPhone(this.value); });
+  loadSessionStart();
   loadTests();
 
   // sincronização em tempo real entre dispositivos
@@ -1327,6 +1424,133 @@ function removePhoto(slotKey, dropId, cardId, prevId, e) {
   document.getElementById(cardId).classList.remove('has-image');
   const icon = document.getElementById(dropId).querySelector('.drop-icon');
   if (icon) icon.style.display = '';
+}
+
+// ── SESSION START ──────────────────────────────────────────────────────────
+
+let ssPhotoTemp = null;
+let ssRecordId  = null;
+
+function maskCpf(v) {
+  return v.replace(/\D/g,'')
+    .replace(/(\d{3})(\d)/,'$1.$2')
+    .replace(/(\d{3})(\d)/,'$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/,'$1-$2')
+    .slice(0,14);
+}
+
+function maskPhone(v) {
+  return v.replace(/\D/g,'')
+    .replace(/^(\d{2})(\d)/,'($1) $2')
+    .replace(/(\d{5})(\d{1,4})$/,'$1-$2')
+    .slice(0,15);
+}
+
+function handleSsPhoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(objUrl);
+    const MAX = 1200;
+    let w = img.naturalWidth || img.width;
+    let h = img.naturalHeight || img.height;
+    if (w > MAX || h > MAX) { const r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    ssPhotoTemp = dataUrl;
+    const prev = document.getElementById('prev-ss-central');
+    prev.src = dataUrl; prev.style.display = 'block';
+    document.getElementById('pc-ss-central').classList.add('has-image');
+    const icon = document.getElementById('pd-ss-central').querySelector('.drop-icon');
+    if (icon) icon.style.display = 'none';
+  };
+  img.onerror = () => { URL.revokeObjectURL(objUrl); showToast('Erro ao carregar imagem.', 'error'); };
+  img.src = objUrl;
+}
+
+function removeSsPhoto(e) {
+  if (e) e.stopPropagation();
+  ssPhotoTemp = null;
+  ['fi-ss-central-cam','fi-ss-central-gal'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const prev = document.getElementById('prev-ss-central');
+  prev.src = ''; prev.style.display = 'none';
+  document.getElementById('pc-ss-central').classList.remove('has-image');
+  const icon = document.getElementById('pd-ss-central').querySelector('.drop-icon');
+  if (icon) icon.style.display = '';
+}
+
+async function loadSessionStart() {
+  const today = new Date().toISOString().slice(0,10);
+  const { data } = await db.from('test_sessions')
+    .select('*').eq('empresa_id', EMPRESA_ID).eq('date', today)
+    .order('created_at', { ascending: false }).limit(1);
+  if (data && data.length > 0) {
+    const s = data[0];
+    ssRecordId = s.id;
+    document.getElementById('ssDate').value        = s.date      || today;
+    document.getElementById('ssTime').value        = s.time_str  || '';
+    document.getElementById('ssResponsavel').value = s.responsavel || '';
+    document.getElementById('ssCpf').value         = s.cpf       || '';
+    document.getElementById('ssCelular').value     = s.celular   || '';
+    document.getElementById('ssStatusCentral').value      = s.status_central      || '';
+    document.getElementById('ssStatusDispositivos').value = s.status_dispositivos || '';
+    document.getElementById('ssObs').value         = s.obs       || '';
+    if (s.foto_central) {
+      ssPhotoTemp = s.foto_central;
+      const prev = document.getElementById('prev-ss-central');
+      prev.src = s.foto_central; prev.style.display = 'block';
+      document.getElementById('pc-ss-central').classList.add('has-image');
+    }
+    document.getElementById('ssSavedLabel').style.display = '';
+  }
+}
+
+async function saveSessionStart() {
+  const date = document.getElementById('ssDate').value;
+  const time = document.getElementById('ssTime').value;
+  const btn = document.querySelector('[onclick="saveSessionStart()"]');
+  btn.disabled = true; btn.textContent = '⏳ Salvando…';
+  try {
+    let fotoUrl = ssPhotoTemp;
+    if (fotoUrl && !fotoUrl.startsWith('http')) {
+      const res  = await fetch(fotoUrl);
+      const blob = await res.blob();
+      const sid  = ssRecordId || Date.now();
+      const path = `${EMPRESA_ID}/session/${sid}/central.jpg`;
+      const { error: upErr } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (!upErr) fotoUrl = db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
+    }
+    const row = {
+      empresa_id: EMPRESA_ID, date, time_str: time,
+      responsavel: document.getElementById('ssResponsavel').value.trim(),
+      cpf:         document.getElementById('ssCpf').value.trim(),
+      celular:     document.getElementById('ssCelular').value.trim(),
+      status_central:      document.getElementById('ssStatusCentral').value,
+      status_dispositivos: document.getElementById('ssStatusDispositivos').value,
+      foto_central: fotoUrl || null,
+      obs:          document.getElementById('ssObs').value.trim()
+    };
+    if (ssRecordId) {
+      await db.from('test_sessions').update(row).eq('id', ssRecordId);
+    } else {
+      ssRecordId = Date.now();
+      row.id = ssRecordId;
+      await db.from('test_sessions').insert(row);
+    }
+    document.getElementById('ssSavedLabel').style.display = '';
+    showToast('Status inicial salvo!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar status inicial.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar Status Inicial';
+  }
 }
 
 // ── ADD TEST ───────────────────────────────────────────────────────────────
