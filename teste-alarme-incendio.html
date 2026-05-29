@@ -446,12 +446,13 @@
   }
   @keyframes modalIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   .modal-header {
-    padding: 24px 28px 20px;
+    padding: 16px 24px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
     border-bottom: 1px solid var(--border);
+    position: relative;
   }
   .modal-header h2 { font-family: 'Archivo Black', sans-serif; font-size: 20px; }
   .modal-close {
@@ -1171,12 +1172,19 @@
 <!-- REPORT MODAL -->
 <div class="modal-backdrop" id="reportModal">
   <div class="modal">
-    <div class="modal-header">
-      <div>
-        <h2>📊 Relatório de Testes de Alarme</h2>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px;" id="reportSubtitle"></p>
+    <div class="modal-header" style="padding:16px 24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px;">
+        <!-- Logo ABNT -->
+        <img src="logo-abnt.svg" alt="ABNT" style="height:64px;width:64px;flex-shrink:0;">
+        <!-- Título central -->
+        <div style="text-align:center;flex:1;">
+          <div style="font-family:'Archivo Black',sans-serif;font-size:clamp(13px,2.5vw,19px);font-weight:900;line-height:1.2;">Relatório Alarme de Incêndio SDAI</div>
+          <p style="font-size:12px;color:var(--muted);margin-top:4px;" id="reportSubtitle"></p>
+        </div>
+        <!-- Logo ProHid -->
+        <img src="logo-prohid.svg" alt="Pro Hid" style="height:52px;flex-shrink:0;max-width:140px;">
       </div>
-      <button class="modal-close" onclick="closeReport()">✕</button>
+      <button class="modal-close" onclick="closeReport()" style="position:absolute;top:12px;right:12px;">✕</button>
     </div>
     <div class="modal-body" id="reportBody"></div>
     <div class="report-footer">
