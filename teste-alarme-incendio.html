@@ -717,10 +717,10 @@
               Botoeira Acionada
             </div>
           </div>
-          <div class="photo-drop" id="pd-botoeira" onclick="triggerInput('fi-botoeira',event)">
-            <input type="file" id="fi-botoeira" accept="image/*" onchange="handlePhoto(this,'pd-botoeira','pc-botoeira','prev-botoeira')">
+          <div class="photo-drop" id="pd-botoeira">
+            <input type="file" id="fi-botoeira" accept="image/*">
             <span class="drop-icon">📤</span>
-            <span>Clique para adicionar foto</span>
+            <span>Toque para adicionar foto</span>
             <img class="preview" id="prev-botoeira" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
           </div>
@@ -733,10 +733,10 @@
               Central de Alarme
             </div>
           </div>
-          <div class="photo-drop" id="pd-central" onclick="triggerInput('fi-central',event)">
-            <input type="file" id="fi-central" accept="image/*" onchange="handlePhoto(this,'pd-central','pc-central','prev-central')">
+          <div class="photo-drop" id="pd-central">
+            <input type="file" id="fi-central" accept="image/*">
             <span class="drop-icon">📤</span>
-            <span>Clique para adicionar foto</span>
+            <span>Toque para adicionar foto</span>
             <img class="preview" id="prev-central" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-central','pd-central','pc-central','prev-central',event)">✕</button>
           </div>
@@ -749,10 +749,10 @@
               Sirene Disparada
             </div>
           </div>
-          <div class="photo-drop" id="pd-sirene" onclick="triggerInput('fi-sirene',event)">
-            <input type="file" id="fi-sirene" accept="image/*" onchange="handlePhoto(this,'pd-sirene','pc-sirene','prev-sirene')">
+          <div class="photo-drop" id="pd-sirene">
+            <input type="file" id="fi-sirene" accept="image/*">
             <span class="drop-icon">📤</span>
-            <span>Clique para adicionar foto</span>
+            <span>Toque para adicionar foto</span>
             <img class="preview" id="prev-sirene" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
           </div>
@@ -899,33 +899,78 @@ let pendingDeleteId = null; // id aguardando confirmação de exclusão
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
   document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
+  bindPhotoInputs(); // vincula eventos de foto (iOS-safe)
   renderList();
 })();
 
 // ── PHOTO HANDLING ─────────────────────────────────────────────────────────
-function triggerInput(inputId, e) {
-  if (e && e.target.classList.contains('remove-btn')) return;
-  const el = document.getElementById(inputId);
-  if (el) el.click();
+
+// vincula os inputs via addEventListener (mais confiável no iOS)
+function bindPhotoInputs() {
+  [
+    ['fi-botoeira', 'pd-botoeira', 'pc-botoeira', 'prev-botoeira'],
+    ['fi-central',  'pd-central',  'pc-central',  'prev-central'],
+    ['fi-sirene',   'pd-sirene',   'pc-sirene',   'prev-sirene']
+  ].forEach(([inputId, dropId, cardId, prevId]) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    // 'change' + 'input' garante disparo no iOS após câmera ou galeria
+    ['change', 'input'].forEach(evt =>
+      input.addEventListener(evt, function () {
+        handlePhoto(this, dropId, cardId, prevId);
+      }, { passive: true })
+    );
+  });
 }
 
+// redimensiona via canvas — resolve fotos grandes do iPhone (HEIC→JPEG, max 1200px)
 function handlePhoto(input, dropId, cardId, prevId) {
-  const file = input.files[0];
+  const file = input.files && input.files[0];
   if (!file) return;
-  if (!file.type.startsWith('image/')) { showToast('Arquivo inválido. Use uma imagem.', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const key = cardId.replace('pc-', '');
-    photosTemp[key] = e.target.result;
+
+  const objUrl = URL.createObjectURL(file);
+  const img    = new Image();
+
+  img.onload = () => {
+    URL.revokeObjectURL(objUrl);
+
+    // redimensiona mantendo proporção (máx 1200px)
+    const MAX = 1200;
+    let w = img.naturalWidth  || img.width;
+    let h = img.naturalHeight || img.height;
+    if (w > MAX || h > MAX) {
+      const r = Math.min(MAX / w, MAX / h);
+      w = Math.round(w * r);
+      h = Math.round(h * r);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    const key     = cardId.replace('pc-', '');
+    photosTemp[key] = dataUrl;
+
     const prev = document.getElementById(prevId);
-    prev.src = e.target.result;
+    prev.src          = dataUrl;
     prev.style.display = 'block';
     document.getElementById(cardId).classList.add('has-image');
+
     const drop = document.getElementById(dropId);
-    drop.querySelector('.drop-icon').style.display = 'none';
-    drop.querySelector('span:not(.drop-icon)').style.display = 'none';
+    const icon = drop.querySelector('.drop-icon');
+    const txt  = drop.querySelector('span:not(.drop-icon)');
+    if (icon) icon.style.display = 'none';
+    if (txt)  txt.style.display  = 'none';
   };
-  reader.readAsDataURL(file);
+
+  img.onerror = () => {
+    URL.revokeObjectURL(objUrl);
+    showToast('Erro ao carregar imagem. Tente novamente.', 'error');
+  };
+
+  img.src = objUrl;
 }
 
 function removePhoto(inputId, dropId, cardId, prevId, e) {
