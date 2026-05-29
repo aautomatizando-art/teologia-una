@@ -314,14 +314,12 @@
     color: var(--muted);
     user-select: none;
   }
-  .status-toggle input[value="ok"]:checked + label,
-  .status-toggle input[value="sirene-ok"]:checked + label {
+  .status-toggle input[value="ok"]:checked + label {
     background: var(--ok);
     color: #0e0e0e;
     box-shadow: 0 2px 12px rgba(74,222,128,.3);
   }
-  .status-toggle input[value="falha"]:checked + label,
-  .status-toggle input[value="falha-sirene"]:checked + label {
+  .status-toggle input[value="falha"]:checked + label {
     background: var(--fail);
     color: #fff;
     box-shadow: 0 2px 12px rgba(255,53,119,.3);
@@ -991,15 +989,25 @@
       <!-- STATUS -->
       <div class="status-group">
         <span class="status-label">Resultado do teste <span style="color:var(--rose)">*</span></span>
-        <div class="status-toggle">
-          <input type="radio" name="status" id="s-ok" value="ok" checked>
-          <label for="s-ok">✅ Botoeira OK</label>
-          <input type="radio" name="status" id="s-sirene-ok" value="sirene-ok">
-          <label for="s-sirene-ok">✅ Sirene OK</label>
-          <input type="radio" name="status" id="s-fail" value="falha">
-          <label for="s-fail">❌ Falha na Botoeira</label>
-          <input type="radio" name="status" id="s-fail-sirene" value="falha-sirene">
-          <label for="s-fail-sirene">❌ Falha na Sirene</label>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">🚨 Botoeira</div>
+            <div class="status-toggle">
+              <input type="radio" name="botoeira-status" id="s-b-ok" value="ok" checked>
+              <label for="s-b-ok">✅ Botoeira OK</label>
+              <input type="radio" name="botoeira-status" id="s-b-fail" value="falha">
+              <label for="s-b-fail">❌ Falha na Botoeira</label>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">🔔 Sirene</div>
+            <div class="status-toggle">
+              <input type="radio" name="sirene-status" id="s-s-ok" value="ok" checked>
+              <label for="s-s-ok">✅ Sirene OK</label>
+              <input type="radio" name="sirene-status" id="s-s-fail" value="falha">
+              <label for="s-s-fail">❌ Falha na Sirene</label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1254,15 +1262,25 @@
           </div>
           <div style="margin-bottom:14px;">
             <span class="status-label">Resultado</span>
-            <div class="status-toggle">
-              <input type="radio" name="estatus" id="es-ok" value="ok">
-              <label for="es-ok">✅ Botoeira OK</label>
-              <input type="radio" name="estatus" id="es-sirene-ok" value="sirene-ok">
-              <label for="es-sirene-ok">✅ Sirene OK</label>
-              <input type="radio" name="estatus" id="es-fail" value="falha">
-              <label for="es-fail">❌ Falha na Botoeira</label>
-              <input type="radio" name="estatus" id="es-fail-sirene" value="falha-sirene">
-              <label for="es-fail-sirene">❌ Falha na Sirene</label>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+              <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">🚨 Botoeira</div>
+                <div class="status-toggle">
+                  <input type="radio" name="ebotoeira-status" id="es-b-ok" value="ok">
+                  <label for="es-b-ok">✅ Botoeira OK</label>
+                  <input type="radio" name="ebotoeira-status" id="es-b-fail" value="falha">
+                  <label for="es-b-fail">❌ Falha na Botoeira</label>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">🔔 Sirene</div>
+                <div class="status-toggle">
+                  <input type="radio" name="esirene-status" id="es-s-ok" value="ok">
+                  <label for="es-s-ok">✅ Sirene OK</label>
+                  <input type="radio" name="esirene-status" id="es-s-fail" value="falha">
+                  <label for="es-s-fail">❌ Falha na Sirene</label>
+                </div>
+              </div>
             </div>
           </div>
           <div class="form-group" style="margin-bottom:14px;">
@@ -1364,13 +1382,30 @@ const EMPRESA_NOME  = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')
 const SENHA_ADMIN   = 'volt';
 const READ_ONLY     = sessionStorage.getItem('fire_company_' + EMPRESA_ID + '_readonly') === '1';
 
-function isOkStatus(s)  { return s === 'ok' || s === 'sirene-ok'; }
+function isOkStatus(s)  { return s === 'ok' || s === 'ok_ok'; }
 function statusCls(s)   { return isOkStatus(s) ? 'ok' : 'falha'; }
 function statusLabel(s) {
-  if (s === 'sirene-ok')    return '✅ Sirene OK';
-  if (s === 'falha-sirene') return '❌ Falha na Sirene';
-  if (s === 'falha')        return '❌ Falha na Botoeira';
-  return '✅ Botoeira OK';
+  const map = {
+    'ok_ok':       '✅ Botoeira OK · Sirene OK',
+    'ok_falha':    '✅ Botoeira OK · ❌ Sirene Falhou',
+    'falha_ok':    '❌ Botoeira Falhou · ✅ Sirene OK',
+    'falha_falha': '❌ Botoeira Falhou · Sirene Falhou',
+    'ok':          '✅ Botoeira OK',
+    'falha':       '❌ Falha na Botoeira',
+    'sirene-ok':   '✅ Sirene OK',
+    'falha-sirene':'❌ Falha na Sirene',
+  };
+  return map[s] || s;
+}
+// Desmonta status composto em {b, s} para preencher o modal de edição
+function parseStatus(s) {
+  if (s === 'ok_ok')      return { b: 'ok',    s: 'ok' };
+  if (s === 'ok_falha')   return { b: 'ok',    s: 'falha' };
+  if (s === 'falha_ok')   return { b: 'falha', s: 'ok' };
+  if (s === 'falha_falha')return { b: 'falha', s: 'falha' };
+  if (s === 'falha-sirene')return { b: 'ok',   s: 'falha' };
+  if (s === 'falha')      return { b: 'falha', s: 'ok' };
+  return { b: 'ok', s: 'ok' }; // legado 'ok', 'sirene-ok' e padrão
 }
 
 const EMPRESA_TOTAL = {
@@ -1920,7 +1955,7 @@ async function addTest() {
       botoNum: document.getElementById('fBotoNum').value.trim(),
       zona:    document.getElementById('fZona').value.trim(),
       tipo:    document.getElementById('fTipo').value.trim(),
-      status:  document.querySelector('input[name="status"]:checked').value,
+      status:  document.querySelector('input[name="botoeira-status"]:checked').value + '_' + document.querySelector('input[name="sirene-status"]:checked').value,
       obs:     document.getElementById('fObs').value.trim(),
       photos
     };
@@ -1946,7 +1981,8 @@ function resetForm() {
   document.getElementById('fZona').value = '';
   document.getElementById('fTipo').value = '';
   document.getElementById('fObs').value = '';
-  document.getElementById('s-ok').checked = true;
+  document.getElementById('s-b-ok').checked = true;
+  document.getElementById('s-s-ok').checked = true;
 
   ['botoeira','central','sirene','dispositivo'].forEach(k => {
     photosTemp[k] = null;
@@ -2154,7 +2190,9 @@ function fillEditForm(test) {
   document.getElementById('eZona').value    = test.zona    || '';
   document.getElementById('eTipo').value    = test.tipo    || '';
   document.getElementById('eObs').value     = test.obs     || '';
-  (document.getElementById('es-' + test.status) || document.getElementById('es-fail')).checked = true;
+  const ps = parseStatus(test.status);
+  document.getElementById(ps.b === 'falha' ? 'es-b-fail' : 'es-b-ok').checked = true;
+  document.getElementById(ps.s === 'falha' ? 'es-s-fail' : 'es-s-ok').checked = true;
 
   editPhotosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, ...(test.photos || {}) };
 
@@ -2231,7 +2269,7 @@ async function saveEdit(e) {
       botoNum: document.getElementById('eBotoNum').value.trim(),
       zona:    document.getElementById('eZona').value.trim(),
       tipo:    document.getElementById('eTipo').value.trim(),
-      status:  document.querySelector('input[name="estatus"]:checked').value,
+      status:  document.querySelector('input[name="ebotoeira-status"]:checked').value + '_' + document.querySelector('input[name="esirene-status"]:checked').value,
       obs:     document.getElementById('eObs').value.trim(),
       photos
     };
