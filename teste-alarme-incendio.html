@@ -2096,6 +2096,12 @@ function buildReport() {
             </div>
             <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
           </div>
+          <div class="report-item-photos">
+            ${reportPhoto(t.photos.dispositivo, '📷 Atual')}
+            ${reportPhoto(t.photos.botoeira,    '🚨 Dispositivo')}
+            ${reportPhoto(t.photos.central,     '🖥️ Central')}
+            ${reportPhoto(t.photos.sirene,      '🔔 Sirene')}
+          </div>
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
       `).join('')}
