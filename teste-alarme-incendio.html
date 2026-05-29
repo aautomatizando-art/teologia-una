@@ -788,6 +788,7 @@
     </div>
     <div style="display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;align-items:center;">
       <button type="button" class="btn btn-primary" onclick="saveSessionStart()">💾 Salvar Status Inicial</button>
+      <button type="button" class="btn btn-ghost" onclick="editSessionStart()">✏️ Editar</button>
       <span id="ssSavedLabel" style="display:none;font-size:12px;color:var(--ok);font-weight:700;">✅ Salvo</span>
     </div>
   </div>
@@ -1509,6 +1510,14 @@ async function loadSessionStart() {
     }
     document.getElementById('ssSavedLabel').style.display = '';
   }
+}
+
+function editSessionStart() {
+  const now = new Date();
+  document.getElementById('ssDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ssTime').value = now.toTimeString().slice(0, 5);
+  document.getElementById('ssSavedLabel').style.display = 'none';
+  document.getElementById('ssResponsavel').focus();
 }
 
 async function saveSessionStart() {
