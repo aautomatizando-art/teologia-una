@@ -1352,6 +1352,7 @@ const PARAMS       = new URLSearchParams(location.search);
 const EMPRESA_ID   = PARAMS.get('empresa') || 'default';
 const EMPRESA_NOME  = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
 const SENHA_ADMIN   = 'volt';
+const READ_ONLY     = sessionStorage.getItem('fire_company_' + EMPRESA_ID + '_readonly') === '1';
 
 const EMPRESA_TOTAL = {
   'essilor-campinas':  139,
@@ -1491,6 +1492,7 @@ let pendingDeleteId = null;
       ['change','input'].forEach(e => inp.addEventListener(e, function(){ handleFtPhoto(this, slot); }, { passive:true }));
     });
   });
+  if (READ_ONLY) applyReadOnlyMode();
   loadSessionStart();
   loadFinalizacao();
   loadTests();
@@ -1649,6 +1651,22 @@ function removeSsPhoto(e) {
   if (icon) icon.style.display = '';
 }
 
+function applyReadOnlyMode() {
+  // Badge de leitura no header
+  const headerEl = document.getElementById('headerEmpresa');
+  if (headerEl) {
+    const badge = document.createElement('span');
+    badge.textContent = '👁 Somente leitura';
+    badge.style.cssText = 'font-size:11px;font-weight:700;background:rgba(255,209,102,.15);color:#ffd166;border:1px solid rgba(255,209,102,.4);border-radius:20px;padding:3px 10px;margin-left:10px;vertical-align:middle;';
+    headerEl.appendChild(badge);
+  }
+  // Esconde formulário de novo teste, sessão e finalização
+  ['formSection', 'sessionSection', 'finalizacaoSection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
 async function loadSessionStart() {
   const today = new Date().toISOString().slice(0,10);
   const { data } = await db.from('test_sessions')
@@ -1686,6 +1704,7 @@ function editSessionStart() {
 }
 
 async function saveSessionStart() {
+  if (READ_ONLY) return;
   const date = document.getElementById('ssDate').value;
   const time = document.getElementById('ssTime').value;
   const btn = document.querySelector('[onclick="saveSessionStart()"]');
@@ -1799,6 +1818,7 @@ async function loadFinalizacao() {
 }
 
 async function saveFinalizacao() {
+  if (READ_ONLY) return;
   const date = document.getElementById('ftDate').value;
   const time = document.getElementById('ftTime').value;
   const btn = document.querySelector('[onclick="saveFinalizacao()"]');
@@ -1850,6 +1870,7 @@ function editFinalizacao() {
 
 // ── ADD TEST ───────────────────────────────────────────────────────────────
 async function addTest() {
+  if (READ_ONLY) return;
   const date  = document.getElementById('fDate').value;
   const time  = document.getElementById('fTime').value;
   const local = document.getElementById('fLocal').value.trim();
@@ -1960,10 +1981,10 @@ function renderList() {
         ${photoSlot(t.photos.sirene,      '🔔 Sirene')}
       </div>
       ${t.obs ? `<div class="test-notes"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
-      <div class="test-item-actions">
+      ${READ_ONLY ? '' : `<div class="test-item-actions">
         <button class="btn btn-sky btn-sm" onclick="editTest(${t.id})">✏️ Editar</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteTest(${t.id})">🗑 Excluir</button>
-      </div>
+      </div>`}
     </div>
   `).join('') + '</div>';
 
@@ -2069,6 +2090,7 @@ let pendingEditId = null;
 let editPhotosTemp = {};
 
 function editTest(id) {
+  if (READ_ONLY) return;
   pendingEditId = id;
   document.getElementById('editAuthInput').value = '';
   document.getElementById('editAuthError').classList.remove('show');
@@ -2205,6 +2227,7 @@ function closeEditModal() {
 
 // ── DELETE (requer senha admin) ────────────────────────────────────────────
 function deleteTest(id) {
+  if (READ_ONLY) return;
   pendingDeleteId = id;
   document.getElementById('delInput').value = '';
   const err = document.getElementById('delError');

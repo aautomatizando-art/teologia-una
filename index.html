@@ -320,7 +320,8 @@ const EMPRESAS = [
     icon:    '👓',
     desc:    'Central ILUMAC CAE-500 XMAX · 139 dispositivos registrados. Unidade industrial de fabricação de lentes oftálmicas. Campinas, SP.',
     accent:  '#003DA5',
-    senha:   'essilor01'        // ← senha deste contrato
+    senha:        'essilor01',
+    senha_leitura:'essilor01r'
   },
   {
     id:      'essilor-sumare',
@@ -330,7 +331,8 @@ const EMPRESAS = [
     icon:    '👓',
     desc:    'Unidade de distribuição, logística e centro de serviços. Sumaré, SP.',
     accent:  '#0057C8',
-    senha:   'essilor02'
+    senha:        'essilor02',
+    senha_leitura:'essilor02r'
   },
   {
     id:      'essilor-sao-paulo',
@@ -340,7 +342,8 @@ const EMPRESAS = [
     icon:    '👓',
     desc:    'Sede administrativa e centro de operações corporativas. São Paulo, SP.',
     accent:  '#1a6fd4',
-    senha:   'essilor03'
+    senha:        'essilor03',
+    senha_leitura:'essilor03r'
   },
   {
     id:      'cbp-brasil',
@@ -350,7 +353,8 @@ const EMPRESAS = [
     icon:    '🏭',
     desc:    'Unidade industrial monitorada com sistema de alarme de incêndio.',
     accent:  '#1B4F72',
-    senha:   'cbp2025'
+    senha:        'cbp2025',
+    senha_leitura:'cbp2025r'
   },
   {
     id:      'hotel-vila-rica',
@@ -360,7 +364,8 @@ const EMPRESAS = [
     icon:    '🏨',
     desc:    'Hotel de negócios com 12 andares, 200 apartamentos e salões de eventos.',
     accent:  '#B87A3A',
-    senha:   'hotel2025'
+    senha:        'hotel2025',
+    senha_leitura:'hotel2025r'
   }
 ];
 
@@ -422,9 +427,15 @@ function submitCompanyLogin(e) {
   e.preventDefault();
   const emp = EMPRESAS.find(e => e.id === pendingEmpresaId);
   const val = document.getElementById('clInput').value;
-  // aceita senha do contrato OU senha do sistema (admin)
-  if (val === emp.senha || val === SENHA_SISTEMA) {
+  const isAdmin    = val === emp.senha || val === SENHA_SISTEMA;
+  const isReadOnly = !isAdmin && val === emp.senha_leitura;
+  if (isAdmin || isReadOnly) {
     sessionStorage.setItem('fire_company_' + pendingEmpresaId, '1');
+    if (isReadOnly) {
+      sessionStorage.setItem('fire_company_' + pendingEmpresaId + '_readonly', '1');
+    } else {
+      sessionStorage.removeItem('fire_company_' + pendingEmpresaId + '_readonly');
+    }
     closeCompanyModal();
     const nomeFull = emp.nome + (emp.unidade ? ' ' + emp.unidade : '');
     location.href = `teste-alarme-incendio.html?empresa=${encodeURIComponent(emp.id)}&nome=${encodeURIComponent(nomeFull)}`;
