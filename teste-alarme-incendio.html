@@ -2107,7 +2107,7 @@ function buildReport() {
       `).join('')}
     </div>`;
 
-  document.getElementById('reportBody').innerHTML = statsHTML + chartsHTML + progressHTML + itemsHTML;
+  document.getElementById('reportBody').innerHTML = statsHTML + chartsHTML + progressHTML;
 
   // bind lightbox on report photos
   document.querySelectorAll('.rp-img img').forEach(img => {
