@@ -1662,6 +1662,7 @@ async function loadSessionStart() {
     document.getElementById('ssResponsavel').value = s.responsavel || '';
     document.getElementById('ssCpf').value         = s.cpf       || '';
     document.getElementById('ssCelular').value     = s.celular   || '';
+    document.getElementById('fTecnico').value      = s.tecnico   || '';
     document.getElementById('ssStatusCentral').value      = s.status_central      || '';
     document.getElementById('ssStatusDispositivos').value = s.status_dispositivos || '';
     document.getElementById('ssCentralFabricante').value  = s.central_fabricante  || '';
@@ -1704,6 +1705,7 @@ async function saveSessionStart() {
       responsavel: document.getElementById('ssResponsavel').value.trim(),
       cpf:         document.getElementById('ssCpf').value.trim(),
       celular:     document.getElementById('ssCelular').value.trim(),
+      tecnico:             document.getElementById('fTecnico').value.trim(),
       status_central:      document.getElementById('ssStatusCentral').value,
       status_dispositivos: document.getElementById('ssStatusDispositivos').value,
       central_fabricante: document.getElementById('ssCentralFabricante').value,
