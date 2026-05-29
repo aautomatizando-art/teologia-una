@@ -469,6 +469,24 @@
   .modal-close:hover { background: var(--rose); border-color: var(--rose); }
   .modal-body { padding: 24px 28px; }
 
+  /* ── EQUIPE DISPLAY ── */
+  .equipe-display {
+    background: var(--bg4); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    font-size: 14px; color: var(--muted); font-style: italic;
+  }
+  /* ── PROGRESS SECTION ── */
+  .progress-info {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px;
+  }
+  .progress-pill {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+  }
+  .progress-pill.ok { border-color: var(--lime); color: var(--lime); }
+  .progress-pill.warn { border-color: var(--gold); color: var(--gold); }
+  .progress-pill.danger { border-color: var(--rose); color: var(--rose); }
+
   /* ── REPORT STATS ── */
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 28px; }
   .stat-card {
@@ -714,9 +732,11 @@
           <label>Técnico Responsável</label>
           <select class="form-control" id="fTecnico">
             <option value="">Selecione o técnico…</option>
-            <option value="Antônio">Antônio</option>
-            <option value="Sandro">Sandro</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>Equipe</label>
+          <div class="equipe-display">Antônio e Sandro</div>
         </div>
         <div class="form-group">
           <label>Nº Dispositivo</label>
@@ -870,6 +890,26 @@
     </div>
   </section>
 
+  <!-- PROGRESSO CAMPINAS -->
+  <section id="progressSection" style="display:none;">
+    <hr class="divider">
+    <div class="section-title">
+      📊 Progresso — Ciclo de 3 Meses
+      <span class="badge" id="progressBadge">0 / 139</span>
+    </div>
+    <div class="progress-info" id="progressInfo"></div>
+    <div class="charts-grid" style="margin-top:16px;">
+      <div class="chart-card">
+        <h4>Dispositivos Testados no Ciclo</h4>
+        <div class="chart-wrapper"><canvas id="progressPie"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Testes por Mês</h4>
+        <div class="chart-wrapper"><canvas id="progressBar"></canvas></div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- REPORT MODAL -->
@@ -936,11 +976,9 @@
               <input type="text" class="form-control" id="eLocal">
             </div>
             <div class="form-group">
-              <label>Técnico</label>
+              <label>Técnico Responsável</label>
               <select class="form-control" id="eTecnico">
                 <option value="">Selecione…</option>
-                <option value="Antônio">Antônio</option>
-                <option value="Sandro">Sandro</option>
               </select>
             </div>
             <div class="form-group">
@@ -1073,6 +1111,29 @@ const EMPRESA_ID   = PARAMS.get('empresa') || 'default';
 const EMPRESA_NOME  = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
 const SENHA_ADMIN   = 'volt';
 
+const CAMPINAS_TOTAL = 139;
+const TECNICOS = {
+  'essilor-campinas':  ['Willian', 'Geovana', 'João', 'Ariane'],
+  'essilor-sumare':    ['Ian Santos', 'Lucas'],
+  'essilor-sao-paulo': ['Willian', 'Danilo'],
+};
+
+function populateTecnicoSelects() {
+  const opts = TECNICOS[EMPRESA_ID] || [];
+  ['fTecnico', 'eTecnico'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const blank = sel.options[0];
+    sel.innerHTML = '';
+    sel.appendChild(blank);
+    opts.forEach(n => {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n;
+      sel.appendChild(o);
+    });
+  });
+}
+
 // ── SUPABASE ───────────────────────────────────────────────────────────────
 const SUPA_URL = 'https://zcevjbtzucwpmioiqtis.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZXZqYnR6dWN3cG1pb2lxdGlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDg3NDQsImV4cCI6MjA5NTU4NDc0NH0.ymeNSclnQOI_Jxzm0iMayYTAzVRWffHuQakML5NyaSw';
@@ -1163,6 +1224,7 @@ let pendingDeleteId = null;
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
   document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
+  populateTecnicoSelects();
   bindPhotoInputs();
   loadTests();
 
@@ -1383,6 +1445,85 @@ function renderList() {
   // bind photo clicks
   container.querySelectorAll('.slot-img img').forEach(img => {
     img.onclick = () => openLightbox(img.src);
+  });
+
+  renderProgress();
+}
+
+let progressPieChart = null, progressBarChart = null;
+
+function renderProgress() {
+  if (EMPRESA_ID !== 'essilor-campinas') return;
+  document.getElementById('progressSection').style.display = '';
+
+  // últimos 3 meses (mês atual + 2 anteriores)
+  const now = new Date();
+  const months = [];
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      year: d.getFullYear(), month: d.getMonth(),
+      label: d.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).replace('. ', '/').replace('.', '')
+    });
+  }
+
+  const counts = months.map(m =>
+    tests.filter(t => {
+      if (!t.date) return false;
+      const parts = t.date.split('-');
+      return parseInt(parts[0]) === m.year && (parseInt(parts[1]) - 1) === m.month;
+    }).length
+  );
+
+  const totalTested = counts.reduce((a, b) => a + b, 0);
+  const remaining   = Math.max(0, CAMPINAS_TOTAL - totalTested);
+  const pct         = Math.round(totalTested / CAMPINAS_TOTAL * 100);
+
+  document.getElementById('progressBadge').textContent = `${totalTested} / ${CAMPINAS_TOTAL}`;
+
+  const statusClass = pct >= 100 ? 'ok' : pct >= 60 ? 'warn' : 'danger';
+  document.getElementById('progressInfo').innerHTML = `
+    <span class="progress-pill ${statusClass}">${pct}% concluído</span>
+    <span class="progress-pill">${totalTested} testados</span>
+    <span class="progress-pill">${remaining} pendentes</span>
+  `;
+
+  if (progressPieChart) { progressPieChart.destroy(); progressPieChart = null; }
+  if (progressBarChart) { progressBarChart.destroy(); progressBarChart = null; }
+
+  progressPieChart = new Chart(document.getElementById('progressPie').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Testados', 'Pendentes'],
+      datasets: [{ data: [totalTested, remaining],
+        backgroundColor: ['#c8f135', '#2e2e2e'],
+        borderColor: ['#161616'], borderWidth: 3, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#f2f2f2', padding: 14, font: { family: 'Archivo', size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${CAMPINAS_TOTAL} (${Math.round(ctx.raw/CAMPINAS_TOTAL*100)}%)` } }
+      }
+    }
+  });
+
+  progressBarChart = new Chart(document.getElementById('progressBar').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [{ label: 'Dispositivos testados', data: counts, backgroundColor: '#c8f135', borderRadius: 5 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#888', font: { family: 'Archivo', size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { beginAtZero: true, max: CAMPINAS_TOTAL,
+          ticks: { color: '#888', font: { family: 'Archivo' }, stepSize: Math.ceil(CAMPINAS_TOTAL / 5) },
+          grid: { color: 'rgba(255,255,255,.07)' } }
+      },
+      plugins: { legend: { display: false } }
+    }
   });
 }
 
