@@ -1660,10 +1660,20 @@ function applyReadOnlyMode() {
     badge.style.cssText = 'font-size:11px;font-weight:700;background:rgba(255,209,102,.15);color:#ffd166;border:1px solid rgba(255,209,102,.4);border-radius:20px;padding:3px 10px;margin-left:10px;vertical-align:middle;';
     headerEl.appendChild(badge);
   }
-  // Esconde formulário de novo teste, sessão e finalização
-  ['formSection', 'sessionSection', 'finalizacaoSection'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+  // Esconde apenas o formulário de novo teste
+  const formSec = document.getElementById('formSection');
+  if (formSec) formSec.style.display = 'none';
+
+  // Sessão e Finalização: exibe os dados gravados mas bloqueia interação
+  ['sessionSection', 'finalizacaoSection'].forEach(id => {
+    const sec = document.getElementById(id);
+    if (!sec) return;
+    // Desabilita campos (JS ainda consegue setar .value para exibir os dados)
+    sec.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
+    // Esconde controles de upload de foto e botão de remover
+    sec.querySelectorAll('.photo-src-btns, .remove-btn, .drop-icon').forEach(el => { el.style.display = 'none'; });
+    // Esconde botões de salvar / editar
+    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"]').forEach(el => { el.style.display = 'none'; });
   });
 }
 
