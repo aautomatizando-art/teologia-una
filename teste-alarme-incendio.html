@@ -645,7 +645,7 @@
       <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="32"></div>
       <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">← Voltar</a>
       <div>
-        <div class="header-title">Dashboard <span>Alarme de Incêndio</span></div>
+        <div class="header-title">Dashboard <span>Alarme de Incêndio SDAI</span></div>
         <div style="font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;" id="headerEmpresa"></div>
       </div>
     </div>
@@ -683,15 +683,25 @@
         </div>
         <div class="form-group">
           <label>Técnico Responsável</label>
-          <input type="text" class="form-control" id="fTecnico" placeholder="Nome do técnico">
+          <select class="form-control" id="fTecnico">
+            <option value="">Selecione o técnico…</option>
+            <option value="Antônio">Antônio</option>
+            <option value="Sandro">Sandro</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Nº Botoeira</label>
           <input type="text" class="form-control" id="fBotoNum" placeholder="Ex: B-07">
         </div>
         <div class="form-group">
-          <label>Zona / Loop</label>
-          <input type="text" class="form-control" id="fZona" placeholder="Ex: Zona 3">
+          <label>Laço</label>
+          <select class="form-control" id="fZona">
+            <option value="">Selecione o laço…</option>
+            <option value="Laço 1">Laço 1</option>
+            <option value="Laço 2">Laço 2</option>
+            <option value="Laço 3">Laço 3</option>
+            <option value="Laço 4">Laço 4</option>
+          </select>
         </div>
       </div>
 
@@ -882,7 +892,7 @@ let pendingDeleteId = null; // id aguardando confirmação de exclusão
   // exibe empresa no header
   const headerEl = document.getElementById('headerEmpresa');
   if (headerEl) headerEl.textContent = EMPRESA_NOME;
-  document.title = EMPRESA_NOME + ' · Dashboard Alarme de Incêndio';
+  document.title = EMPRESA_NOME + ' · Dashboard Alarme de Incêndio SDAI';
   const voltLogo = document.getElementById('voltLogo');
   if (voltLogo) voltLogo.style.display = 'inline-flex';
 
