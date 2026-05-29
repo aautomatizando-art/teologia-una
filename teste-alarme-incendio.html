@@ -1289,6 +1289,7 @@ async function addTest() {
     };
     const { error } = await db.from('fire_tests').insert(testToRow(test));
     if (error) throw error;
+    await loadTests();
     resetForm();
     showToast('Teste adicionado com sucesso!', 'success');
     document.getElementById('listSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1518,6 +1519,7 @@ async function saveEdit(e) {
     };
     const { error } = await db.from('fire_tests').update(testToRow(updated)).eq('id', pendingEditId);
     if (error) throw error;
+    await loadTests();
     closeEditModal();
     showToast('Registro atualizado com sucesso!', 'success');
   } catch (err) {
@@ -1555,6 +1557,7 @@ async function confirmDelete(e) {
       );
       const { error } = await db.from('fire_tests').delete().eq('id', pendingDeleteId);
       if (error) throw error;
+      await loadTests();
       closeDeleteModal();
       showToast('Registro excluído.', 'success');
     } catch (err) {
@@ -1580,6 +1583,7 @@ async function clearAll() {
   try {
     const { error } = await db.from('fire_tests').delete().eq('empresa_id', EMPRESA_ID);
     if (error) throw error;
+    await loadTests();
     showToast('Todos os registros foram removidos.', 'success');
   } catch (err) {
     console.error(err);
