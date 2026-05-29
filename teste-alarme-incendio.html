@@ -595,6 +595,23 @@
     .report-footer { display: flex !important; }
   }
 
+  /* ── DELETE MODAL ── */
+  .del-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);z-index:250;display:none;align-items:center;justify-content:center;padding:24px; }
+  .del-backdrop.open { display:flex; }
+  .del-modal { background:var(--bg2);border:1px solid var(--border);border-radius:18px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.7);animation:modalIn .25s ease; }
+  .del-header { padding:22px 22px 0;display:flex;align-items:center;justify-content:space-between;gap:12px; }
+  .del-header h3 { font-family:'Archivo Black',sans-serif;font-size:17px;display:flex;align-items:center;gap:8px; }
+  .del-close { background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition); }
+  .del-close:hover { background:var(--fail);border-color:var(--fail); }
+  .del-body { padding:18px 22px 22px; }
+  .del-warn { font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5; }
+  .del-warn strong { color:var(--fail); }
+  .del-error { background:rgba(255,53,119,.1);border:1px solid rgba(255,53,119,.3);color:var(--fail);font-size:13px;padding:9px 13px;border-radius:var(--radius-sm);margin-bottom:14px;display:none; }
+  .del-error.show { display:block;animation:shake .35s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+  .btn-del-confirm { width:100%;padding:12px;background:var(--fail);color:#fff;font-family:'Archivo Black',sans-serif;font-size:14px;border:none;border-radius:var(--radius-sm);cursor:pointer;margin-top:8px;transition:var(--transition); }
+  .btn-del-confirm:hover { background:#ff4d88;transform:translateY(-1px); }
+
   /* ── TOAST ── */
   #toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
@@ -797,6 +814,27 @@
   </div>
 </div>
 
+<!-- DELETE MODAL -->
+<div class="del-backdrop" id="deleteModal">
+  <div class="del-modal">
+    <div class="del-header">
+      <h3>🗑️ Excluir registro</h3>
+      <button class="del-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="del-body">
+      <p class="del-warn">Esta ação é <strong>irreversível</strong>. Digite a senha de administrador para confirmar a exclusão.</p>
+      <div class="del-error" id="delError">⚠️ Senha incorreta. Tente novamente.</div>
+      <form onsubmit="confirmDelete(event)">
+        <div class="form-group">
+          <label>Senha do administrador</label>
+          <input type="password" class="form-control" id="delInput" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-del-confirm">🗑️ Confirmar exclusão</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer class="site-footer">
   <div class="site-footer-inner">
@@ -819,24 +857,29 @@
 
 <script>
 // ── STATE ──────────────────────────────────────────────────────────────────
-const PARAMS      = new URLSearchParams(location.search);
-const EMPRESA_ID  = PARAMS.get('empresa') || 'default';
+const PARAMS       = new URLSearchParams(location.search);
+const EMPRESA_ID   = PARAMS.get('empresa') || 'default';
 const EMPRESA_NOME = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
-const STORAGE_KEY = 'fire_tests_' + EMPRESA_ID;
+const STORAGE_KEY  = 'fire_tests_' + EMPRESA_ID;
+const SENHA_ADMIN  = 'alarme2025'; // senha para excluir registros
 
 let tests = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let photosTemp = { botoeira: null, central: null, sirene: null };
 let chartPie = null, chartBar = null;
+let pendingDeleteId = null; // id aguardando confirmação de exclusão
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 (function init() {
-  // auth guard
+  // verifica login principal
   if (sessionStorage.getItem('fire_auth') !== '1') {
-    location.href = 'index.html';
-    return;
+    location.href = 'index.html'; return;
+  }
+  // verifica login da empresa
+  if (EMPRESA_ID !== 'default' && sessionStorage.getItem('fire_company_' + EMPRESA_ID) !== '1') {
+    location.href = 'index.html'; return;
   }
 
-  // show company in header
+  // exibe empresa no header
   const headerEl = document.getElementById('headerEmpresa');
   if (headerEl) headerEl.textContent = EMPRESA_NOME;
   document.title = EMPRESA_NOME + ' · Dashboard Alarme de Incêndio';
@@ -1004,13 +1047,35 @@ function photoSlot(src, label) {
   </div>`;
 }
 
-// ── DELETE ─────────────────────────────────────────────────────────────────
+// ── DELETE (requer senha admin) ────────────────────────────────────────────
 function deleteTest(id) {
-  if (!confirm('Excluir este registro?')) return;
-  tests = tests.filter(t => t.id !== id);
-  save();
-  renderList();
-  showToast('Registro excluído.', 'success');
+  pendingDeleteId = id;
+  document.getElementById('delInput').value = '';
+  const err = document.getElementById('delError');
+  err.classList.remove('show');
+  document.getElementById('deleteModal').classList.add('open');
+  setTimeout(() => document.getElementById('delInput').focus(), 100);
+}
+
+function confirmDelete(e) {
+  if (e) e.preventDefault();
+  if (document.getElementById('delInput').value === SENHA_ADMIN) {
+    tests = tests.filter(t => t.id !== pendingDeleteId);
+    save();
+    renderList();
+    closeDeleteModal();
+    showToast('Registro excluído.', 'success');
+  } else {
+    const err = document.getElementById('delError');
+    err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
+    document.getElementById('delInput').value = '';
+    document.getElementById('delInput').focus();
+  }
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+  pendingDeleteId = null;
 }
 
 function clearAll() {
@@ -1209,7 +1274,7 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightboxImg').src = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); } });
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function save() {
