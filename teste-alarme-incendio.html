@@ -1790,6 +1790,52 @@ function buildReport() {
       </div>
     </div>`;
 
+  // progresso ciclo 3 meses
+  let progressHTML = '';
+  let rptProgressData = null;
+  const TOTAL = EMPRESA_TOTAL[EMPRESA_ID];
+  if (TOTAL) {
+    const now = new Date();
+    const months = [];
+    for (let i = 2; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        year: d.getFullYear(), month: d.getMonth(),
+        label: d.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).replace('. ', '/').replace('.', '')
+      });
+    }
+    const counts = months.map(m =>
+      tests.filter(t => {
+        if (!t.date) return false;
+        const parts = t.date.split('-');
+        return parseInt(parts[0]) === m.year && (parseInt(parts[1]) - 1) === m.month;
+      }).length
+    );
+    const totalTested = counts.reduce((a, b) => a + b, 0);
+    const remaining   = Math.max(0, TOTAL - totalTested);
+    const pct         = Math.round(totalTested / TOTAL * 100);
+    const sc          = pct >= 100 ? 'ok' : pct >= 60 ? 'warn' : 'danger';
+    rptProgressData   = { totalTested, remaining, pct, TOTAL, counts, monthLabels: months.map(m => m.label) };
+
+    progressHTML = `
+      <div class="section-title" style="font-size:15px;margin:28px 0 12px;">📊 Progresso — Ciclo de 3 Meses</div>
+      <div class="progress-info" style="margin-bottom:16px;">
+        <span class="progress-pill ${sc}">${pct}% concluído</span>
+        <span class="progress-pill">${totalTested} / ${TOTAL} testados</span>
+        <span class="progress-pill">${remaining} pendentes</span>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4>Dispositivos Testados no Ciclo</h4>
+          <div class="chart-wrapper"><canvas id="rptProgressPie"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Testes por Mês</h4>
+          <div class="chart-wrapper"><canvas id="rptProgressBar"></canvas></div>
+        </div>
+      </div>`;
+  }
+
   // test items
   const itemsHTML = `
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">📋 Detalhamento dos Testes</div>
@@ -1821,7 +1867,7 @@ function buildReport() {
       `).join('')}
     </div>`;
 
-  document.getElementById('reportBody').innerHTML = statsHTML + chartsHTML + itemsHTML;
+  document.getElementById('reportBody').innerHTML = statsHTML + chartsHTML + progressHTML + itemsHTML;
 
   // bind lightbox on report photos
   document.querySelectorAll('.rp-img img').forEach(img => {
@@ -1901,6 +1947,44 @@ function buildReport() {
         }
       }
     });
+
+    // progress charts (só para empresas com TOTAL definido)
+    if (rptProgressData) {
+      const { totalTested, remaining, TOTAL: T, counts, monthLabels } = rptProgressData;
+      new Chart(document.getElementById('rptProgressPie').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Testados', 'Pendentes'],
+          datasets: [{ data: [totalTested, remaining],
+            backgroundColor: ['#c8f135', '#2e2e2e'],
+            borderColor: ['#161616'], borderWidth: 3, hoverOffset: 8 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#f2f2f2', padding: 14, font: { family: 'Archivo', size: 12 } } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${T} (${Math.round(ctx.raw/T*100)}%)` } }
+          }
+        }
+      });
+      new Chart(document.getElementById('rptProgressBar').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: monthLabels,
+          datasets: [{ label: 'Dispositivos testados', data: counts, backgroundColor: '#c8f135', borderRadius: 5 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: '#888', font: { family: 'Archivo', size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { beginAtZero: true, max: T,
+              ticks: { color: '#888', font: { family: 'Archivo' }, stepSize: Math.ceil(T / 5) },
+              grid: { color: 'rgba(255,255,255,.07)' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
   });
 }
 
