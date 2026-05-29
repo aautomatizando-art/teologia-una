@@ -619,7 +619,7 @@
   /* ── PRINT ── */
   @media print {
     body { background: #fff; color: #111; }
-    .site-header, .modal-close, .btn, .form-actions, #formSection { display: none !important; }
+    main, .site-header, .modal-close, .btn, .form-actions { display: none !important; }
     .modal-backdrop {
       position: static !important;
       background: transparent !important;
@@ -636,10 +636,12 @@
     .stat-card, .chart-card, .report-item { background: #f8f8f8; border-color: #ddd; }
     .stat-card .stat-value { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .chart-wrapper { height: 180px; }
-    .report-item.ok { border-left: 3px solid #4ade80; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .report-item.ok    { border-left: 3px solid #4ade80; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .report-item.falha { border-left: 3px solid #ff3577; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .progress-pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .report-footer { display: flex !important; }
+    .del-backdrop { display: none !important; }
   }
 
   /* ── DELETE MODAL ── */
