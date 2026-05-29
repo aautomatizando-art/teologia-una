@@ -209,9 +209,45 @@
     font-size: 15px;
     flex-shrink: 0;
   }
-  .icon-botoeira { background: rgba(255,107,53,.15); }
-  .icon-central  { background: rgba(53,200,255,.15); }
-  .icon-sirene   { background: rgba(255,209,102,.15); }
+  .icon-botoeira    { background: rgba(255,107,53,.15); }
+  .icon-central     { background: rgba(53,200,255,.15); }
+  .icon-sirene      { background: rgba(255,209,102,.15); }
+  .icon-dispositivo { background: rgba(180,122,255,.15); }
+
+  /* botão editar foto */
+  .btn-edit-photo {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .btn-edit-photo:hover { border-color: var(--sky); color: var(--sky); }
+
+  /* estado bloqueado da central */
+  .photo-drop.locked { cursor: default; }
+  .photo-drop.locked input[type="file"] { pointer-events: none; }
+  .lock-overlay {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px; color: var(--muted);
+    position: absolute; inset: 0;
+    background: rgba(14,14,14,.55);
+    backdrop-filter: blur(2px);
+    z-index: 1;
+  }
+  .photo-drop.has-image .lock-overlay { background: rgba(14,14,14,.72); }
+  .lock-icon-lg { font-size: 28px; }
+  .lock-hint { font-size: 10px; opacity: .65; }
+
   .photo-drop {
     position: relative;
     cursor: pointer;
@@ -352,7 +388,7 @@
   .status-badge.falha { background: rgba(255,53,119,.15); color: var(--fail); border: 1px solid rgba(255,53,119,.3); }
   .test-photos {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 0 20px 16px;
   }
@@ -500,7 +536,7 @@
   }
   .report-item-photos {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 12px 16px;
   }
@@ -629,8 +665,8 @@
 
   /* ── RESPONSIVE ── */
   @media (max-width: 540px) {
-    .test-photos { grid-template-columns: 1fr; }
-    .report-item-photos { grid-template-columns: 1fr; }
+    .test-photos { grid-template-columns: repeat(2, 1fr); }
+    .report-item-photos { grid-template-columns: repeat(2, 1fr); }
     .form-footer { flex-direction: column; align-items: stretch; }
     .form-footer .btn { justify-content: center; }
   }
@@ -703,18 +739,26 @@
             <option value="Laço 4">Laço 4</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Tipo de Dispositivo</label>
+          <select class="form-control" id="fTipo">
+            <option value="">Selecione o tipo…</option>
+            <option value="Botoeira">Botoeira</option>
+            <option value="Detector de Fumaça">Detector de Fumaça</option>
+          </select>
+        </div>
       </div>
 
       <!-- PHOTOS -->
       <hr class="divider" style="margin: 24px 0;">
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">📷 Evidências Fotográficas</p>
       <div class="photos-grid">
-        <!-- BOTOEIRA -->
+        <!-- DISPOSITIVO ACIONADO -->
         <div class="photo-card" id="pc-botoeira">
           <div class="photo-header">
             <div class="photo-label">
               <div class="icon icon-botoeira">🚨</div>
-              Botoeira Acionada
+              Dispositivo Acionado
             </div>
           </div>
           <div class="photo-drop" id="pd-botoeira">
@@ -725,18 +769,22 @@
             <button class="remove-btn" onclick="removePhoto('fi-botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
           </div>
         </div>
-        <!-- CENTRAL -->
+        <!-- CENTRAL DE ALARME (restrito) -->
         <div class="photo-card" id="pc-central">
           <div class="photo-header">
             <div class="photo-label">
               <div class="icon icon-central">🖥️</div>
               Central de Alarme
             </div>
+            <button class="btn-edit-photo" onclick="openCentralEdit()">✏️ Editar</button>
           </div>
-          <div class="photo-drop" id="pd-central">
+          <div class="photo-drop locked" id="pd-central">
             <input type="file" id="fi-central" accept="image/*">
-            <span class="drop-icon">📤</span>
-            <span>Toque para adicionar foto</span>
+            <div class="lock-overlay">
+              <span class="lock-icon-lg">🔒</span>
+              <span>Acesso restrito</span>
+              <span class="lock-hint">Use o botão Editar acima</span>
+            </div>
             <img class="preview" id="prev-central" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-central','pd-central','pc-central','prev-central',event)">✕</button>
           </div>
@@ -755,6 +803,22 @@
             <span>Toque para adicionar foto</span>
             <img class="preview" id="prev-sirene" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
+          </div>
+        </div>
+        <!-- DISPOSITIVO ATUAL -->
+        <div class="photo-card" id="pc-dispositivo">
+          <div class="photo-header">
+            <div class="photo-label">
+              <div class="icon icon-dispositivo">📷</div>
+              Dispositivo Atual
+            </div>
+          </div>
+          <div class="photo-drop" id="pd-dispositivo">
+            <input type="file" id="fi-dispositivo" accept="image/*">
+            <span class="drop-icon">📤</span>
+            <span>Toque para adicionar foto</span>
+            <img class="preview" id="prev-dispositivo" style="display:none;">
+            <button class="remove-btn" onclick="removePhoto('fi-dispositivo','pd-dispositivo','pc-dispositivo','prev-dispositivo',event)">✕</button>
           </div>
         </div>
       </div>
@@ -824,6 +888,27 @@
   </div>
 </div>
 
+<!-- CENTRAL EDIT MODAL -->
+<div class="del-backdrop" id="centralEditModal">
+  <div class="del-modal">
+    <div class="del-header">
+      <h3>🔒 Editar Central de Alarme</h3>
+      <button class="del-close" onclick="closeCentralEditModal()">✕</button>
+    </div>
+    <div class="del-body">
+      <p class="del-warn">Acesso restrito ao administrador. Digite a senha para desbloquear a edição da foto da Central de Alarme.</p>
+      <div class="del-error" id="ceError">⚠️ Senha incorreta. Tente novamente.</div>
+      <form onsubmit="confirmCentralEdit(event)">
+        <div class="form-group">
+          <label>Senha do administrador</label>
+          <input type="password" class="form-control" id="ceInput" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-del-confirm" style="background:var(--sky);color:#0e0e0e;">🔓 Desbloquear edição</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE MODAL -->
 <div class="del-backdrop" id="deleteModal">
   <div class="del-modal">
@@ -874,9 +959,9 @@ const STORAGE_KEY  = 'fire_tests_' + EMPRESA_ID;
 const SENHA_ADMIN  = 'alarme2025'; // senha para excluir registros
 
 let tests = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-let photosTemp = { botoeira: null, central: null, sirene: null };
+let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null };
 let chartPie = null, chartBar = null;
-let pendingDeleteId = null; // id aguardando confirmação de exclusão
+let pendingDeleteId = null;
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 (function init() {
@@ -908,19 +993,57 @@ let pendingDeleteId = null; // id aguardando confirmação de exclusão
 // vincula os inputs via addEventListener (mais confiável no iOS)
 function bindPhotoInputs() {
   [
-    ['fi-botoeira', 'pd-botoeira', 'pc-botoeira', 'prev-botoeira'],
-    ['fi-central',  'pd-central',  'pc-central',  'prev-central'],
-    ['fi-sirene',   'pd-sirene',   'pc-sirene',   'prev-sirene']
+    ['fi-botoeira',    'pd-botoeira',    'pc-botoeira',    'prev-botoeira'],
+    ['fi-sirene',      'pd-sirene',      'pc-sirene',      'prev-sirene'],
+    ['fi-dispositivo', 'pd-dispositivo', 'pc-dispositivo', 'prev-dispositivo']
+    // fi-central é vinculado somente após autenticação admin
   ].forEach(([inputId, dropId, cardId, prevId]) => {
     const input = document.getElementById(inputId);
     if (!input) return;
-    // 'change' + 'input' garante disparo no iOS após câmera ou galeria
     ['change', 'input'].forEach(evt =>
       input.addEventListener(evt, function () {
         handlePhoto(this, dropId, cardId, prevId);
       }, { passive: true })
     );
   });
+}
+
+// ── CENTRAL DE ALARME (acesso restrito) ───────────────────────────────────
+let centralBound = false;
+
+function openCentralEdit() {
+  document.getElementById('ceInput').value = '';
+  document.getElementById('ceError').classList.remove('show');
+  document.getElementById('centralEditModal').classList.add('open');
+  setTimeout(() => document.getElementById('ceInput').focus(), 100);
+}
+function closeCentralEditModal() {
+  document.getElementById('centralEditModal').classList.remove('open');
+}
+function confirmCentralEdit(e) {
+  e.preventDefault();
+  if (document.getElementById('ceInput').value === SENHA_ADMIN) {
+    closeCentralEditModal();
+    unlockCentral();
+  } else {
+    const err = document.getElementById('ceError');
+    err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
+    document.getElementById('ceInput').value = '';
+    document.getElementById('ceInput').focus();
+  }
+}
+function unlockCentral() {
+  document.getElementById('pd-central').classList.remove('locked');
+  if (!centralBound) {
+    centralBound = true;
+    const input = document.getElementById('fi-central');
+    ['change', 'input'].forEach(evt =>
+      input.addEventListener(evt, function () {
+        handlePhoto(this, 'pd-central', 'pc-central', 'prev-central');
+      }, { passive: true })
+    );
+  }
+  showToast('Central desbloqueada para edição.', 'success');
 }
 
 // redimensiona via canvas — resolve fotos grandes do iPhone (HEIC→JPEG, max 1200px)
@@ -975,6 +1098,10 @@ function handlePhoto(input, dropId, cardId, prevId) {
 
 function removePhoto(inputId, dropId, cardId, prevId, e) {
   if (e) e.stopPropagation();
+  if (cardId === 'pc-central' && document.getElementById(dropId).classList.contains('locked')) {
+    showToast('Use o botão Editar para modificar a Central.', 'error');
+    return;
+  }
   const key = cardId.replace('pc-', '');
   photosTemp[key] = null;
   document.getElementById(inputId).value = '';
@@ -982,8 +1109,10 @@ function removePhoto(inputId, dropId, cardId, prevId, e) {
   prev.src = ''; prev.style.display = 'none';
   document.getElementById(cardId).classList.remove('has-image');
   const drop = document.getElementById(dropId);
-  drop.querySelector('.drop-icon').style.display = '';
-  drop.querySelector('span:not(.drop-icon)').style.display = '';
+  const icon = drop.querySelector('.drop-icon');
+  const txt  = drop.querySelector('span:not(.drop-icon):not(.lock-hint)');
+  if (icon) icon.style.display = '';
+  if (txt)  txt.style.display  = '';
 }
 
 // ── ADD TEST ───────────────────────────────────────────────────────────────
@@ -1002,7 +1131,8 @@ function addTest() {
     date, time, local,
     tecnico: document.getElementById('fTecnico').value.trim(),
     botoNum: document.getElementById('fBotoNum').value.trim(),
-    zona: document.getElementById('fZona').value.trim(),
+    zona:    document.getElementById('fZona').value.trim(),
+    tipo:    document.getElementById('fTipo').value.trim(),
     status,
     obs: document.getElementById('fObs').value.trim(),
     photos: { ...photosTemp }
@@ -1020,9 +1150,12 @@ function resetForm() {
   document.getElementById('fTecnico').value = '';
   document.getElementById('fBotoNum').value = '';
   document.getElementById('fZona').value = '';
+  document.getElementById('fTipo').value = '';
   document.getElementById('fObs').value = '';
   document.getElementById('s-ok').checked = true;
-  ['botoeira','central','sirene'].forEach(k => {
+
+  // reset fotos normais
+  ['botoeira','sirene','dispositivo'].forEach(k => {
     photosTemp[k] = null;
     const inputEl = document.getElementById('fi-'+k);
     if (inputEl) inputEl.value = '';
@@ -1032,10 +1165,23 @@ function resetForm() {
     if (card) card.classList.remove('has-image');
     const drop = document.getElementById('pd-'+k);
     if (drop) {
-      drop.querySelector('.drop-icon').style.display = '';
-      drop.querySelector('span:not(.drop-icon)').style.display = '';
+      const icon = drop.querySelector('.drop-icon');
+      const txt  = drop.querySelector('span:not(.drop-icon)');
+      if (icon) icon.style.display = '';
+      if (txt)  txt.style.display  = '';
     }
   });
+
+  // re-trava central
+  photosTemp.central = null;
+  const ciEl = document.getElementById('fi-central');
+  if (ciEl) ciEl.value = '';
+  const cprev = document.getElementById('prev-central');
+  if (cprev) { cprev.src = ''; cprev.style.display = 'none'; }
+  document.getElementById('pc-central').classList.remove('has-image');
+  document.getElementById('pd-central').classList.add('locked');
+  centralBound = false;
+
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
   document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
@@ -1067,16 +1213,18 @@ function renderList() {
           <div class="test-meta">
             <span>📅 ${formatDate(t.date)} às ${t.time}</span>
             ${t.tecnico ? `<span>👤 ${esc(t.tecnico)}</span>` : ''}
+            ${t.tipo    ? `<span>🔧 ${esc(t.tipo)}</span>`    : ''}
             ${t.botoNum ? `<span>🚨 ${esc(t.botoNum)}</span>` : ''}
-            ${t.zona ? `<span>📡 ${esc(t.zona)}</span>` : ''}
+            ${t.zona    ? `<span>📡 ${esc(t.zona)}</span>`    : ''}
           </div>
         </div>
         <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
       </div>
       <div class="test-photos">
-        ${photoSlot(t.photos.botoeira, '🚨 Botoeira')}
-        ${photoSlot(t.photos.central, '🖥️ Central')}
-        ${photoSlot(t.photos.sirene, '🔔 Sirene')}
+        ${photoSlot(t.photos.botoeira,    '🚨 Dispositivo')}
+        ${photoSlot(t.photos.central,     '🖥️ Central')}
+        ${photoSlot(t.photos.sirene,      '🔔 Sirene')}
+        ${photoSlot(t.photos.dispositivo, '📷 Atual')}
       </div>
       ${t.obs ? `<div class="test-notes"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
       <div class="test-item-actions">
@@ -1206,16 +1354,18 @@ function buildReport() {
               <div style="font-size:12px;color:var(--muted);margin-top:2px;">
                 ${formatDate(t.date)} ${t.time}
                 ${t.tecnico ? ' · ' + esc(t.tecnico) : ''}
+                ${t.tipo    ? ' · ' + esc(t.tipo)    : ''}
                 ${t.botoNum ? ' · ' + esc(t.botoNum) : ''}
-                ${t.zona ? ' · ' + esc(t.zona) : ''}
+                ${t.zona    ? ' · ' + esc(t.zona)    : ''}
               </div>
             </div>
             <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
           </div>
           <div class="report-item-photos">
-            ${reportPhoto(t.photos.botoeira, '🚨 Botoeira')}
-            ${reportPhoto(t.photos.central, '🖥️ Central')}
-            ${reportPhoto(t.photos.sirene, '🔔 Sirene')}
+            ${reportPhoto(t.photos.botoeira,    '🚨 Dispositivo')}
+            ${reportPhoto(t.photos.central,     '🖥️ Central')}
+            ${reportPhoto(t.photos.sirene,      '🔔 Sirene')}
+            ${reportPhoto(t.photos.dispositivo, '📷 Atual')}
           </div>
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
@@ -1329,7 +1479,7 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightboxImg').src = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); closeCentralEditModal(); } });
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function save() {
