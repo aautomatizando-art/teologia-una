@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0e0e0e;
@@ -1032,11 +1033,74 @@
 // ── STATE ──────────────────────────────────────────────────────────────────
 const PARAMS       = new URLSearchParams(location.search);
 const EMPRESA_ID   = PARAMS.get('empresa') || 'default';
-const EMPRESA_NOME = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
-const STORAGE_KEY  = 'fire_tests_' + EMPRESA_ID;
-const SENHA_ADMIN  = 'alarme2025'; // senha para excluir registros
+const EMPRESA_NOME  = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
+const SENHA_ADMIN   = 'alarme2025';
 
-let tests = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+const SUPA_URL = 'https://zcevjbtzucwpmioiqtis.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZXZqYnR6dWN3cG1pb2lxdGlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDg3NDQsImV4cCI6MjA5NTU4NDc0NH0.ymeNSclnQOI_Jxzm0iMayYTAzVRWffHuQakML5NyaSw';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+function rowToTest(r) {
+  return {
+    id: r.id, date: r.date, time: r.time_str,
+    local: r.local_desc, tecnico: r.tecnico || '',
+    botoNum: r.boto_num || '', zona: r.zona || '',
+    tipo: r.tipo || '', status: r.status, obs: r.obs || '',
+    photos: {
+      botoeira:    r.photo_botoeira    || null,
+      central:     r.photo_central     || null,
+      sirene:      r.photo_sirene      || null,
+      dispositivo: r.photo_dispositivo || null
+    }
+  };
+}
+
+function testToRow(t) {
+  return {
+    id: t.id, empresa_id: EMPRESA_ID,
+    date: t.date, time_str: t.time, local_desc: t.local,
+    tecnico: t.tecnico || null, boto_num: t.botoNum || null,
+    zona: t.zona || null, tipo: t.tipo || null,
+    status: t.status, obs: t.obs || null,
+    photo_botoeira:    t.photos.botoeira    || null,
+    photo_central:     t.photos.central     || null,
+    photo_sirene:      t.photos.sirene      || null,
+    photo_dispositivo: t.photos.dispositivo || null
+  };
+}
+
+async function uploadPhoto(dataUrl, testId, slot) {
+  if (!dataUrl) return null;
+  if (dataUrl.startsWith('http')) return dataUrl; // já é URL do storage
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const path = `${EMPRESA_ID}/${testId}/${slot}.jpg`;
+  const { error } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+  if (error) throw error;
+  return db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
+}
+
+async function uploadAllPhotos(photos, testId) {
+  const [botoeira, central, sirene, dispositivo] = await Promise.all([
+    uploadPhoto(photos.botoeira,    testId, 'botoeira'),
+    uploadPhoto(photos.central,     testId, 'central'),
+    uploadPhoto(photos.sirene,      testId, 'sirene'),
+    uploadPhoto(photos.dispositivo, testId, 'dispositivo')
+  ]);
+  return { botoeira, central, sirene, dispositivo };
+}
+
+async function loadTests() {
+  const { data, error } = await db.from('fire_tests')
+    .select('*').eq('empresa_id', EMPRESA_ID)
+    .order('created_at', { ascending: true });
+  if (error) { console.error(error); showToast('Erro ao carregar dados.', 'error'); return; }
+  tests = (data || []).map(rowToTest);
+  renderList();
+}
+
+let tests = [];
 let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null };
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
@@ -1062,8 +1126,16 @@ let pendingDeleteId = null;
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
   document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
-  bindPhotoInputs(); // vincula eventos de foto (iOS-safe)
-  renderList();
+  bindPhotoInputs();
+  loadTests();
+
+  // sincronização em tempo real entre dispositivos
+  db.channel('fire_tests_' + EMPRESA_ID)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'fire_tests',
+      filter: `empresa_id=eq.${EMPRESA_ID}`
+    }, () => loadTests())
+    .subscribe();
 })();
 
 // ── PHOTO HANDLING ─────────────────────────────────────────────────────────
@@ -1152,33 +1224,43 @@ function removePhoto(inputId, dropId, cardId, prevId, e) {
 }
 
 // ── ADD TEST ───────────────────────────────────────────────────────────────
-function addTest() {
-  const date = document.getElementById('fDate').value;
-  const time = document.getElementById('fTime').value;
+async function addTest() {
+  const date  = document.getElementById('fDate').value;
+  const time  = document.getElementById('fTime').value;
   const local = document.getElementById('fLocal').value.trim();
-
-  if (!date) { showToast('Informe a data do teste.', 'error'); return; }
-  if (!time) { showToast('Informe o horário do teste.', 'error'); return; }
+  if (!date)  { showToast('Informe a data do teste.', 'error'); return; }
+  if (!time)  { showToast('Informe o horário do teste.', 'error'); return; }
   if (!local) { showToast('Informe o local / pavimento.', 'error'); return; }
 
-  const status = document.querySelector('input[name="status"]:checked').value;
-  const test = {
-    id: Date.now(),
-    date, time, local,
-    tecnico: document.getElementById('fTecnico').value.trim(),
-    botoNum: document.getElementById('fBotoNum').value.trim(),
-    zona:    document.getElementById('fZona').value.trim(),
-    tipo:    document.getElementById('fTipo').value.trim(),
-    status,
-    obs: document.getElementById('fObs').value.trim(),
-    photos: { ...photosTemp }
-  };
-  tests.push(test);
-  save();
-  renderList();
-  resetForm();
-  showToast('Teste adicionado com sucesso!', 'success');
-  document.getElementById('listSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const btn = document.querySelector('.btn-primary.btn-lg');
+  btn.disabled = true;
+  btn.textContent = '⏳ Salvando…';
+
+  try {
+    const id = Date.now();
+    const photos = await uploadAllPhotos(photosTemp, id);
+    const test = {
+      id, date, time, local,
+      tecnico: document.getElementById('fTecnico').value.trim(),
+      botoNum: document.getElementById('fBotoNum').value.trim(),
+      zona:    document.getElementById('fZona').value.trim(),
+      tipo:    document.getElementById('fTipo').value.trim(),
+      status:  document.querySelector('input[name="status"]:checked').value,
+      obs:     document.getElementById('fObs').value.trim(),
+      photos
+    };
+    const { error } = await db.from('fire_tests').insert(testToRow(test));
+    if (error) throw error;
+    resetForm();
+    showToast('Teste adicionado com sucesso!', 'success');
+    document.getElementById('listSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar. Tente novamente.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '➕ Adicionar Teste';
+  }
 }
 
 function resetForm() {
@@ -1368,7 +1450,7 @@ function handleEditPhoto(input, key) {
   img.src = objUrl;
 }
 
-function saveEdit(e) {
+async function saveEdit(e) {
   e.preventDefault();
   const date  = document.getElementById('eDate').value;
   const time  = document.getElementById('eTime').value;
@@ -1377,25 +1459,32 @@ function saveEdit(e) {
   if (!time)  { showToast('Informe o horário.', 'error'); return; }
   if (!local) { showToast('Informe o local.', 'error'); return; }
 
-  const idx = tests.findIndex(t => t.id === pendingEditId);
-  if (idx < 0) return;
+  const saveBtn = document.querySelector('#editForm [type="submit"]');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '⏳ Salvando…';
 
-  tests[idx] = {
-    ...tests[idx],
-    date, time, local,
-    tecnico: document.getElementById('eTecnico').value.trim(),
-    botoNum: document.getElementById('eBotoNum').value.trim(),
-    zona:    document.getElementById('eZona').value.trim(),
-    tipo:    document.getElementById('eTipo').value.trim(),
-    status:  document.querySelector('input[name="estatus"]:checked').value,
-    obs:     document.getElementById('eObs').value.trim(),
-    photos:  { ...editPhotosTemp }
-  };
-
-  save();
-  renderList();
-  closeEditModal();
-  showToast('Registro atualizado com sucesso!', 'success');
+  try {
+    const photos = await uploadAllPhotos(editPhotosTemp, pendingEditId);
+    const updated = {
+      id: pendingEditId, date, time, local,
+      tecnico: document.getElementById('eTecnico').value.trim(),
+      botoNum: document.getElementById('eBotoNum').value.trim(),
+      zona:    document.getElementById('eZona').value.trim(),
+      tipo:    document.getElementById('eTipo').value.trim(),
+      status:  document.querySelector('input[name="estatus"]:checked').value,
+      obs:     document.getElementById('eObs').value.trim(),
+      photos
+    };
+    const { error } = await db.from('fire_tests').update(testToRow(updated)).eq('id', pendingEditId);
+    if (error) throw error;
+    closeEditModal();
+    showToast('Registro atualizado com sucesso!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar. Tente novamente.', 'error');
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Salvar alterações';
+  }
 }
 
 function closeEditModal() {
@@ -1414,14 +1503,23 @@ function deleteTest(id) {
   setTimeout(() => document.getElementById('delInput').focus(), 100);
 }
 
-function confirmDelete(e) {
+async function confirmDelete(e) {
   if (e) e.preventDefault();
   if (document.getElementById('delInput').value === SENHA_ADMIN) {
-    tests = tests.filter(t => t.id !== pendingDeleteId);
-    save();
-    renderList();
-    closeDeleteModal();
-    showToast('Registro excluído.', 'success');
+    try {
+      // remove fotos do storage
+      await db.storage.from('fire-photos').remove(
+        ['botoeira','central','sirene','dispositivo']
+          .map(s => `${EMPRESA_ID}/${pendingDeleteId}/${s}.jpg`)
+      );
+      const { error } = await db.from('fire_tests').delete().eq('id', pendingDeleteId);
+      if (error) throw error;
+      closeDeleteModal();
+      showToast('Registro excluído.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao excluir.', 'error');
+    }
   } else {
     const err = document.getElementById('delError');
     err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
@@ -1435,13 +1533,17 @@ function closeDeleteModal() {
   pendingDeleteId = null;
 }
 
-function clearAll() {
+async function clearAll() {
   if (tests.length === 0) return;
   if (!confirm('Excluir TODOS os registros? Esta ação não pode ser desfeita.')) return;
-  tests = [];
-  save();
-  renderList();
-  showToast('Todos os registros foram removidos.', 'success');
+  try {
+    const { error } = await db.from('fire_tests').delete().eq('empresa_id', EMPRESA_ID);
+    if (error) throw error;
+    showToast('Todos os registros foram removidos.', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao limpar registros.', 'error');
+  }
 }
 
 // ── REPORT ─────────────────────────────────────────────────────────────────
@@ -1636,10 +1738,6 @@ function closeLightbox() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); closeEditModal(); } });
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tests));
-}
-
 function formatDate(d) {
   if (!d) return '';
   const [y,m,day] = d.split('-');
