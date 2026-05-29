@@ -618,7 +618,18 @@
 
   /* ── PRINT ── */
   @media print {
-    body { background: #fff; color: #111; }
+    /* Override all CSS variables to light theme */
+    :root {
+      --bg:     #ffffff !important;
+      --bg2:    #f7f7f7 !important;
+      --bg3:    #f0f0f0 !important;
+      --bg4:    #e8e8e8 !important;
+      --border: #d0d0d0 !important;
+      --text:   #111111 !important;
+      --muted:  #555555 !important;
+    }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: #fff !important; color: #111 !important; }
     main, .site-header, .modal-close, .btn, .form-actions { display: none !important; }
     .modal-backdrop {
       position: static !important;
@@ -628,18 +639,43 @@
       display: block !important;
     }
     .modal {
+      background: #fff !important;
+      color: #111 !important;
       box-shadow: none !important;
       border: none !important;
       max-width: 100% !important;
       animation: none !important;
     }
-    .stat-card, .chart-card, .report-item { background: #f8f8f8; border-color: #ddd; }
-    .stat-card .stat-value { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .modal-header, .modal-body, .report-footer {
+      background: #fff !important;
+      color: #111 !important;
+      border-color: #d0d0d0 !important;
+    }
+    .modal-header h2, .modal-header p, .report-stamp { color: #111 !important; }
+    .stat-card, .chart-card, .report-item {
+      background: #f0f0f0 !important;
+      border-color: #d0d0d0 !important;
+      color: #111 !important;
+    }
+    .stat-card .stat-label, .chart-card h4 { color: #555 !important; }
     .chart-wrapper { height: 180px; }
-    .report-item.ok    { border-left: 3px solid #4ade80; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .report-item.falha { border-left: 3px solid #ff3577; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .progress-pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .report-item.ok    { border-left: 3px solid #16a34a !important; }
+    .report-item.falha { border-left: 3px solid #dc2626 !important; }
+    .report-item-head  { border-color: #d0d0d0 !important; background: #f0f0f0 !important; color: #111 !important; }
+    .report-photo      { background: #e8e8e8 !important; }
+    .report-photo .rp-label { color: #555 !important; border-color: #d0d0d0 !important; }
+    .report-notes-row  { color: #555 !important; }
+    .progress-pill     { background: #e8e8e8 !important; border-color: #aaa !important; color: #111 !important; }
+    .progress-pill.ok  { border-color: #16a34a !important; color: #16a34a !important; }
+    .progress-pill.warn  { border-color: #b45309 !important; color: #b45309 !important; }
+    .progress-pill.danger{ border-color: #dc2626 !important; color: #dc2626 !important; }
+    .status-badge { background: transparent !important; }
+    .status-badge.ok   { background: #dcfce7 !important; color: #16a34a !important; border-color: #16a34a !important; }
+    .status-badge.falha{ background: #fee2e2 !important; color: #dc2626 !important; border-color: #dc2626 !important; }
+    .stat-total .stat-value { color: #0284c7 !important; }
+    .stat-ok .stat-value    { color: #16a34a !important; }
+    .stat-fail .stat-value  { color: #dc2626 !important; }
+    .stat-rate .stat-value  { color: #15803d !important; }
     .report-footer { display: flex !important; }
     .del-backdrop { display: none !important; }
   }
