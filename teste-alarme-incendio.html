@@ -737,7 +737,13 @@
       </div>
       <div class="form-group">
         <label>Central Fabricante</label>
-        <span id="ssCentralFabricante" style="font-size:14px;font-weight:600;color:var(--sky);padding-top:4px;display:block;">ILUMAC CAE-500 XMAX</span>
+        <select class="form-control" id="ssCentralFabricante">
+          <option value="">Selecione…</option>
+          <option value="ILUMAC CAE-500 XMAX">ILUMAC CAE-500 XMAX</option>
+          <option value="INTELBRAS CIE1125">INTELBRAS CIE1125</option>
+          <option value="VERIN VRE-250P">VERIN VRE-250P</option>
+          <option value="ASCAEL 24/16">ASCAEL 24/16</option>
+        </select>
       </div>
       <div class="form-group" style="grid-column:span 2">
         <label>Responsável Acompanhando os Testes</label>
@@ -1622,6 +1628,7 @@ async function loadSessionStart() {
     document.getElementById('ssCelular').value     = s.celular   || '';
     document.getElementById('ssStatusCentral').value      = s.status_central      || '';
     document.getElementById('ssStatusDispositivos').value = s.status_dispositivos || '';
+    document.getElementById('ssCentralFabricante').value  = s.central_fabricante  || '';
     document.getElementById('ssObs').value         = s.obs       || '';
     if (s.foto_central) {
       ssPhotoTemp = s.foto_central;
@@ -1663,6 +1670,7 @@ async function saveSessionStart() {
       celular:     document.getElementById('ssCelular').value.trim(),
       status_central:      document.getElementById('ssStatusCentral').value,
       status_dispositivos: document.getElementById('ssStatusDispositivos').value,
+      central_fabricante: document.getElementById('ssCentralFabricante').value,
       foto_central: fotoUrl || null,
       obs:          document.getElementById('ssObs').value.trim()
     };
@@ -2319,7 +2327,7 @@ function buildReport() {
   const ssDisp        = document.getElementById('ssStatusDispositivos').value;
   const ssObsVal      = document.getElementById('ssObs').value.trim();
   const ssFoto        = ssPhotoTemp;
-  const ssFabricante  = (document.getElementById('ssCentralFabricante') || {}).textContent || '—';
+  const ssFabricante  = (document.getElementById('ssCentralFabricante') || {}).value || '—';
 
   const sessionHTML = `
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">🔍 Status Início de Teste</div>
