@@ -2537,7 +2537,57 @@ function buildReport() {
       ${ftPhotosTemp.dc      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${ftPhotosTemp.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
     </div>`;
 
-  document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML + finalizacaoHTML;
+  const signatureHTML = `
+    <div style="margin-top:32px;border-top:2px solid #CC1500;padding-top:20px;">
+
+      <!-- Logos + título -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;">
+        <img src="prohidlogo.png" alt="Pro Hid" style="height:48px;object-fit:contain;">
+        <div style="text-align:center;flex:1;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#CC1500;">Responsável Técnico pelo Serviço</div>
+        </div>
+        <img src="crea.jpg" alt="CREA" style="height:48px;object-fit:contain;">
+      </div>
+
+      <!-- Empresa -->
+      <div style="background:#f5f5f5;border-left:4px solid #CC1500;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:4px;">Empresa Responsável</div>
+        <div style="font-size:13px;font-weight:800;color:#111;line-height:1.4;">MAIA &amp; LEITE INSTALAÇÕES E MANUTENÇÃO INDUSTRIAL LTDA ME</div>
+      </div>
+
+      <!-- Grid: técnicos + representantes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+
+        <!-- Técnicos -->
+        <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:8px;">👷 Técnicos Executores</div>
+          <div style="font-size:12px;font-weight:700;color:#111;margin-bottom:4px;">Alexsandro Fco Rodrigues</div>
+          <div style="font-size:12px;font-weight:700;color:#111;">Antônio Francisco</div>
+        </div>
+
+        <!-- Representantes -->
+        <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:8px;">🏗️ Representantes Técnicos</div>
+          <div style="margin-bottom:6px;">
+            <div style="font-size:12px;font-weight:700;color:#111;">Juscelino Rosa Leite</div>
+            <div style="font-size:10px;color:#555;">Eng. Civil &amp; Eng. Seg. do Trabalho</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#111;">Harley Washington A. Ferreira</div>
+            <div style="font-size:10px;color:#555;">Eng. Civil &amp; Eng. Seg. do Trabalho</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ART -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;background:#111;border-radius:8px;padding:10px 16px;">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#aaa;">Nº ART</span>
+        <span style="font-size:15px;font-weight:900;color:#CC1500;font-family:'Fira Code',monospace;letter-spacing:.08em;">2620260043644</span>
+      </div>
+
+    </div>`;
+
+  document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML + finalizacaoHTML + signatureHTML;
 
   // bind lightbox on report photos
   document.querySelectorAll('.rp-img img').forEach(img => {
