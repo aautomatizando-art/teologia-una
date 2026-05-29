@@ -226,16 +226,15 @@
     transition:var(--transition);
   }
   .edit-photo-thumb:hover { border-color:var(--sky); }
-  .edit-photo-thumb input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; z-index:3; }
   .edit-photo-thumb .eth-label { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); text-align:center; padding:4px; z-index:1; }
   .edit-photo-thumb .eth-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-  .edit-photo-thumb .eth-overlay {
-    position:absolute; inset:0; background:rgba(0,0,0,.55);
-    display:none; align-items:center; justify-content:center;
-    font-size:11px; font-weight:700; color:#fff; z-index:2;
-    pointer-events:none; /* deixa cliques passarem para o input */
+  .eth-src-btns { display:flex; gap:3px; z-index:2; }
+  .eth-src-btn {
+    background:rgba(0,0,0,.7); border:1px solid rgba(255,255,255,.15);
+    border-radius:10px; padding:3px 7px; font-size:13px;
+    cursor:pointer; transition:var(--transition);
   }
-  .edit-photo-thumb:hover .eth-overlay { display:flex; }
+  .eth-src-btn:hover { border-color:var(--lime); }
 
   .photo-drop {
     position: relative;
@@ -253,10 +252,15 @@
     overflow: hidden;
   }
   .photo-drop:hover { background: #2c2c2c; color: var(--text); }
-  .photo-drop input[type="file"] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
   .photo-drop .drop-icon { font-size: 32px; opacity: .5; }
+  .photo-src-btns { display:flex; gap:6px; justify-content:center; z-index:1; }
+  .photo-src-btn {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:20px; padding:6px 12px; font-size:12px; font-weight:700;
+    color:var(--text); cursor:pointer; transition:var(--transition);
+  }
+  .photo-src-btn:hover { border-color:var(--lime); color:var(--lime); }
+  .photo-card.has-image .photo-src-btns { display:none; }
   .photo-drop img.preview {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
@@ -751,11 +755,15 @@
             </div>
           </div>
           <div class="photo-drop" id="pd-dispositivo">
-            <input type="file" id="fi-dispositivo" accept="image/*">
+            <input type="file" id="fi-dispositivo-cam" accept="image/*" capture="environment" style="display:none">
+            <input type="file" id="fi-dispositivo-gal" accept="image/*" style="display:none">
             <span class="drop-icon">📤</span>
-            <span>Toque para adicionar foto</span>
+            <div class="photo-src-btns">
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-dispositivo-cam').click()">📷 Câmera</button>
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-dispositivo-gal').click()">🖼️ Galeria</button>
+            </div>
             <img class="preview" id="prev-dispositivo" style="display:none;">
-            <button class="remove-btn" onclick="removePhoto('fi-dispositivo','pd-dispositivo','pc-dispositivo','prev-dispositivo',event)">✕</button>
+            <button class="remove-btn" onclick="removePhoto('dispositivo','pd-dispositivo','pc-dispositivo','prev-dispositivo',event)">✕</button>
           </div>
         </div>
         <!-- 2. DISPOSITIVO ACIONADO -->
@@ -767,11 +775,15 @@
             </div>
           </div>
           <div class="photo-drop" id="pd-botoeira">
-            <input type="file" id="fi-botoeira" accept="image/*">
+            <input type="file" id="fi-botoeira-cam" accept="image/*" capture="environment" style="display:none">
+            <input type="file" id="fi-botoeira-gal" accept="image/*" style="display:none">
             <span class="drop-icon">📤</span>
-            <span>Toque para adicionar foto</span>
+            <div class="photo-src-btns">
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-botoeira-cam').click()">📷 Câmera</button>
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-botoeira-gal').click()">🖼️ Galeria</button>
+            </div>
             <img class="preview" id="prev-botoeira" style="display:none;">
-            <button class="remove-btn" onclick="removePhoto('fi-botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
+            <button class="remove-btn" onclick="removePhoto('botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
           </div>
         </div>
         <!-- 3. CENTRAL -->
@@ -783,11 +795,15 @@
             </div>
           </div>
           <div class="photo-drop" id="pd-central">
-            <input type="file" id="fi-central" accept="image/*">
+            <input type="file" id="fi-central-cam" accept="image/*" capture="environment" style="display:none">
+            <input type="file" id="fi-central-gal" accept="image/*" style="display:none">
             <span class="drop-icon">📤</span>
-            <span>Toque para adicionar foto</span>
+            <div class="photo-src-btns">
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-central-cam').click()">📷 Câmera</button>
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-central-gal').click()">🖼️ Galeria</button>
+            </div>
             <img class="preview" id="prev-central" style="display:none;">
-            <button class="remove-btn" onclick="removePhoto('fi-central','pd-central','pc-central','prev-central',event)">✕</button>
+            <button class="remove-btn" onclick="removePhoto('central','pd-central','pc-central','prev-central',event)">✕</button>
           </div>
         </div>
         <!-- 4. SIRENE -->
@@ -799,11 +815,15 @@
             </div>
           </div>
           <div class="photo-drop" id="pd-sirene">
-            <input type="file" id="fi-sirene" accept="image/*">
+            <input type="file" id="fi-sirene-cam" accept="image/*" capture="environment" style="display:none">
+            <input type="file" id="fi-sirene-gal" accept="image/*" style="display:none">
             <span class="drop-icon">📤</span>
-            <span>Toque para adicionar foto</span>
+            <div class="photo-src-btns">
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-sirene-cam').click()">📷 Câmera</button>
+              <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-sirene-gal').click()">🖼️ Galeria</button>
+            </div>
             <img class="preview" id="prev-sirene" style="display:none;">
-            <button class="remove-btn" onclick="removePhoto('fi-sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
+            <button class="remove-btn" onclick="removePhoto('sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
           </div>
         </div>
       </div>
@@ -962,24 +982,40 @@
           <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">📷 Fotos — clique para trocar</p>
           <div class="edit-photos-grid">
             <div class="edit-photo-thumb" id="eth-dispositivo">
-              <input type="file" id="efi-dispositivo" accept="image/*">
+              <input type="file" id="efi-dispositivo-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="efi-dispositivo-gal" accept="image/*" style="display:none">
               <span class="eth-label">📷 Atual</span>
-              <span class="eth-overlay">Trocar</span>
+              <div class="eth-src-btns">
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-dispositivo-cam').click()">📷</button>
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-dispositivo-gal').click()">🖼️</button>
+              </div>
             </div>
             <div class="edit-photo-thumb" id="eth-botoeira">
-              <input type="file" id="efi-botoeira" accept="image/*">
+              <input type="file" id="efi-botoeira-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="efi-botoeira-gal" accept="image/*" style="display:none">
               <span class="eth-label">🚨 Dispositivo</span>
-              <span class="eth-overlay">Trocar</span>
+              <div class="eth-src-btns">
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-botoeira-cam').click()">📷</button>
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-botoeira-gal').click()">🖼️</button>
+              </div>
             </div>
             <div class="edit-photo-thumb" id="eth-central">
-              <input type="file" id="efi-central" accept="image/*">
+              <input type="file" id="efi-central-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="efi-central-gal" accept="image/*" style="display:none">
               <span class="eth-label">🖥️ Central</span>
-              <span class="eth-overlay">Trocar</span>
+              <div class="eth-src-btns">
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-central-cam').click()">📷</button>
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-central-gal').click()">🖼️</button>
+              </div>
             </div>
             <div class="edit-photo-thumb" id="eth-sirene">
-              <input type="file" id="efi-sirene" accept="image/*">
+              <input type="file" id="efi-sirene-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="efi-sirene-gal" accept="image/*" style="display:none">
               <span class="eth-label">🔔 Sirene</span>
-              <span class="eth-overlay">Trocar</span>
+              <div class="eth-src-btns">
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-sirene-cam').click()">📷</button>
+                <button type="button" class="eth-src-btn" onclick="document.getElementById('efi-sirene-gal').click()">🖼️</button>
+              </div>
             </div>
           </div>
           <button type="submit" class="btn-del-confirm" style="background:var(--lime);color:#0e0e0e;">💾 Salvar alterações</button>
@@ -1144,18 +1180,20 @@ let pendingDeleteId = null;
 // vincula os inputs via addEventListener (mais confiável no iOS)
 function bindPhotoInputs() {
   [
-    ['fi-botoeira',    'pd-botoeira',    'pc-botoeira',    'prev-botoeira'],
-    ['fi-central',     'pd-central',     'pc-central',     'prev-central'],
-    ['fi-sirene',      'pd-sirene',      'pc-sirene',      'prev-sirene'],
-    ['fi-dispositivo', 'pd-dispositivo', 'pc-dispositivo', 'prev-dispositivo']
-  ].forEach(([inputId, dropId, cardId, prevId]) => {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    ['change', 'input'].forEach(evt =>
-      input.addEventListener(evt, function () {
-        handlePhoto(this, dropId, cardId, prevId);
-      }, { passive: true })
-    );
+    ['botoeira',    'pd-botoeira',    'pc-botoeira',    'prev-botoeira'],
+    ['central',     'pd-central',     'pc-central',     'prev-central'],
+    ['sirene',      'pd-sirene',      'pc-sirene',      'prev-sirene'],
+    ['dispositivo', 'pd-dispositivo', 'pc-dispositivo', 'prev-dispositivo']
+  ].forEach(([slot, dropId, cardId, prevId]) => {
+    ['fi-'+slot+'-cam', 'fi-'+slot+'-gal'].forEach(inputId => {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      ['change', 'input'].forEach(evt =>
+        input.addEventListener(evt, function () {
+          handlePhoto(this, dropId, cardId, prevId);
+        }, { passive: true })
+      );
+    });
   });
 }
 
@@ -1209,19 +1247,18 @@ function handlePhoto(input, dropId, cardId, prevId) {
   img.src = objUrl;
 }
 
-function removePhoto(inputId, dropId, cardId, prevId, e) {
+function removePhoto(slotKey, dropId, cardId, prevId, e) {
   if (e) e.stopPropagation();
   const key = cardId.replace('pc-', '');
   photosTemp[key] = null;
-  document.getElementById(inputId).value = '';
+  ['fi-'+slotKey+'-cam', 'fi-'+slotKey+'-gal'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   const prev = document.getElementById(prevId);
   prev.src = ''; prev.style.display = 'none';
   document.getElementById(cardId).classList.remove('has-image');
-  const drop = document.getElementById(dropId);
-  const icon = drop.querySelector('.drop-icon');
-  const txt  = drop.querySelector('span:not(.drop-icon)');
+  const icon = document.getElementById(dropId).querySelector('.drop-icon');
   if (icon) icon.style.display = '';
-  if (txt)  txt.style.display  = '';
 }
 
 // ── ADD TEST ───────────────────────────────────────────────────────────────
@@ -1413,13 +1450,16 @@ function fillEditForm(test) {
       img.src = editPhotosTemp[k];
       thumb.insertBefore(img, thumb.querySelector('input'));
     }
-    // rebind file input (clone to remove old listeners)
-    const oldInput = document.getElementById('efi-' + k);
-    const fresh = oldInput.cloneNode(true);
-    oldInput.parentNode.replaceChild(fresh, oldInput);
-    ['change','input'].forEach(evt =>
-      fresh.addEventListener(evt, function() { handleEditPhoto(this, k); }, { passive: true })
-    );
+    // rebind both file inputs (clone to remove old listeners)
+    ['efi-'+k+'-cam', 'efi-'+k+'-gal'].forEach(inputId => {
+      const oldInput = document.getElementById(inputId);
+      if (!oldInput) return;
+      const fresh = oldInput.cloneNode(true);
+      oldInput.parentNode.replaceChild(fresh, oldInput);
+      ['change','input'].forEach(evt =>
+        fresh.addEventListener(evt, function() { handleEditPhoto(this, k); }, { passive: true })
+      );
+    });
   });
 
   const idx = tests.findIndex(t => t.id === pendingEditId);
