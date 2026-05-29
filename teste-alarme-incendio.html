@@ -2370,7 +2370,30 @@ function buildReport() {
       `).join('')}
     </div>`;
 
-  document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML;
+  // finalização de teste
+  const ftCentral = document.getElementById('ftStatusCentral').value;
+  const ftDisp    = document.getElementById('ftStatusDispositivos').value;
+  const ftObsVal  = document.getElementById('ftObs').value.trim();
+  const ftDateVal = document.getElementById('ftDate').value;
+  const ftTimeVal = document.getElementById('ftTime').value;
+
+  const finalizacaoHTML = `
+    <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">
+    <div class="section-title" style="font-size:15px;margin-bottom:16px;">✅ Finalização de Teste</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;">
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Data</div><div style="font-weight:600;">${ftDateVal ? formatDate(ftDateVal) : '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Hora</div><div style="font-weight:600;">${ftTimeVal || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status da Central</div><div style="font-weight:600;">${esc(ftCentral) || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status dos Dispositivos</div><div style="font-weight:600;">${esc(ftDisp) || '—'}</div></div>
+    </div>
+    ${ftObsVal ? `<div style="margin-bottom:14px;font-size:13px;"><strong>Obs:</strong> ${esc(ftObsVal)}</div>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:8px;">
+      ${ftPhotosTemp.central ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ftPhotosTemp.central}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.ac      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">⚡ Medição Alimentação AC</div><img src="${ftPhotosTemp.ac}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.dc      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${ftPhotosTemp.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+    </div>`;
+
+  document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML + finalizacaoHTML;
 
   // bind lightbox on report photos
   document.querySelectorAll('.rp-img img').forEach(img => {
