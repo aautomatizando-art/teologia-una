@@ -737,7 +737,7 @@
       </div>
       <div class="form-group">
         <label>Central Fabricante</label>
-        <span style="font-size:14px;font-weight:600;color:var(--sky);padding-top:4px;display:block;">ILUMAC CAE-500 XMAX</span>
+        <span id="ssCentralFabricante" style="font-size:14px;font-weight:600;color:var(--sky);padding-top:4px;display:block;">ILUMAC CAE-500 XMAX</span>
       </div>
       <div class="form-group" style="grid-column:span 2">
         <label>Responsável Acompanhando os Testes</label>
@@ -2077,15 +2077,16 @@ function buildReport() {
   }
 
   // session start
-  const ssDate     = document.getElementById('ssDate').value;
-  const ssTime     = document.getElementById('ssTime').value;
-  const ssResp     = document.getElementById('ssResponsavel').value.trim();
-  const ssCpf      = document.getElementById('ssCpf').value.trim();
-  const ssCel      = document.getElementById('ssCelular').value.trim();
-  const ssCentral  = document.getElementById('ssStatusCentral').value;
-  const ssDisp     = document.getElementById('ssStatusDispositivos').value;
-  const ssObsVal   = document.getElementById('ssObs').value.trim();
-  const ssFoto     = ssPhotoTemp;
+  const ssDate        = document.getElementById('ssDate').value;
+  const ssTime        = document.getElementById('ssTime').value;
+  const ssResp        = document.getElementById('ssResponsavel').value.trim();
+  const ssCpf         = document.getElementById('ssCpf').value.trim();
+  const ssCel         = document.getElementById('ssCelular').value.trim();
+  const ssCentral     = document.getElementById('ssStatusCentral').value;
+  const ssDisp        = document.getElementById('ssStatusDispositivos').value;
+  const ssObsVal      = document.getElementById('ssObs').value.trim();
+  const ssFoto        = ssPhotoTemp;
+  const ssFabricante  = (document.getElementById('ssCentralFabricante') || {}).textContent || '—';
 
   const sessionHTML = `
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">🔍 Status Início de Teste</div>
@@ -2097,6 +2098,7 @@ function buildReport() {
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Responsável Acompanhando</div><div style="font-weight:600;">${esc(ssResp) || '—'}</div></div>
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">CPF</div><div style="font-weight:600;">${esc(ssCpf) || '—'}</div></div>
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Celular</div><div style="font-weight:600;">${esc(ssCel) || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Central Fabricante</div><div style="font-weight:600;">${esc(ssFabricante)}</div></div>
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status da Central</div><div style="font-weight:600;">${esc(ssCentral) || '—'}</div></div>
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status dos Dispositivos</div><div style="font-weight:600;">${esc(ssDisp) || '—'}</div></div>
     </div>
