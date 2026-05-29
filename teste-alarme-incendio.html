@@ -226,13 +226,14 @@
     transition:var(--transition);
   }
   .edit-photo-thumb:hover { border-color:var(--sky); }
-  .edit-photo-thumb input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .edit-photo-thumb input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; z-index:3; }
   .edit-photo-thumb .eth-label { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--muted); text-align:center; padding:4px; z-index:1; }
-  .edit-photo-thumb .eth-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .edit-photo-thumb .eth-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
   .edit-photo-thumb .eth-overlay {
     position:absolute; inset:0; background:rgba(0,0,0,.55);
     display:none; align-items:center; justify-content:center;
     font-size:11px; font-weight:700; color:#fff; z-index:2;
+    pointer-events:none; /* deixa cliques passarem para o input */
   }
   .edit-photo-thumb:hover .eth-overlay { display:flex; }
 
@@ -741,7 +742,23 @@
       <hr class="divider" style="margin: 24px 0;">
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">📷 Evidências Fotográficas</p>
       <div class="photos-grid">
-        <!-- DISPOSITIVO ACIONADO -->
+        <!-- 1. DISPOSITIVO ATUAL -->
+        <div class="photo-card" id="pc-dispositivo">
+          <div class="photo-header">
+            <div class="photo-label">
+              <div class="icon icon-dispositivo">📷</div>
+              Dispositivo Atual
+            </div>
+          </div>
+          <div class="photo-drop" id="pd-dispositivo">
+            <input type="file" id="fi-dispositivo" accept="image/*">
+            <span class="drop-icon">📤</span>
+            <span>Toque para adicionar foto</span>
+            <img class="preview" id="prev-dispositivo" style="display:none;">
+            <button class="remove-btn" onclick="removePhoto('fi-dispositivo','pd-dispositivo','pc-dispositivo','prev-dispositivo',event)">✕</button>
+          </div>
+        </div>
+        <!-- 2. DISPOSITIVO ACIONADO -->
         <div class="photo-card" id="pc-botoeira">
           <div class="photo-header">
             <div class="photo-label">
@@ -757,7 +774,7 @@
             <button class="remove-btn" onclick="removePhoto('fi-botoeira','pd-botoeira','pc-botoeira','prev-botoeira',event)">✕</button>
           </div>
         </div>
-        <!-- CENTRAL -->
+        <!-- 3. CENTRAL -->
         <div class="photo-card" id="pc-central">
           <div class="photo-header">
             <div class="photo-label">
@@ -773,7 +790,7 @@
             <button class="remove-btn" onclick="removePhoto('fi-central','pd-central','pc-central','prev-central',event)">✕</button>
           </div>
         </div>
-        <!-- SIRENE -->
+        <!-- 4. SIRENE -->
         <div class="photo-card" id="pc-sirene">
           <div class="photo-header">
             <div class="photo-label">
@@ -787,22 +804,6 @@
             <span>Toque para adicionar foto</span>
             <img class="preview" id="prev-sirene" style="display:none;">
             <button class="remove-btn" onclick="removePhoto('fi-sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
-          </div>
-        </div>
-        <!-- DISPOSITIVO ATUAL -->
-        <div class="photo-card" id="pc-dispositivo">
-          <div class="photo-header">
-            <div class="photo-label">
-              <div class="icon icon-dispositivo">📷</div>
-              Dispositivo Atual
-            </div>
-          </div>
-          <div class="photo-drop" id="pd-dispositivo">
-            <input type="file" id="fi-dispositivo" accept="image/*">
-            <span class="drop-icon">📤</span>
-            <span>Toque para adicionar foto</span>
-            <img class="preview" id="prev-dispositivo" style="display:none;">
-            <button class="remove-btn" onclick="removePhoto('fi-dispositivo','pd-dispositivo','pc-dispositivo','prev-dispositivo',event)">✕</button>
           </div>
         </div>
       </div>
@@ -960,6 +961,11 @@
           </div>
           <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">📷 Fotos — clique para trocar</p>
           <div class="edit-photos-grid">
+            <div class="edit-photo-thumb" id="eth-dispositivo">
+              <input type="file" id="efi-dispositivo" accept="image/*">
+              <span class="eth-label">📷 Atual</span>
+              <span class="eth-overlay">Trocar</span>
+            </div>
             <div class="edit-photo-thumb" id="eth-botoeira">
               <input type="file" id="efi-botoeira" accept="image/*">
               <span class="eth-label">🚨 Dispositivo</span>
@@ -973,11 +979,6 @@
             <div class="edit-photo-thumb" id="eth-sirene">
               <input type="file" id="efi-sirene" accept="image/*">
               <span class="eth-label">🔔 Sirene</span>
-              <span class="eth-overlay">Trocar</span>
-            </div>
-            <div class="edit-photo-thumb" id="eth-dispositivo">
-              <input type="file" id="efi-dispositivo" accept="image/*">
-              <span class="eth-label">📷 Atual</span>
               <span class="eth-overlay">Trocar</span>
             </div>
           </div>
@@ -1328,10 +1329,10 @@ function renderList() {
         <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
       </div>
       <div class="test-photos">
+        ${photoSlot(t.photos.dispositivo, '📷 Atual')}
         ${photoSlot(t.photos.botoeira,    '🚨 Dispositivo')}
         ${photoSlot(t.photos.central,     '🖥️ Central')}
         ${photoSlot(t.photos.sirene,      '🔔 Sirene')}
-        ${photoSlot(t.photos.dispositivo, '📷 Atual')}
       </div>
       ${t.obs ? `<div class="test-notes"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
       <div class="test-item-actions">
@@ -1618,10 +1619,10 @@ function buildReport() {
             <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
           </div>
           <div class="report-item-photos">
+            ${reportPhoto(t.photos.dispositivo, '📷 Atual')}
             ${reportPhoto(t.photos.botoeira,    '🚨 Dispositivo')}
             ${reportPhoto(t.photos.central,     '🖥️ Central')}
             ${reportPhoto(t.photos.sirene,      '🔔 Sirene')}
-            ${reportPhoto(t.photos.dispositivo, '📷 Atual')}
           </div>
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
