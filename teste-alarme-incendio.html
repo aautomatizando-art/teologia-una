@@ -314,12 +314,14 @@
     color: var(--muted);
     user-select: none;
   }
-  .status-toggle input[value="ok"]:checked + label {
+  .status-toggle input[value="ok"]:checked + label,
+  .status-toggle input[value="sirene-ok"]:checked + label {
     background: var(--ok);
     color: #0e0e0e;
     box-shadow: 0 2px 12px rgba(74,222,128,.3);
   }
-  .status-toggle input[value="falha"]:checked + label {
+  .status-toggle input[value="falha"]:checked + label,
+  .status-toggle input[value="falha-sirene"]:checked + label {
     background: var(--fail);
     color: #fff;
     box-shadow: 0 2px 12px rgba(255,53,119,.3);
@@ -991,9 +993,13 @@
         <span class="status-label">Resultado do teste <span style="color:var(--rose)">*</span></span>
         <div class="status-toggle">
           <input type="radio" name="status" id="s-ok" value="ok" checked>
-          <label for="s-ok">✅ Funcionamento OK</label>
+          <label for="s-ok">✅ Botoeira OK</label>
+          <input type="radio" name="status" id="s-sirene-ok" value="sirene-ok">
+          <label for="s-sirene-ok">✅ Sirene OK</label>
           <input type="radio" name="status" id="s-fail" value="falha">
-          <label for="s-fail">❌ Falha</label>
+          <label for="s-fail">❌ Falha na Botoeira</label>
+          <input type="radio" name="status" id="s-fail-sirene" value="falha-sirene">
+          <label for="s-fail-sirene">❌ Falha na Sirene</label>
         </div>
       </div>
 
@@ -1250,9 +1256,13 @@
             <span class="status-label">Resultado</span>
             <div class="status-toggle">
               <input type="radio" name="estatus" id="es-ok" value="ok">
-              <label for="es-ok">✅ Funcionamento OK</label>
+              <label for="es-ok">✅ Botoeira OK</label>
+              <input type="radio" name="estatus" id="es-sirene-ok" value="sirene-ok">
+              <label for="es-sirene-ok">✅ Sirene OK</label>
               <input type="radio" name="estatus" id="es-fail" value="falha">
-              <label for="es-fail">❌ Falha</label>
+              <label for="es-fail">❌ Falha na Botoeira</label>
+              <input type="radio" name="estatus" id="es-fail-sirene" value="falha-sirene">
+              <label for="es-fail-sirene">❌ Falha na Sirene</label>
             </div>
           </div>
           <div class="form-group" style="margin-bottom:14px;">
@@ -1353,6 +1363,15 @@ const EMPRESA_ID   = PARAMS.get('empresa') || 'default';
 const EMPRESA_NOME  = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
 const SENHA_ADMIN   = 'volt';
 const READ_ONLY     = sessionStorage.getItem('fire_company_' + EMPRESA_ID + '_readonly') === '1';
+
+function isOkStatus(s)  { return s === 'ok' || s === 'sirene-ok'; }
+function statusCls(s)   { return isOkStatus(s) ? 'ok' : 'falha'; }
+function statusLabel(s) {
+  if (s === 'sirene-ok')    return '✅ Sirene OK';
+  if (s === 'falha-sirene') return '❌ Falha na Sirene';
+  if (s === 'falha')        return '❌ Falha na Botoeira';
+  return '✅ Botoeira OK';
+}
 
 const EMPRESA_TOTAL = {
   'essilor-campinas':  139,
@@ -1969,7 +1988,7 @@ function renderList() {
   }
 
   container.innerHTML = '<div class="tests-list">' + tests.map((t, i) => `
-    <div class="test-item status-${t.status}" id="ti-${t.id}">
+    <div class="test-item status-${statusCls(t.status)}" id="ti-${t.id}">
       <div class="test-item-header">
         <span class="test-num">#${String(i+1).padStart(2,'0')}</span>
         <div class="test-info">
@@ -1982,7 +2001,7 @@ function renderList() {
             ${t.zona    ? `<span>📡 ${esc(t.zona)}</span>`    : ''}
           </div>
         </div>
-        <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
+        <span class="status-badge ${statusCls(t.status)}">${statusLabel(t.status)}</span>
       </div>
       <div class="test-photos">
         ${photoSlot(t.photos.dispositivo, '📷 Atual')}
@@ -2135,7 +2154,7 @@ function fillEditForm(test) {
   document.getElementById('eZona').value    = test.zona    || '';
   document.getElementById('eTipo').value    = test.tipo    || '';
   document.getElementById('eObs').value     = test.obs     || '';
-  document.getElementById(test.status === 'ok' ? 'es-ok' : 'es-fail').checked = true;
+  (document.getElementById('es-' + test.status) || document.getElementById('es-fail')).checked = true;
 
   editPhotosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, ...(test.photos || {}) };
 
@@ -2306,7 +2325,7 @@ function closeReport() {
 
 function buildReport() {
   const total = tests.length;
-  const okCount = tests.filter(t => t.status === 'ok').length;
+  const okCount = tests.filter(t => isOkStatus(t.status)).length;
   const failCount = total - okCount;
   const rate = total ? Math.round((okCount / total) * 100) : 0;
 
@@ -2324,7 +2343,7 @@ function buildReport() {
   const statsHTML = `
     <div class="stats-grid">
       <div class="stat-card stat-total"><div class="stat-value">${total}</div><div class="stat-label">Total de Testes</div></div>
-      <div class="stat-card stat-ok"><div class="stat-value">${okCount}</div><div class="stat-label">Funcionamento OK</div></div>
+      <div class="stat-card stat-ok"><div class="stat-value">${okCount}</div><div class="stat-label">Aprovados</div></div>
       <div class="stat-card stat-fail"><div class="stat-value">${failCount}</div><div class="stat-label">Falhas</div></div>
       <div class="stat-card stat-rate"><div class="stat-value">${rate}%</div><div class="stat-label">Taxa de Aprovação</div></div>
     </div>`;
@@ -2423,7 +2442,7 @@ function buildReport() {
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">📋 Detalhamento dos Testes</div>
     <div class="report-items">
       ${sorted.map((t,i) => `
-        <div class="report-item ${t.status}">
+        <div class="report-item ${statusCls(t.status)}">
           <div class="report-item-head">
             <span class="test-num">#${String(i+1).padStart(2,'0')}</span>
             <div style="flex:1;min-width:0;">
@@ -2436,7 +2455,7 @@ function buildReport() {
                 ${t.zona    ? ' · ' + esc(t.zona)    : ''}
               </div>
             </div>
-            <span class="status-badge ${t.status}">${t.status === 'ok' ? '✅ OK' : '❌ Falha'}</span>
+            <span class="status-badge ${statusCls(t.status)}">${statusLabel(t.status)}</span>
           </div>
           <div class="report-item-photos">
             ${reportPhoto(t.photos.dispositivo, '📷 Atual')}
@@ -2514,7 +2533,7 @@ function buildReport() {
     tests.forEach(t => {
       const k = t.local;
       if (!locals[k]) locals[k] = { ok: 0, falha: 0 };
-      locals[k][t.status]++;
+      if (isOkStatus(t.status)) locals[k].ok++; else locals[k].falha++;
     });
     const labels = Object.keys(locals);
     const okData = labels.map(l => locals[l].ok);
