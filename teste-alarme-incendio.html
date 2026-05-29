@@ -1111,7 +1111,13 @@ const EMPRESA_ID   = PARAMS.get('empresa') || 'default';
 const EMPRESA_NOME  = PARAMS.get('nome') ? decodeURIComponent(PARAMS.get('nome')) : 'Empresa';
 const SENHA_ADMIN   = 'volt';
 
-const CAMPINAS_TOTAL = 139;
+const EMPRESA_TOTAL = {
+  'essilor-campinas':  139,
+  'essilor-sumare':    254,
+  'essilor-sao-paulo': 250,
+  'cbp-brasil':        350,
+  'hotel-vila-rica':   100,
+};
 const TECNICOS = {
   'essilor-campinas':  ['Willian', 'Geovana', 'João', 'Ariane'],
   'essilor-sumare':    ['Ian Santos', 'Lucas'],
@@ -1453,7 +1459,8 @@ function renderList() {
 let progressPieChart = null, progressBarChart = null;
 
 function renderProgress() {
-  if (EMPRESA_ID !== 'essilor-campinas') return;
+  const TOTAL = EMPRESA_TOTAL[EMPRESA_ID];
+  if (!TOTAL) return;
   document.getElementById('progressSection').style.display = '';
 
   // últimos 3 meses (mês atual + 2 anteriores)
@@ -1476,10 +1483,10 @@ function renderProgress() {
   );
 
   const totalTested = counts.reduce((a, b) => a + b, 0);
-  const remaining   = Math.max(0, CAMPINAS_TOTAL - totalTested);
-  const pct         = Math.round(totalTested / CAMPINAS_TOTAL * 100);
+  const remaining   = Math.max(0, TOTAL - totalTested);
+  const pct         = Math.round(totalTested / TOTAL * 100);
 
-  document.getElementById('progressBadge').textContent = `${totalTested} / ${CAMPINAS_TOTAL}`;
+  document.getElementById('progressBadge').textContent = `${totalTested} / ${TOTAL}`;
 
   const statusClass = pct >= 100 ? 'ok' : pct >= 60 ? 'warn' : 'danger';
   document.getElementById('progressInfo').innerHTML = `
@@ -1503,7 +1510,7 @@ function renderProgress() {
       responsive: true, maintainAspectRatio: false, cutout: '65%',
       plugins: {
         legend: { position: 'bottom', labels: { color: '#f2f2f2', padding: 14, font: { family: 'Archivo', size: 12 } } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${CAMPINAS_TOTAL} (${Math.round(ctx.raw/CAMPINAS_TOTAL*100)}%)` } }
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${TOTAL} (${Math.round(ctx.raw/TOTAL*100)}%)` } }
       }
     }
   });
@@ -1518,8 +1525,8 @@ function renderProgress() {
       responsive: true, maintainAspectRatio: false,
       scales: {
         x: { ticks: { color: '#888', font: { family: 'Archivo', size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
-        y: { beginAtZero: true, max: CAMPINAS_TOTAL,
-          ticks: { color: '#888', font: { family: 'Archivo' }, stepSize: Math.ceil(CAMPINAS_TOTAL / 5) },
+        y: { beginAtZero: true, max: TOTAL,
+          ticks: { color: '#888', font: { family: 'Archivo' }, stepSize: Math.ceil(TOTAL / 5) },
           grid: { color: 'rgba(255,255,255,.07)' } }
       },
       plugins: { legend: { display: false } }
