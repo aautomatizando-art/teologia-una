@@ -253,13 +253,13 @@
   }
   .photo-drop:hover { background: #2c2c2c; color: var(--text); }
   .photo-drop .drop-icon { font-size: 32px; opacity: .5; }
-  .photo-src-btns { display:flex; gap:6px; justify-content:center; z-index:1; }
+  .photo-src-btns { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; z-index:1; }
   .photo-src-btn {
-    background:var(--bg3); border:1px solid var(--border);
-    border-radius:20px; padding:6px 12px; font-size:12px; font-weight:700;
-    color:var(--text); cursor:pointer; transition:var(--transition);
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2);
+    border-radius:20px; padding:7px 14px; font-size:12px; font-weight:700;
+    color:#fff; cursor:pointer; transition:var(--transition);
   }
-  .photo-src-btn:hover { border-color:var(--lime); color:var(--lime); }
+  .photo-src-btn:hover { background:var(--lime); border-color:var(--lime); color:#0e0e0e; }
   .photo-card.has-image .photo-src-btns { display:none; }
   .photo-drop img.preview {
     position: absolute; inset: 0;
@@ -719,7 +719,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Nº Botoeira</label>
+          <label>Nº Dispositivo</label>
           <input type="text" class="form-control" id="fBotoNum" placeholder="Ex: B-07">
         </div>
         <div class="form-group">
@@ -944,7 +944,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Nº Botoeira</label>
+              <label>Nº Dispositivo</label>
               <input type="text" class="form-control" id="eBotoNum">
             </div>
             <div class="form-group">
