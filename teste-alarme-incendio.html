@@ -2076,6 +2076,34 @@ function buildReport() {
       </div>`;
   }
 
+  // session start
+  const ssDate     = document.getElementById('ssDate').value;
+  const ssTime     = document.getElementById('ssTime').value;
+  const ssResp     = document.getElementById('ssResponsavel').value.trim();
+  const ssCpf      = document.getElementById('ssCpf').value.trim();
+  const ssCel      = document.getElementById('ssCelular').value.trim();
+  const ssCentral  = document.getElementById('ssStatusCentral').value;
+  const ssDisp     = document.getElementById('ssStatusDispositivos').value;
+  const ssObsVal   = document.getElementById('ssObs').value.trim();
+  const ssFoto     = ssPhotoTemp;
+
+  const sessionHTML = `
+    <div class="section-title" style="font-size:15px;margin-bottom:16px;">🔍 Status Início de Teste</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;">
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Data</div><div style="font-weight:600;">${ssDate ? formatDate(ssDate) : '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Hora</div><div style="font-weight:600;">${ssTime || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Equipe ProHid</div><div style="font-weight:600;">Antônio e Sandro</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Técnico Responsável</div><div style="font-weight:600;">${esc(document.getElementById('fTecnico').value || '—')}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Responsável Acompanhando</div><div style="font-weight:600;">${esc(ssResp) || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">CPF</div><div style="font-weight:600;">${esc(ssCpf) || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Celular</div><div style="font-weight:600;">${esc(ssCel) || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status da Central</div><div style="font-weight:600;">${esc(ssCentral) || '—'}</div></div>
+      <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status dos Dispositivos</div><div style="font-weight:600;">${esc(ssDisp) || '—'}</div></div>
+    </div>
+    ${ssObsVal ? `<div style="margin-bottom:14px;font-size:13px;"><strong>Obs:</strong> ${esc(ssObsVal)}</div>` : ''}
+    ${ssFoto ? `<div style="margin-bottom:24px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">📷 Foto — Status Atual da Central</div><img src="${ssFoto}" style="max-width:320px;width:100%;border-radius:8px;display:block;"></div>` : ''}
+    <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">`;
+
   // test items
   const itemsHTML = `
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">📋 Detalhamento dos Testes</div>
@@ -2107,7 +2135,7 @@ function buildReport() {
       `).join('')}
     </div>`;
 
-  document.getElementById('reportBody').innerHTML = statsHTML + chartsHTML + progressHTML + itemsHTML;
+  document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML;
 
   // bind lightbox on report photos
   document.querySelectorAll('.rp-img img').forEach(img => {
