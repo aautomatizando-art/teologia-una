@@ -971,6 +971,110 @@
 
   <hr class="divider">
 
+  <!-- FINALIZAÇÃO DE TESTE -->
+  <section id="finalizacaoSection">
+    <div class="section-title">✅ Finalização de Teste</div>
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" class="form-control" id="ftDate" readonly style="cursor:default;">
+        </div>
+        <div class="form-group">
+          <label>Hora</label>
+          <input type="time" class="form-control" id="ftTime" readonly style="cursor:default;">
+        </div>
+        <div class="form-group">
+          <label>Status da Central</label>
+          <select class="form-control" id="ftStatusCentral">
+            <option value="">Selecione…</option>
+            <option value="Sistema OK">✅ Sistema OK</option>
+            <option value="Avaria">⚠️ Avaria</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status dos Dispositivos</label>
+          <select class="form-control" id="ftStatusDispositivos">
+            <option value="">Selecione…</option>
+            <option value="Normal">✅ Normal</option>
+            <option value="Anulado">🔴 Anulado</option>
+            <option value="Parcialmente Anulado">🟡 Parcialmente Anulado</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;">📷 Evidências Fotográficas</p>
+        <div class="photos-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+
+          <div class="photo-card" id="pc-ft-central">
+            <div class="photo-header">
+              <div class="photo-label"><div class="icon icon-central">🖥️</div>Status Atual da Central</div>
+            </div>
+            <div class="photo-drop" id="pd-ft-central">
+              <input type="file" id="fi-ft-central-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="fi-ft-central-gal" accept="image/*" style="display:none">
+              <span class="drop-icon">📤</span>
+              <div class="photo-src-btns">
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-central-cam').click()">📷 Câmera</button>
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-central-gal').click()">🖼️ Galeria</button>
+              </div>
+              <img class="preview" id="prev-ft-central" style="display:none;">
+              <button class="remove-btn" onclick="removeFtPhoto('central',event)">✕</button>
+            </div>
+          </div>
+
+          <div class="photo-card" id="pc-ft-ac">
+            <div class="photo-header">
+              <div class="photo-label"><div class="icon icon-botoeira">⚡</div>Medição Alimentação AC</div>
+            </div>
+            <div class="photo-drop" id="pd-ft-ac">
+              <input type="file" id="fi-ft-ac-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="fi-ft-ac-gal" accept="image/*" style="display:none">
+              <span class="drop-icon">📤</span>
+              <div class="photo-src-btns">
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-ac-cam').click()">📷 Câmera</button>
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-ac-gal').click()">🖼️ Galeria</button>
+              </div>
+              <img class="preview" id="prev-ft-ac" style="display:none;">
+              <button class="remove-btn" onclick="removeFtPhoto('ac',event)">✕</button>
+            </div>
+          </div>
+
+          <div class="photo-card" id="pc-ft-dc">
+            <div class="photo-header">
+              <div class="photo-label"><div class="icon icon-sirene">🔋</div>Medição Alimentação DC</div>
+            </div>
+            <div class="photo-drop" id="pd-ft-dc">
+              <input type="file" id="fi-ft-dc-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="fi-ft-dc-gal" accept="image/*" style="display:none">
+              <span class="drop-icon">📤</span>
+              <div class="photo-src-btns">
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-dc-cam').click()">📷 Câmera</button>
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-dc-gal').click()">🖼️ Galeria</button>
+              </div>
+              <img class="preview" id="prev-ft-dc" style="display:none;">
+              <button class="remove-btn" onclick="removeFtPhoto('dc',event)">✕</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px;">
+        <label>Observações</label>
+        <textarea class="form-control" id="ftObs" rows="3" placeholder="Condições finais, pendências, recomendações…"></textarea>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;align-items:center;">
+        <button type="button" class="btn btn-primary" onclick="saveFinalizacao()">💾 Salvar Finalização</button>
+        <button type="button" class="btn btn-ghost" onclick="editFinalizacao()">✏️ Editar</button>
+        <span id="ftSavedLabel" style="display:none;font-size:12px;color:var(--ok);font-weight:700;">✅ Salvo</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
   <!-- TESTS LIST -->
   <section id="listSection">
     <div class="section-title">
@@ -1328,6 +1432,8 @@ let pendingDeleteId = null;
   document.getElementById('fTime').value  = now.toTimeString().slice(0, 5);
   document.getElementById('ssDate').value = now.toISOString().slice(0, 10);
   document.getElementById('ssTime').value = now.toTimeString().slice(0, 5);
+  document.getElementById('ftDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ftTime').value = now.toTimeString().slice(0, 5);
   populateTecnicoSelects();
   bindPhotoInputs();
   ['fi-ss-central-cam','fi-ss-central-gal'].forEach(id => {
@@ -1336,7 +1442,15 @@ let pendingDeleteId = null;
   });
   document.getElementById('ssCpf').addEventListener('input', function(){ this.value = maskCpf(this.value); });
   document.getElementById('ssCelular').addEventListener('input', function(){ this.value = maskPhone(this.value); });
+  // bind finalização photo inputs
+  ['central','ac','dc'].forEach(slot => {
+    ['fi-ft-'+slot+'-cam','fi-ft-'+slot+'-gal'].forEach(id => {
+      const inp = document.getElementById(id); if (!inp) return;
+      ['change','input'].forEach(e => inp.addEventListener(e, function(){ handleFtPhoto(this, slot); }, { passive:true }));
+    });
+  });
   loadSessionStart();
+  loadFinalizacao();
   loadTests();
 
   // sincronização em tempo real entre dispositivos
@@ -1567,6 +1681,125 @@ async function saveSessionStart() {
   } finally {
     btn.disabled = false; btn.textContent = '💾 Salvar Status Inicial';
   }
+}
+
+// ── FINALIZAÇÃO DE TESTE ───────────────────────────────────────────────────
+
+const ftPhotosTemp = { central: null, ac: null, dc: null };
+let ftRecordId = null;
+
+function handleFtPhoto(input, slot) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(objUrl);
+    const MAX = 1200;
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (w > MAX || h > MAX) { const r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    ftPhotosTemp[slot] = dataUrl;
+    const prev = document.getElementById('prev-ft-' + slot);
+    prev.src = dataUrl; prev.style.display = 'block';
+    document.getElementById('pc-ft-' + slot).classList.add('has-image');
+    const icon = document.getElementById('pd-ft-' + slot).querySelector('.drop-icon');
+    if (icon) icon.style.display = 'none';
+  };
+  img.onerror = () => { URL.revokeObjectURL(objUrl); showToast('Erro ao carregar imagem.', 'error'); };
+  img.src = objUrl;
+}
+
+function removeFtPhoto(slot, e) {
+  if (e) e.stopPropagation();
+  ftPhotosTemp[slot] = null;
+  ['fi-ft-'+slot+'-cam','fi-ft-'+slot+'-gal'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const prev = document.getElementById('prev-ft-' + slot);
+  prev.src = ''; prev.style.display = 'none';
+  document.getElementById('pc-ft-' + slot).classList.remove('has-image');
+  const icon = document.getElementById('pd-ft-' + slot).querySelector('.drop-icon');
+  if (icon) icon.style.display = '';
+}
+
+async function loadFinalizacao() {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await db.from('test_finalizacoes')
+    .select('*').eq('empresa_id', EMPRESA_ID).eq('date', today)
+    .order('created_at', { ascending: false }).limit(1);
+  if (data && data.length > 0) {
+    const f = data[0];
+    ftRecordId = f.id;
+    document.getElementById('ftDate').value = f.date || today;
+    document.getElementById('ftTime').value = f.time_str || '';
+    document.getElementById('ftStatusCentral').value = f.status_central || '';
+    document.getElementById('ftStatusDispositivos').value = f.status_dispositivos || '';
+    document.getElementById('ftObs').value = f.obs || '';
+    ['central','ac','dc'].forEach(slot => {
+      const url = f['foto_' + slot];
+      if (url) {
+        ftPhotosTemp[slot] = url;
+        const prev = document.getElementById('prev-ft-' + slot);
+        prev.src = url; prev.style.display = 'block';
+        document.getElementById('pc-ft-' + slot).classList.add('has-image');
+      }
+    });
+    document.getElementById('ftSavedLabel').style.display = '';
+  }
+}
+
+async function saveFinalizacao() {
+  const date = document.getElementById('ftDate').value;
+  const time = document.getElementById('ftTime').value;
+  const btn = document.querySelector('[onclick="saveFinalizacao()"]');
+  btn.disabled = true; btn.textContent = '⏳ Salvando…';
+  try {
+    const fotos = {};
+    for (const slot of ['central','ac','dc']) {
+      let url = ftPhotosTemp[slot];
+      if (url && !url.startsWith('http')) {
+        const res = await fetch(url); const blob = await res.blob();
+        const sid = ftRecordId || Date.now();
+        const path = `${EMPRESA_ID}/finalizacao/${sid}/${slot}.jpg`;
+        const { error: upErr } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+        if (!upErr) url = db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
+      }
+      fotos[slot] = url || null;
+    }
+    const row = {
+      empresa_id: EMPRESA_ID, date, time_str: time,
+      status_central:      document.getElementById('ftStatusCentral').value,
+      status_dispositivos: document.getElementById('ftStatusDispositivos').value,
+      foto_central: fotos.central, foto_ac: fotos.ac, foto_dc: fotos.dc,
+      obs: document.getElementById('ftObs').value.trim()
+    };
+    if (ftRecordId) {
+      await db.from('test_finalizacoes').update(row).eq('id', ftRecordId);
+    } else {
+      ftRecordId = Date.now();
+      row.id = ftRecordId;
+      await db.from('test_finalizacoes').insert(row);
+    }
+    document.getElementById('ftSavedLabel').style.display = '';
+    showToast('Finalização salva!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar finalização.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar Finalização';
+  }
+}
+
+function editFinalizacao() {
+  const now = new Date();
+  document.getElementById('ftDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ftTime').value = now.toTimeString().slice(0, 5);
+  document.getElementById('ftSavedLabel').style.display = 'none';
+  document.getElementById('ftStatusCentral').focus();
 }
 
 // ── ADD TEST ───────────────────────────────────────────────────────────────
