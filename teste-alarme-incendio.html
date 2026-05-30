@@ -841,6 +841,10 @@
         </div>
       </div>
     </div>
+    <div id="ss-extras-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;"></div>
+    <div style="margin-top:12px;">
+      <button type="button" class="btn btn-ghost" id="ssAddPhotoBtn" onclick="addSsExtraPhoto()" style="font-size:13px;">➕ Adicionar Foto</button>
+    </div>
     <div class="form-group" style="margin-top:14px;">
       <label>Observações</label>
       <textarea class="form-control" id="ssObs" rows="3" placeholder="Condições gerais, anomalias identificadas…"></textarea>
@@ -985,6 +989,10 @@
             <button class="remove-btn" onclick="removePhoto('sirene','pd-sirene','pc-sirene','prev-sirene',event)">✕</button>
           </div>
         </div>
+      </div>
+      <div id="form-extras-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;"></div>
+      <div style="margin-top:12px;">
+        <button type="button" class="btn btn-ghost" id="formAddPhotoBtn" onclick="addFormExtraPhoto()" style="font-size:13px;">➕ Adicionar Foto</button>
       </div>
 
       <!-- STATUS -->
@@ -1620,6 +1628,8 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 function rowToTest(r) {
+  let extras = [];
+  try { if (r.photos_extras) extras = JSON.parse(r.photos_extras); } catch(_) {}
   return {
     id: r.id, date: r.date, time: r.time_str,
     local: r.local_desc, tecnico: r.tecnico || '',
@@ -1629,7 +1639,8 @@ function rowToTest(r) {
       botoeira:    r.photo_botoeira    || null,
       central:     r.photo_central     || null,
       sirene:      r.photo_sirene      || null,
-      dispositivo: r.photo_dispositivo || null
+      dispositivo: r.photo_dispositivo || null,
+      extras
     }
   };
 }
@@ -1644,7 +1655,8 @@ function testToRow(t) {
     photo_botoeira:    t.photos.botoeira    || null,
     photo_central:     t.photos.central     || null,
     photo_sirene:      t.photos.sirene      || null,
-    photo_dispositivo: t.photos.dispositivo || null
+    photo_dispositivo: t.photos.dispositivo || null,
+    photos_extras: (t.photos.extras && t.photos.extras.length) ? JSON.stringify(t.photos.extras) : null
   };
 }
 
@@ -1666,7 +1678,11 @@ async function uploadAllPhotos(photos, testId) {
     uploadPhoto(photos.sirene,      testId, 'sirene'),
     uploadPhoto(photos.dispositivo, testId, 'dispositivo')
   ]);
-  return { botoeira, central, sirene, dispositivo };
+  const extras = [];
+  for (let i = 0; i < (photos.extras || []).length; i++) {
+    extras.push(await uploadPhoto(photos.extras[i], testId, 'extra_' + i));
+  }
+  return { botoeira, central, sirene, dispositivo, extras: extras.filter(Boolean) };
 }
 
 async function loadTests() {
@@ -1679,7 +1695,7 @@ async function loadTests() {
 }
 
 let tests = [];
-let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null };
+let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, extras: [] };
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
 
@@ -1826,8 +1842,9 @@ function removePhoto(slotKey, dropId, cardId, prevId, e) {
 
 // ── SESSION START ──────────────────────────────────────────────────────────
 
-let ssPhotoTemp = null;
-let ssRecordId  = null;
+let ssPhotoTemp    = null;
+let ssPhotosExtras = [];
+let ssRecordId     = null;
 
 function maskCpf(v) {
   return v.replace(/\D/g,'')
@@ -1905,9 +1922,85 @@ function applyReadOnlyMode() {
     // Esconde controles de upload de foto e botão de remover
     sec.querySelectorAll('.photo-src-btns, .remove-btn, .drop-icon').forEach(el => { el.style.display = 'none'; });
     // Esconde botões de salvar / editar / adicionar foto / named slots
-    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"], button[onclick^="showFt"]').forEach(el => { el.style.display = 'none'; });
+    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"], button[onclick^="showFt"], button[onclick^="addSs"]').forEach(el => { el.style.display = 'none'; });
   });
 }
+
+function _buildExtraPhotoCard(gridId, idx, onchange, onremove) {
+  const card = document.createElement('div');
+  card.className = 'photo-card';
+  card.id = gridId + '-card-' + idx;
+  card.innerHTML = `
+    <div class="photo-header">
+      <div class="photo-label"><div class="icon icon-botoeira">📸</div>Foto Extra ${idx + 1}</div>
+    </div>
+    <div class="photo-drop" id="${gridId}-drop-${idx}">
+      <input type="file" id="${gridId}-cam-${idx}" accept="image/*" capture="environment" style="display:none" onchange="${onchange}(this,${idx})">
+      <input type="file" id="${gridId}-gal-${idx}" accept="image/*" style="display:none" onchange="${onchange}(this,${idx})">
+      <span class="drop-icon">📤</span>
+      <div class="photo-src-btns">
+        <button type="button" class="photo-src-btn" onclick="document.getElementById('${gridId}-cam-${idx}').click()">📷 Câmera</button>
+        <button type="button" class="photo-src-btn" onclick="document.getElementById('${gridId}-gal-${idx}').click()">🖼️ Galeria</button>
+      </div>
+      <img class="preview" id="${gridId}-prev-${idx}" style="display:none;">
+      <button class="remove-btn" onclick="${onremove}(${idx},event)">✕</button>
+    </div>`;
+  document.getElementById(gridId).appendChild(card);
+}
+
+function _handleExtraPhoto(file, extrasArr, gridId, idx) {
+  if (!file) return;
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(objUrl);
+    const MAX = 1200;
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (w > MAX || h > MAX) { const r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    extrasArr[idx] = dataUrl;
+    const prev = document.getElementById(gridId + '-prev-' + idx);
+    if (prev) { prev.src = dataUrl; prev.style.display = 'block'; }
+    const card = document.getElementById(gridId + '-card-' + idx);
+    if (card) card.classList.add('has-image');
+    const icon = document.getElementById(gridId + '-drop-' + idx)?.querySelector('.drop-icon');
+    if (icon) icon.style.display = 'none';
+  };
+  img.onerror = () => { URL.revokeObjectURL(objUrl); showToast('Erro ao carregar imagem.', 'error'); };
+  img.src = objUrl;
+}
+
+function _removeExtraPhoto(extrasArr, gridId, idx, onchangeFn, onremoveFn) {
+  const saved = extrasArr.filter((_, i) => i !== idx);
+  extrasArr.length = 0;
+  document.getElementById(gridId).innerHTML = '';
+  saved.forEach(url => {
+    const i = extrasArr.length;
+    extrasArr.push(null);
+    _buildExtraPhotoCard(gridId, i, onchangeFn, onremoveFn);
+    if (url) {
+      extrasArr[i] = url;
+      const prev = document.getElementById(gridId + '-prev-' + i);
+      if (prev) { prev.src = url; prev.style.display = 'block'; }
+      const card = document.getElementById(gridId + '-card-' + i);
+      if (card) card.classList.add('has-image');
+      const icon = document.getElementById(gridId + '-drop-' + i)?.querySelector('.drop-icon');
+      if (icon) icon.style.display = 'none';
+    }
+  });
+}
+
+// ── SS EXTRAS ──
+function addSsExtraPhoto()               { const i = ssPhotosExtras.length; ssPhotosExtras.push(null); _buildExtraPhotoCard('ss-extras-grid', i, 'handleSsExtraPhoto', 'removeSsExtraPhoto'); }
+function handleSsExtraPhoto(input, idx)  { _handleExtraPhoto(input.files && input.files[0], ssPhotosExtras, 'ss-extras-grid', idx); }
+function removeSsExtraPhoto(idx, e)      { if (e) e.stopPropagation(); _removeExtraPhoto(ssPhotosExtras, 'ss-extras-grid', idx, 'handleSsExtraPhoto', 'removeSsExtraPhoto'); }
+
+// ── FORM EXTRAS ──
+function addFormExtraPhoto()              { const i = photosTemp.extras.length; photosTemp.extras.push(null); _buildExtraPhotoCard('form-extras-grid', i, 'handleFormExtraPhoto', 'removeFormExtraPhoto'); }
+function handleFormExtraPhoto(input, idx) { _handleExtraPhoto(input.files && input.files[0], photosTemp.extras, 'form-extras-grid', idx); }
+function removeFormExtraPhoto(idx, e)     { if (e) e.stopPropagation(); _removeExtraPhoto(photosTemp.extras, 'form-extras-grid', idx, 'handleFormExtraPhoto', 'removeFormExtraPhoto'); }
 
 async function loadSessionStart() {
   const today = new Date().toISOString().slice(0,10);
@@ -1932,6 +2025,22 @@ async function loadSessionStart() {
       const prev = document.getElementById('prev-ss-central');
       prev.src = s.foto_central; prev.style.display = 'block';
       document.getElementById('pc-ss-central').classList.add('has-image');
+    }
+    if (s.ss_fotos_extras) {
+      try {
+        JSON.parse(s.ss_fotos_extras).forEach(url => {
+          if (!url) return;
+          addSsExtraPhoto();
+          const i = ssPhotosExtras.length - 1;
+          ssPhotosExtras[i] = url;
+          const prev = document.getElementById('ss-extras-grid-prev-' + i);
+          if (prev) { prev.src = url; prev.style.display = 'block'; }
+          const card = document.getElementById('ss-extras-grid-card-' + i);
+          if (card) card.classList.add('has-image');
+          const icon = document.getElementById('ss-extras-grid-drop-' + i)?.querySelector('.drop-icon');
+          if (icon) icon.style.display = 'none';
+        });
+      } catch(_) {}
     }
     document.getElementById('ssSavedLabel').style.display = '';
   }
@@ -1961,6 +2070,18 @@ async function saveSessionStart() {
       const { error: upErr } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
       if (!upErr) fotoUrl = db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
     }
+    const ssExtrasUrls = [];
+    for (let i = 0; i < ssPhotosExtras.length; i++) {
+      let url = ssPhotosExtras[i];
+      if (url && !url.startsWith('http')) {
+        const res = await fetch(url); const blob = await res.blob();
+        const sid = ssRecordId || Date.now();
+        const path = `${EMPRESA_ID}/session/${sid}/extra_${i}.jpg`;
+        const { error: upErr } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+        if (!upErr) url = db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
+      }
+      if (url) ssExtrasUrls.push(url);
+    }
     const row = {
       empresa_id: EMPRESA_ID, date, time_str: time,
       responsavel: document.getElementById('ssResponsavel').value.trim(),
@@ -1971,6 +2092,7 @@ async function saveSessionStart() {
       status_dispositivos: document.getElementById('ssStatusDispositivos').value,
       central_fabricante: document.getElementById('ssCentralFabricante').value,
       foto_central: fotoUrl || null,
+      ss_fotos_extras: ssExtrasUrls.length ? JSON.stringify(ssExtrasUrls) : null,
       obs:          document.getElementById('ssObs').value.trim()
     };
     if (ssRecordId) {
@@ -2339,6 +2461,9 @@ function resetForm() {
       if (txt)  txt.style.display  = '';
     }
   });
+  photosTemp.extras = [];
+  const feg = document.getElementById('form-extras-grid');
+  if (feg) feg.innerHTML = '';
 
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
@@ -2812,7 +2937,10 @@ function buildReport() {
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status dos Dispositivos</div><div style="font-weight:600;">${esc(ssDisp) || '—'}</div></div>
     </div>
     ${ssObsVal ? `<div style="margin-bottom:14px;font-size:13px;"><strong>Obs:</strong> ${esc(ssObsVal)}</div>` : ''}
-    ${ssFoto ? `<div style="margin-bottom:24px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">📷 Foto — Status Atual da Central</div><img src="${ssFoto}" style="max-width:320px;width:100%;border-radius:8px;display:block;"></div>` : ''}
+    ${ssFoto || ssPhotosExtras.filter(Boolean).length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+      ${ssFoto ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ssFoto}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ssPhotosExtras.filter(Boolean).map((url, i) => `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">📸 Foto Extra ${i + 1}</div><img src="${url}" style="width:100%;border-radius:8px;display:block;"></div>`).join('')}
+    </div>` : ''}
     <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">`;
 
   // test items
@@ -2840,6 +2968,7 @@ function buildReport() {
             ${reportPhoto(t.photos.botoeira,    '🚨 Dispositivo')}
             ${reportPhoto(t.photos.central,     '🖥️ Central')}
             ${reportPhoto(t.photos.sirene,      '🔔 Sirene')}
+            ${(t.photos.extras || []).filter(Boolean).map((url, i) => reportPhoto(url, '📸 Extra '+(i+1))).join('')}
           </div>
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
