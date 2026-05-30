@@ -1232,6 +1232,15 @@
       </div>
       <button class="modal-close" onclick="closeReport()" style="position:absolute;top:12px;right:12px;">✕</button>
     </div>
+    <!-- FILTRO DE DATA -->
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
+      <span style="font-size:12px;font-weight:700;color:var(--muted);">📅 Período:</span>
+      <input type="date" id="rptDateFrom" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);">
+      <span style="font-size:12px;color:var(--muted);">até</span>
+      <input type="date" id="rptDateTo"   style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);">
+      <button class="btn btn-primary btn-sm" onclick="applyReportFilter()">🔍 Filtrar</button>
+      <button class="btn btn-ghost btn-sm"   onclick="clearReportFilter()">✕ Ver Todos</button>
+    </div>
     <div class="modal-body" id="reportBody"></div>
     <div class="report-footer">
       <span class="report-stamp" id="reportStamp"></span>
@@ -1777,6 +1786,7 @@ async function loadTests() {
 }
 
 let tests = [];
+let rptSess = null; // session override for date-filtered reports
 let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, extras: [] };
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
@@ -3038,8 +3048,69 @@ async function clearAll() {
 // ── REPORT ─────────────────────────────────────────────────────────────────
 function openReport() {
   if (tests.length === 0) return;
-  buildReport();
+  rptSess = null;
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('rptDateFrom').value = today;
+  document.getElementById('rptDateTo').value   = today;
+  buildReport(tests.filter(t => t.date === today));
   document.getElementById('reportModal').classList.add('open');
+}
+
+async function applyReportFilter() {
+  const from = document.getElementById('rptDateFrom').value;
+  const to   = document.getElementById('rptDateTo').value;
+  const targetDate = to || from;
+
+  if (targetDate) {
+    const [sessRes, ftRes] = await Promise.all([
+      db.from('test_sessions').select('*').eq('empresa_id', EMPRESA_ID).eq('date', targetDate)
+        .order('created_at', { ascending: false }).limit(1),
+      db.from('test_finalizacoes').select('*').eq('empresa_id', EMPRESA_ID).eq('date', targetDate)
+        .order('created_at', { ascending: false }).limit(1)
+    ]);
+    const s = sessRes.data?.[0];
+    const f = ftRes.data?.[0];
+
+    let ssExtras = [], probPhotos = {}, probObs = {}, ftExtras = [], namedObs = {};
+    try { if (s?.ss_fotos_extras) ssExtras = JSON.parse(s.ss_fotos_extras).map(parseExtraItem); } catch(_) {}
+    try {
+      if (s?.problemas_data) JSON.parse(s.problemas_data).forEach((raw, i) => {
+        const item = parseExtraItem(raw); probPhotos[i] = item.url; probObs[i] = item.obs;
+      });
+    } catch(_) {}
+    try { if (f?.fotos_extras) ftExtras = JSON.parse(f.fotos_extras).map(parseExtraItem); } catch(_) {}
+    try { if (f?.ft_named_obs) namedObs = JSON.parse(f.ft_named_obs); } catch(_) {}
+
+    rptSess = {
+      date: s?.date || targetDate, time: s?.time_str || '',
+      resp: s?.responsavel || '', cpf: s?.cpf || '', cel: s?.celular || '',
+      fabricante: s?.central_fabricante || '—',
+      statusCentral: s?.status_central || '', statusDisp: s?.status_dispositivos || '',
+      obs: s?.obs || '', ssPhotoTemp: s?.foto_central || null,
+      ssExtras, probPhotos, probObs,
+      ftDate: f?.date || '', ftTime: f?.time_str || '',
+      ftCentral: f?.status_central || '', ftDisp: f?.status_dispositivos || '',
+      ftObs: f?.obs || '',
+      ftPhotos: { central: f?.foto_central || null, ac: f?.foto_ac || null,
+        dc: f?.foto_dc || null, escada: f?.foto_escada || null,
+        portas: f?.foto_portas || null, catracas: f?.foto_catracas || null, extras: ftExtras },
+      namedObs
+    };
+  } else {
+    rptSess = null;
+  }
+
+  let filtered = tests;
+  if (from) filtered = filtered.filter(t => t.date >= from);
+  if (to)   filtered = filtered.filter(t => t.date <= to);
+  buildReport(filtered);
+}
+
+function clearReportFilter() {
+  rptSess = null;
+  document.getElementById('rptDateFrom').value = '';
+  document.getElementById('rptDateTo').value   = '';
+  buildReport(tests);
 }
 
 function closeReport() {
@@ -3083,14 +3154,15 @@ function saveArt(e) {
   showToast('Nº ART atualizado!', 'success');
 }
 
-function buildReport() {
-  const total = tests.length;
-  const okCount = tests.filter(t => isOkStatus(t.status)).length;
+function buildReport(filtered) {
+  const allTests = (filtered && filtered.length !== undefined) ? filtered : tests;
+  const total    = allTests.length;
+  const okCount  = allTests.filter(t => isOkStatus(t.status)).length;
   const failCount = total - okCount;
-  const rate = total ? Math.round((okCount / total) * 100) : 0;
+  const rate     = total ? Math.round((okCount / total) * 100) : 0;
 
   // date range
-  const sorted = [...tests].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
+  const sorted = [...allTests].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
   const first = sorted[0], last = sorted[sorted.length-1];
   const rangeStr = total > 1
     ? `${formatDate(first.date)} → ${formatDate(last.date)}`
@@ -3136,7 +3208,7 @@ function buildReport() {
       });
     }
     const counts = months.map(m =>
-      tests.filter(t => {
+      allTests.filter(t => {
         if (!t.date || t.tipo !== 'Botoeira') return false;
         const parts = t.date.split('-');
         return parseInt(parts[0]) === m.year && (parseInt(parts[1]) - 1) === m.month;
@@ -3148,7 +3220,7 @@ function buildReport() {
     const sc          = pct >= 100 ? 'ok' : pct >= 60 ? 'warn' : 'danger';
     rptProgressData   = { totalTested, remaining, pct, TOTAL, counts, monthLabels: months.map(m => m.label) };
 
-    const rptDetTests = tests.filter(t => {
+    const rptDetTests = allTests.filter(t => {
       if (t.tipo !== 'Detector de Fumaça' || !t.date) return false;
       const [y, m] = t.date.split('-').map(Number);
       return months.some(mo => mo.year === y && mo.month === m - 1);
@@ -3185,17 +3257,20 @@ function buildReport() {
       </div>` : ''}`;
   }
 
-  // session start
-  const ssDate        = document.getElementById('ssDate').value;
-  const ssTime        = document.getElementById('ssTime').value;
-  const ssResp        = document.getElementById('ssResponsavel').value.trim();
-  const ssCpf         = document.getElementById('ssCpf').value.trim();
-  const ssCel         = document.getElementById('ssCelular').value.trim();
-  const ssCentral     = document.getElementById('ssStatusCentral').value;
-  const ssDisp        = document.getElementById('ssStatusDispositivos').value;
-  const ssObsVal      = document.getElementById('ssObs').value.trim();
-  const ssFoto        = ssPhotoTemp;
-  const ssFabricante  = (document.getElementById('ssCentralFabricante') || {}).value || '—';
+  // session start — use rptSess override when a past date is loaded
+  const ssDate       = rptSess?.date          ?? document.getElementById('ssDate').value;
+  const ssTime       = rptSess?.time          ?? document.getElementById('ssTime').value;
+  const ssResp       = rptSess?.resp          ?? document.getElementById('ssResponsavel').value.trim();
+  const ssCpf        = rptSess?.cpf           ?? document.getElementById('ssCpf').value.trim();
+  const ssCel        = rptSess?.cel           ?? document.getElementById('ssCelular').value.trim();
+  const ssCentral    = rptSess?.statusCentral ?? document.getElementById('ssStatusCentral').value;
+  const ssDisp       = rptSess?.statusDisp    ?? document.getElementById('ssStatusDispositivos').value;
+  const ssObsVal     = rptSess?.obs           ?? document.getElementById('ssObs').value.trim();
+  const ssFoto       = rptSess?.ssPhotoTemp   ?? ssPhotoTemp;
+  const ssFabricante = rptSess?.fabricante    ?? (document.getElementById('ssCentralFabricante')?.value || '—');
+  const rptSsExtras  = rptSess
+    ? rptSess.ssExtras
+    : ssPhotosExtras.map((url, i) => ({ url, obs: document.getElementById('ss-extras-grid-obs-'+i)?.value.trim()||'' }));
 
   const sessionHTML = `
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">🔍 Status Início de Teste</div>
@@ -3212,9 +3287,9 @@ function buildReport() {
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Status dos Dispositivos</div><div style="font-weight:600;">${esc(ssDisp) || '—'}</div></div>
     </div>
     ${ssObsVal ? `<div style="margin-bottom:14px;font-size:13px;"><strong>Obs:</strong> ${esc(ssObsVal)}</div>` : ''}
-    ${ssFoto || ssPhotosExtras.filter(Boolean).length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
+    ${ssFoto || rptSsExtras.some(e => e.url) ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
       ${ssFoto ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ssFoto}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ssPhotosExtras.filter(Boolean).map((url, i) => { const obs = document.getElementById('ss-extras-grid-obs-'+i)?.value.trim()||''; return `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">${obs ? esc(obs) : '📸 Foto Extra '+(i+1)}</div><img src="${url}" style="width:100%;border-radius:8px;display:block;"></div>`; }).join('')}
+      ${rptSsExtras.filter(e => e.url).map((e, i) => `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">${e.obs ? esc(e.obs) : '📸 Foto Extra '+(i+1)}</div><img src="${e.url}" style="width:100%;border-radius:8px;display:block;"></div>`).join('')}
     </div>` : ''}
     <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">`;
 
@@ -3257,12 +3332,14 @@ function buildReport() {
       `).join('')}
     </div>`;
 
-  // finalização de teste
-  const ftCentral = document.getElementById('ftStatusCentral').value;
-  const ftDisp    = document.getElementById('ftStatusDispositivos').value;
-  const ftObsVal  = document.getElementById('ftObs').value.trim();
-  const ftDateVal = document.getElementById('ftDate').value;
-  const ftTimeVal = document.getElementById('ftTime').value;
+  // finalização de teste — use rptSess override when available
+  const ftCentral = rptSess?.ftCentral ?? document.getElementById('ftStatusCentral').value;
+  const ftDisp    = rptSess?.ftDisp    ?? document.getElementById('ftStatusDispositivos').value;
+  const ftObsVal  = rptSess?.ftObs     ?? document.getElementById('ftObs').value.trim();
+  const ftDateVal = rptSess?.ftDate    ?? document.getElementById('ftDate').value;
+  const ftTimeVal = rptSess?.ftTime    ?? document.getElementById('ftTime').value;
+  const rptFtP    = rptSess?.ftPhotos  ?? ftPhotosTemp;
+  const rptFtNamed = rptSess?.namedObs ?? {};
 
   const finalizacaoHTML = `
     <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">
@@ -3275,13 +3352,13 @@ function buildReport() {
     </div>
     ${ftObsVal ? `<div style="margin-bottom:14px;font-size:13px;"><strong>Obs:</strong> ${esc(ftObsVal)}</div>` : ''}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:8px;">
-      ${ftPhotosTemp.central  ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ftPhotosTemp.central}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.ac       ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">⚡ Medição Alimentação AC</div><img src="${ftPhotosTemp.ac}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.dc       ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${ftPhotosTemp.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.escada   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚪 Escada Pressurizada${document.getElementById('obs-ft-escada')?.value.trim() ? ' — '+esc(document.getElementById('obs-ft-escada').value.trim()) : ''}</div><img src="${ftPhotosTemp.escada}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.portas   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔒 Portas Magnéticas${document.getElementById('obs-ft-portas')?.value.trim() ? ' — '+esc(document.getElementById('obs-ft-portas').value.trim()) : ''}</div><img src="${ftPhotosTemp.portas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.catracas ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚧 Catracas${document.getElementById('obs-ft-catracas')?.value.trim() ? ' — '+esc(document.getElementById('obs-ft-catracas').value.trim()) : ''}</div><img src="${ftPhotosTemp.catracas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${(ftPhotosTemp.extras || []).filter(Boolean).map((url, i) => { const obs=document.getElementById('obs-ft-extra-'+i)?.value.trim()||''; return `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">${obs ? esc(obs) : '📸 Foto Extra '+(i+1)}</div><img src="${url}" style="width:100%;border-radius:8px;display:block;"></div>`; }).join('')}
+      ${rptFtP.central  ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${rptFtP.central}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${rptFtP.ac       ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">⚡ Medição Alimentação AC</div><img src="${rptFtP.ac}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${rptFtP.dc       ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${rptFtP.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${rptFtP.escada   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚪 Escada Pressurizada${(rptSess ? rptFtNamed.escada : document.getElementById('obs-ft-escada')?.value.trim()) ? ' — '+esc(rptSess ? rptFtNamed.escada : document.getElementById('obs-ft-escada').value.trim()) : ''}</div><img src="${rptFtP.escada}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${rptFtP.portas   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔒 Portas Magnéticas${(rptSess ? rptFtNamed.portas : document.getElementById('obs-ft-portas')?.value.trim()) ? ' — '+esc(rptSess ? rptFtNamed.portas : document.getElementById('obs-ft-portas').value.trim()) : ''}</div><img src="${rptFtP.portas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${rptFtP.catracas ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚧 Catracas${(rptSess ? rptFtNamed.catracas : document.getElementById('obs-ft-catracas')?.value.trim()) ? ' — '+esc(rptSess ? rptFtNamed.catracas : document.getElementById('obs-ft-catracas').value.trim()) : ''}</div><img src="${rptFtP.catracas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${(rptFtP.extras || []).filter(e => e && (e.url||(typeof e==='string'&&e))).map((e, i) => { const item=parseExtraItem(e); const obs=rptSess ? item.obs : (document.getElementById('obs-ft-extra-'+i)?.value.trim()||item.obs||''); return `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">${obs ? esc(obs) : '📸 Foto Extra '+(i+1)}</div><img src="${item.url}" style="width:100%;border-radius:8px;display:block;"></div>`; }).join('')}
     </div>`;
 
   const signatureHTML = `
@@ -3334,18 +3411,17 @@ function buildReport() {
 
     </div>`;
 
-  const problemasAtivos = problemasPhotos.filter(Boolean);
-  const problemasHTML = problemasAtivos.length ? `
+  const rptProbEntries = rptSess
+    ? Object.entries(rptSess.probPhotos).filter(([,url]) => url).map(([i, url]) => ({ url, obs: rptSess.probObs[i] || '' }))
+    : problemasPhotos.map((url, i) => ({ url, obs: document.getElementById('form-problemas-grid-obs-'+i)?.value.trim()||'' })).filter(e => e.url);
+  const problemasHTML = rptProbEntries.length ? `
     <hr style="border:none;border-top:2px solid #f59e0b;margin:24px 0;">
     <div class="section-title" style="font-size:15px;margin-bottom:16px;color:#b45309;">⚠️ Problemas Identificados</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
-      ${problemasAtivos.map((url, i) => {
-        const obs = document.getElementById('form-problemas-grid-obs-' + i)?.value.trim() || '';
-        return `<div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b45309;margin-bottom:6px;">${obs ? esc(obs) : 'Problema ' + (i + 1)}</div>
-          <img src="${url}" style="width:100%;border-radius:8px;display:block;border:2px solid #f59e0b;">
-        </div>`;
-      }).join('')}
+      ${rptProbEntries.map((e, i) => `<div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b45309;margin-bottom:6px;">${e.obs ? esc(e.obs) : 'Problema ' + (i + 1)}</div>
+          <img src="${e.url}" style="width:100%;border-radius:8px;display:block;border:2px solid #f59e0b;">
+        </div>`).join('')}
     </div>` : '';
 
   document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML + problemasHTML + finalizacaoHTML + signatureHTML;
@@ -3387,7 +3463,7 @@ function buildReport() {
 
     // bar — group by local
     const locals = {};
-    tests.forEach(t => {
+    allTests.forEach(t => {
       const k = t.local;
       if (!locals[k]) locals[k] = { ok: 0, falha: 0 };
       if (isOkStatus(t.status)) locals[k].ok++; else locals[k].falha++;
