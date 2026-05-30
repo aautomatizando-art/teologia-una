@@ -3171,8 +3171,14 @@ function buildReport() {
             ${reportPhoto(t.photos.central,     '🖥️ Central')}
             ${reportPhoto(t.photos.sirene,      '🔔 Sirene')}
             ${(t.photos.extras || []).filter(e => e && (e.url||(typeof e==='string'&&e))).map((item, i) => { const p=parseExtraItem(item); return reportPhoto(p.url, p.obs||'📸 Extra '+(i+1)); }).join('')}
-            ${(t.photos.problemas || []).filter(e => e && (e.url||(typeof e==='string'&&e))).map((item, i) => { const p=parseExtraItem(item); return reportPhoto(p.url, p.obs||'⚠️ Problema '+(i+1)); }).join('')}
           </div>
+          ${(() => { const probs = (t.photos.problemas || []).filter(e => e && (e.url||(typeof e==='string'&&e))); return probs.length ? `
+          <div style="margin-top:12px;border-top:2px solid #f59e0b;padding-top:10px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b45309;margin-bottom:8px;">⚠️ Problemas Identificados</div>
+            <div class="report-item-photos">
+              ${probs.map((item, i) => { const p=parseExtraItem(item); return reportPhoto(p.url, p.obs||'Problema '+(i+1)); }).join('')}
+            </div>
+          </div>` : ''; })()}
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
       `).join('')}
