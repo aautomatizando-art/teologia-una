@@ -69,7 +69,17 @@ bool iniciarCamera() {
     cfg.jpeg_quality = CAM_QUALIDADE;
     cfg.fb_count     = psramFound() ? 2 : 1;
     cfg.fb_location  = psramFound() ? CAMERA_FB_IN_PSRAM : CAMERA_FB_IN_DRAM;
-    return esp_camera_init(&cfg) == ESP_OK;
+    if (esp_camera_init(&cfg) != ESP_OK) return false;
+
+    sensor_t* s = esp_camera_sensor_get();
+    s->set_brightness(s,  1);   // -2 a 2
+    s->set_contrast(s,    1);   // -2 a 2
+    s->set_sharpness(s,   2);   // -2 a 2
+    s->set_whitebal(s,    1);   // auto white balance
+    s->set_awb_gain(s,    1);
+    s->set_exposure_ctrl(s, 1); // auto exposure
+    s->set_aec2(s,        1);
+    return true;
 }
 
 // ── Telegram ──────────────────────────────────────

@@ -20,11 +20,11 @@
 // ── Flash LED ─────────────────────────────────────
 // false = desligado (recomendado se o LCD tem backlight suficiente)
 // true  = liga flash branco (GPIO4) durante a captura
-#define FLASH_LIGADO    false
+#define FLASH_LIGADO    true   // liga flash branco durante captura
 
 // ── Resolução e qualidade JPEG ────────────────────
-// FRAMESIZE_SVGA  = 800×600  (recomendado para texto)
-// FRAMESIZE_XGA   = 1024×768 (maior detalhe, mais lento)
-// FRAMESIZE_VGA   = 640×480  (rápido, pode não ler texto pequeno)
-#define CAM_FRAMESIZE   FRAMESIZE_SVGA
-#define CAM_QUALIDADE   10   // 0–63: menor = melhor qualidade JPEG
+// FRAMESIZE_UXGA  = 1600×1200 (máxima — melhor para texto)
+// FRAMESIZE_SVGA  = 800×600
+// FRAMESIZE_VGA   = 640×480
+#define CAM_FRAMESIZE   FRAMESIZE_UXGA
+#define CAM_QUALIDADE   6    // 0–63: menor = melhor qualidade JPEG
