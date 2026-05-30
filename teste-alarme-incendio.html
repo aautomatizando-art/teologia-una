@@ -1118,6 +1118,12 @@
         </div>
       </div>
 
+      <!-- Extra photos -->
+      <div id="ft-extras-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;"></div>
+      <div style="margin-top:12px;">
+        <button type="button" class="btn btn-ghost" id="ftAddPhotoBtn" onclick="addFtExtraPhoto()" style="font-size:13px;">➕ Adicionar Foto</button>
+      </div>
+
       <div class="form-group" style="margin-top:14px;">
         <label>Observações</label>
         <textarea class="form-control" id="ftObs" rows="3" placeholder="Condições finais, pendências, recomendações…"></textarea>
@@ -1894,8 +1900,8 @@ function applyReadOnlyMode() {
     sec.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
     // Esconde controles de upload de foto e botão de remover
     sec.querySelectorAll('.photo-src-btns, .remove-btn, .drop-icon').forEach(el => { el.style.display = 'none'; });
-    // Esconde botões de salvar / editar
-    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"]').forEach(el => { el.style.display = 'none'; });
+    // Esconde botões de salvar / editar / adicionar foto
+    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"]').forEach(el => { el.style.display = 'none'; });
   });
 }
 
@@ -1982,7 +1988,7 @@ async function saveSessionStart() {
 
 // ── FINALIZAÇÃO DE TESTE ───────────────────────────────────────────────────
 
-const ftPhotosTemp = { central: null, ac: null, dc: null };
+const ftPhotosTemp = { central: null, ac: null, dc: null, extras: [] };
 let ftRecordId = null;
 
 function handleFtPhoto(input, slot) {
@@ -2023,6 +2029,77 @@ function removeFtPhoto(slot, e) {
   if (icon) icon.style.display = '';
 }
 
+function addFtExtraPhoto() {
+  const idx = ftPhotosTemp.extras.length;
+  ftPhotosTemp.extras.push(null);
+  const grid = document.getElementById('ft-extras-grid');
+  const card = document.createElement('div');
+  card.className = 'photo-card';
+  card.id = 'pc-ft-extra-' + idx;
+  card.innerHTML = `
+    <div class="photo-header">
+      <div class="photo-label"><div class="icon icon-botoeira">📸</div>Foto Extra ${idx + 1}</div>
+    </div>
+    <div class="photo-drop" id="pd-ft-extra-${idx}">
+      <input type="file" id="fi-ft-extra-${idx}-cam" accept="image/*" capture="environment" style="display:none" onchange="handleFtExtraPhoto(this,${idx})">
+      <input type="file" id="fi-ft-extra-${idx}-gal" accept="image/*" style="display:none" onchange="handleFtExtraPhoto(this,${idx})">
+      <span class="drop-icon">📤</span>
+      <div class="photo-src-btns">
+        <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-extra-${idx}-cam').click()">📷 Câmera</button>
+        <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-extra-${idx}-gal').click()">🖼️ Galeria</button>
+      </div>
+      <img class="preview" id="prev-ft-extra-${idx}" style="display:none;">
+      <button class="remove-btn" onclick="removeFtExtraPhoto(${idx},event)">✕</button>
+    </div>`;
+  grid.appendChild(card);
+}
+
+function handleFtExtraPhoto(input, idx) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    URL.revokeObjectURL(objUrl);
+    const MAX = 1200;
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (w > MAX || h > MAX) { const r = Math.min(MAX/w, MAX/h); w = Math.round(w*r); h = Math.round(h*r); }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    ftPhotosTemp.extras[idx] = dataUrl;
+    const prev = document.getElementById('prev-ft-extra-' + idx);
+    if (prev) { prev.src = dataUrl; prev.style.display = 'block'; }
+    document.getElementById('pc-ft-extra-' + idx).classList.add('has-image');
+    const icon = document.getElementById('pd-ft-extra-' + idx).querySelector('.drop-icon');
+    if (icon) icon.style.display = 'none';
+  };
+  img.onerror = () => { URL.revokeObjectURL(objUrl); showToast('Erro ao carregar imagem.', 'error'); };
+  img.src = objUrl;
+}
+
+function removeFtExtraPhoto(idx, e) {
+  if (e) e.stopPropagation();
+  const saved = ftPhotosTemp.extras.filter((_, i) => i !== idx);
+  ftPhotosTemp.extras = [];
+  const grid = document.getElementById('ft-extras-grid');
+  grid.innerHTML = '';
+  saved.forEach(url => {
+    addFtExtraPhoto();
+    const i = ftPhotosTemp.extras.length - 1;
+    if (url) {
+      ftPhotosTemp.extras[i] = url;
+      const prev = document.getElementById('prev-ft-extra-' + i);
+      if (prev) { prev.src = url; prev.style.display = 'block'; }
+      const card = document.getElementById('pc-ft-extra-' + i);
+      if (card) card.classList.add('has-image');
+      const icon = document.getElementById('pd-ft-extra-' + i)?.querySelector('.drop-icon');
+      if (icon) icon.style.display = 'none';
+    }
+  });
+}
+
 async function loadFinalizacao() {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await db.from('test_finalizacoes')
@@ -2045,6 +2122,24 @@ async function loadFinalizacao() {
         document.getElementById('pc-ft-' + slot).classList.add('has-image');
       }
     });
+    if (f.fotos_extras) {
+      try {
+        const extras = JSON.parse(f.fotos_extras);
+        extras.forEach(url => {
+          addFtExtraPhoto();
+          const i = ftPhotosTemp.extras.length - 1;
+          if (url) {
+            ftPhotosTemp.extras[i] = url;
+            const prev = document.getElementById('prev-ft-extra-' + i);
+            if (prev) { prev.src = url; prev.style.display = 'block'; }
+            const card = document.getElementById('pc-ft-extra-' + i);
+            if (card) card.classList.add('has-image');
+            const icon = document.getElementById('pd-ft-extra-' + i)?.querySelector('.drop-icon');
+            if (icon) icon.style.display = 'none';
+          }
+        });
+      } catch(_) {}
+    }
     document.getElementById('ftSavedLabel').style.display = '';
   }
 }
@@ -2071,11 +2166,24 @@ async function saveFinalizacao() {
       }
       fotos[slot] = url || null;
     }
+    const extrasUrls = [];
+    for (let i = 0; i < ftPhotosTemp.extras.length; i++) {
+      let url = ftPhotosTemp.extras[i];
+      if (url && !url.startsWith('http')) {
+        const res = await fetch(url); const blob = await res.blob();
+        const sid = ftRecordId || Date.now();
+        const path = `${EMPRESA_ID}/finalizacao/${sid}/extra_${i}.jpg`;
+        const { error: upErr } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+        if (!upErr) url = db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
+      }
+      if (url) extrasUrls.push(url);
+    }
     const row = {
       empresa_id: EMPRESA_ID, date, time_str: time,
       status_central:      document.getElementById('ftStatusCentral').value,
       status_dispositivos: document.getElementById('ftStatusDispositivos').value,
       foto_central: fotos.central, foto_ac: fotos.ac, foto_dc: fotos.dc,
+      fotos_extras: extrasUrls.length ? JSON.stringify(extrasUrls) : null,
       obs: document.getElementById('ftObs').value.trim()
     };
     if (ftRecordId) {
@@ -2701,6 +2809,7 @@ function buildReport() {
       ${ftPhotosTemp.central ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ftPhotosTemp.central}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
       ${ftPhotosTemp.ac      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">⚡ Medição Alimentação AC</div><img src="${ftPhotosTemp.ac}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
       ${ftPhotosTemp.dc      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${ftPhotosTemp.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${(ftPhotosTemp.extras || []).filter(Boolean).map((url, i) => `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">📸 Foto Extra ${i + 1}</div><img src="${url}" style="width:100%;border-radius:8px;display:block;"></div>`).join('')}
     </div>`;
 
   const signatureHTML = `
