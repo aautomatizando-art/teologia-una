@@ -874,7 +874,7 @@
         </div>
         <div class="form-group">
           <label>Local / Pavimento <span>*</span></label>
-          <select class="form-control" id="fLocal"><option value="">Selecione o laço primeiro…</option></select>
+          <select class="form-control" id="fLocal" onchange="autoFillBotoNum('fLocal','fBotoNum')"><option value="">Selecione o laço primeiro…</option></select>
         </div>
 
         <div class="form-group">
@@ -1237,7 +1237,7 @@
             </div>
             <div class="form-group">
               <label>Local / Pavimento <span style="color:var(--rose)">*</span></label>
-              <select class="form-control" id="eLocal"><option value="">Selecione o laço primeiro…</option></select>
+              <select class="form-control" id="eLocal" onchange="autoFillBotoNum('eLocal','eBotoNum')"><option value="">Selecione o laço primeiro…</option></select>
             </div>
             <div class="form-group">
               <label>Técnico Responsável</label>
@@ -1419,49 +1419,111 @@ function parseStatus(s) {
 const LOCAIS = {
   'essilor-campinas': {
     'Laço 1': [
-      'ESCADA ADM HID1 1ANDAR','PILAR ADM HID2 ENT IMP 3D','HIDRANTE 3 ADM',
-      'HIDRANTE 4 ADM','HID5 EMBALAGEM','HID6 FRENTE CASA BOMBAS',
-      'HID7 CORRED FERRAMENTARIA','HID8 DOC TECNICA','HID9 INT FERRAMENTARIA',
-      'HID10 CORRED PQP','HID11 EXT PQP'
+      {local:'ESCADA ADM HID1 1ANDAR',        boto:'BOT1'},
+      {local:'PILAR ADM HID2 ENT IMP 3D',     boto:'BOT2'},
+      {local:'HIDRANTE 3 ADM',                boto:'BOT3'},
+      {local:'HIDRANTE 4 ADM',                boto:'BOT4'},
+      {local:'HID5 EMBALAGEM',                boto:'BOT5'},
+      {local:'HID6 FRENTE CASA BOMBAS',       boto:'BOT6'},
+      {local:'HID7 CORRED FERRAMENTARIA',     boto:'BOT7'},
+      {local:'HID8 DOC TECNICA',              boto:'BOT8'},
+      {local:'HID9 INT FERRAMENTARIA',        boto:'BOT9'},
+      {local:'HID10 CORRED PQP',              boto:'BOT10'},
+      {local:'HID11 EXT PQP',                 boto:'BOT11'}
     ],
     'Laço 2': [
-      'SALA DIRETORIA','EM FRENTE SL DIRETORIA','SALA SFEROFLEX',
-      'EM FRENTE AUDITORIO','DETECT 1 AUDITORIO','DETECT 2 AUDITORIO',
-      'DETECT 3 AUDITORIO','DETECT 4 AUDITORIO','SL GERENCIA COMPRAS',
-      'SETOR COMPRAS','CONTROLADORIA','DETECT 1 DESIGN','DETECT 2 DESIGN',
-      'DETECT 3 DESIGN','SALA PERSON','SL CRIACAO IMPRESS 3D',
-      'SALA REUNIAO DESIGN','DIRETORIA FRAMES','COPA',
-      'EM FRENTE SL RAY BAN','SALA RAY BAN','DETECT 1 COMPRAS',
-      'DETECT 2 COMPRAS','DETECT 3 COMPRAS','GERENCIA CONTROLADORIA',
-      'DETECTOR 1 PCP','DETECTOR 2 PCP','GERENCIA SUPPLY',
-      'GERENCIA MANUFATURA','DETEC 1 ENGENHARIA','GERENCIA ENGENHARIA',
-      'DETEC 2 ENGENHARIA','DETEC DIRETORIA EHS','DETECTOR 1 EHS',
-      'DETECTOR 2 EHS','DETEC ESCADA ADM','DETEC SALA JURIDICO',
-      'DETEC SL GERENCIA LATAM','CORREDOR BANHEIRO ADM',
-      'DETEC SL IMPRESSAO 3D','DETEC SALA ALMOX EHS',
-      'ARMAZEM TI DETEC 1','ARMAZEM TI DETEC 2','DETECTOR SALA TI',
-      'DETEC 1 SALA SERVIDOR','DETEC 2 SALA SERVIDOR',
-      'DETEC 1 ALMOX EMBALAG','DETEC 2 ALMOX EMBALAG','DETEC 3 ALMOX EMBALAG',
-      'DETEC 4 ALMOX EMBALAG','DETEC 5 ALMOX EMBALAG','DETEC 6 ALMOX EMBALAG',
-      'DETEC 7 ALMOX EMBALAG','DETEC 8 ALMOX EMBALAG','DETEC 9 ALMOX EMBALAG',
-      'DETEC 1 EMBALAGEM'
+      {local:'SALA DIRETORIA',                boto:'DET200'},
+      {local:'EM FRENTE SL DIRETORIA',        boto:'DET201'},
+      {local:'SALA SFEROFLEX',                boto:'DET202'},
+      {local:'EM FRENTE AUDITORIO',           boto:'DET203'},
+      {local:'DETECT 1 AUDITORIO',            boto:'DET204'},
+      {local:'DETECT 2 AUDITORIO',            boto:'DET205'},
+      {local:'DETECT 3 AUDITORIO',            boto:'DET206'},
+      {local:'DETECT 4 AUDITORIO',            boto:'DET207'},
+      {local:'SL GERENCIA COMPRAS',           boto:'DET208'},
+      {local:'SETOR COMPRAS',                 boto:'DET209'},
+      {local:'CONTROLADORIA',                 boto:'DET210'},
+      {local:'DETECT 1 DESIGN',               boto:'DET211'},
+      {local:'DETECT 2 DESIGN',               boto:'DET212'},
+      {local:'DETECT 3 DESIGN',               boto:'DET213'},
+      {local:'SALA PERSON',                   boto:'DET214'},
+      {local:'SL CRIACAO IMPRESS 3D',         boto:'DET215'},
+      {local:'SALA REUNIAO DESIGN',           boto:'DET216'},
+      {local:'DIRETORIA FRAMES',              boto:'DET217'},
+      {local:'COPA',                          boto:'DET218'},
+      {local:'SALA DIRETORIA',                boto:'DET219'},
+      {local:'EM FRENTE SL DIRETORIA',        boto:'DET220'},
+      {local:'EM FRENTE SL RAY BAN',          boto:'DET221'},
+      {local:'SALA RAY BAN',                  boto:'DET222'},
+      {local:'DETECT 1 COMPRAS',              boto:'DET223'},
+      {local:'DETECT 2 COMPRAS',              boto:'DET224'},
+      {local:'DETECT 3 COMPRAS',              boto:'DET225'},
+      {local:'GERENCIA CONTROLADORIA',        boto:'DET226'},
+      {local:'DETECTOR 1 PCP',                boto:'DET227'},
+      {local:'DETECTOR 2 PCP',                boto:'DET228'},
+      {local:'GERENCIA SUPPLY',               boto:'DET229'},
+      {local:'GERENCIA MANUFATURA',           boto:'DET230'},
+      {local:'DETEC 1 ENGENHARIA',             boto:'DET231'},
+      {local:'GERENCIA ENGENHARIA',           boto:'DET232'},
+      {local:'DETEC 2 ENGENHARIA',             boto:'DET233'},
+      {local:'DETEC DIRETORIA EHS',           boto:'DET234'},
+      {local:'DETECTOR 1 EHS',                boto:'DET235'},
+      {local:'DETECTOR 2 EHS',                boto:'DET236'},
+      {local:'DETEC ESCADA ADM',              boto:'DET237'},
+      {local:'DETEC SALA JURIDICO',           boto:'DET238'},
+      {local:'DETEC SL GERENCIA LATAM',       boto:'DET239'},
+      {local:'CORREDOR BANHEIRO ADM',         boto:'DET240'},
+      {local:'DETEC SL IMPRESSAO 3D',         boto:'DET241'},
+      {local:'DETEC SALA ALMOX EHS',          boto:'DET242'},
+      {local:'ARMAZEM TI DETEC 1',            boto:'DET243'},
+      {local:'ARMAZEM TI DETEC 2',            boto:'DET244'},
+      {local:'DETECTOR SALA TI',              boto:'DET245'},
+      {local:'DETEC 1 SALA SERVIDOR',         boto:'DET246'},
+      {local:'DETEC 2 SALA SERVIDOR',         boto:'DET247'},
+      {local:'DETEC 1 ALMOX EMBALAG',         boto:'DET248'},
+      {local:'DETEC 2 ALMOX EMBALAG',         boto:'DET249'},
+      {local:'DETEC 3 ALMOX EMBALAG',         boto:'DET250'},
+      {local:'DETEC 4 ALMOX EMBALAG',         boto:'DET251'},
+      {local:'DETEC 5 ALMOX EMBALAG',         boto:'DET252'},
+      {local:'DETEC 6 ALMOX EMBALAG',         boto:'DET253'},
+      {local:'DETEC 7 ALMOX EMBALAG',         boto:'DET254'},
+      {local:'DETEC 8 ALMOX EMBALAG',         boto:'DET255'},
+      {local:'DETEC 9 ALMOX EMBALAG',         boto:'DET256'},
+      {local:'DETEC 1 EMBALAGEM',             boto:'DET257'}
     ],
     'Laço 3': [
-      'HID32 AO LADO AMBULATORIO','HID14 MEIO MONTAG. FINAL',
-      'SIRENE 1 LAPIDACAO','SIRENE 2 LAPIDACAO','HID31 CABINE PRIMARIA',
-      'HID15 INJETADOS PLASTICOS','HID30 COMPRESSORES',
-      'HID38 TRATAM. RESIDUOS','HID29 TRATAM. EFLUENTES',
-      'HID17 ALMOX DE METAL','HID16 ST TAMBOREAMENTO',
-      'HID28 AREA SERRALHERIA','HID18 MONTAGEM INICIAL','HID19 MONTAGEM SOLDA'
+      {local:'HID32 AO LADO AMBULATORIO',     boto:'BOT300'},
+      {local:'HID14 MEIO MONTAG. FINAL',      boto:'BOT301'},
+      {local:'SIRENE 1 LAPIDACAO',            boto:'BOT302'},
+      {local:'SIRENE 2 LAPIDACAO',            boto:'BOT303'},
+      {local:'HID31 CABINE PRIMARIA',         boto:'BOT304'},
+      {local:'HID15 INJETADOS PLASTICOS',     boto:'BOT305'},
+      {local:'HID30 COMPRESSORES',            boto:'BOT309'},
+      {local:'HID38 TRATAM. RESIDUOS',        boto:'BOT310'},
+      {local:'HID29 TRATAM. EFLUENTES',       boto:'BOT311'},
+      {local:'HID17 ALMOX DE METAL',          boto:'BOT312'},
+      {local:'HID16 ST TAMBOREAMENTO',        boto:'BOT313'},
+      {local:'HID28 AREA SERRALHERIA',        boto:'BOT314'},
+      {local:'HID18 MONTAGEM INICIAL',        boto:'BOT315'},
+      {local:'HID19 MONTAGEM SOLDA',          boto:'BOT316'}
     ],
     'Laço 4': [
-      'HID13 ALMOXARIFADO KIT','HID12 EXPED. MATERIAIS',
-      'HID12 ALMOX. CENTRAL REC.','HID25 PAREDE ALMOX RECEB',
-      'HID26 RESID. RESTAURANTE','HID21 POLIMENTO METAL',
-      'HID20 GALVANICA AUTOM.','BOT ENT SALA BRANCA','BOT INT SALA BRANCA',
-      'HID23 INT ALMOX PINTURA','HID22 GRAVACAO A LASER',
-      'HID34 VESTIARIOS','HID35 EM FRENTE QUIOSQUE',
-      'CENTRAL GLP PROX PORT','ACIONADOR PORTARIA','REPETIDORA PORTARIA'
+      {local:'HID13 ALMOXARIFADO KIT',        boto:'BOT401'},
+      {local:'HID12 EXPED. MATERIAIS',        boto:'BOT402'},
+      {local:'HID12 ALMOX. CENTRAL REC.',     boto:'BOT403'},
+      {local:'HID25 PAREDE ALMOX RECEB',      boto:'BOT404'},
+      {local:'HID26 RESID. RESTAURANTE',      boto:'BOT405'},
+      {local:'HID21 POLIMENTO METAL',         boto:'BOT407'},
+      {local:'HID20 GALVANICA AUTOM.',        boto:'BOT408'},
+      {local:'BOT ENT SALA BRANCA',           boto:'BOT409'},
+      {local:'BOT INT SALA BRANCA',           boto:'BOT410'},
+      {local:'HID23 INT ALMOX PINTURA',       boto:'BOT412'},
+      {local:'HID22 GRAVACAO A LASER',        boto:'BOT413'},
+      {local:'HID34 VESTIARIOS',              boto:'BOT414'},
+      {local:'HID35 EM FRENTE QUIOSQUE',      boto:'BOT415'},
+      {local:'CENTRAL GLP PROX PORT',         boto:'BOT416'},
+      {local:'ACIONADOR PORTARIA',            boto:'BOT417'},
+      {local:'REPETIDORA PORTARIA',           boto:'REP420'}
     ]
   }
 };
@@ -1502,18 +1564,25 @@ function updateLocais(zonaId, localId, currentVal) {
   if (!sel) return;
   const companyLocais = (LOCAIS[EMPRESA_ID] || {})[zona] || [];
   sel.innerHTML = '<option value="">Selecione o local…</option>';
-  companyLocais.forEach(l => {
+  companyLocais.forEach(item => {
     const o = document.createElement('option');
-    o.value = l; o.textContent = l; sel.appendChild(o);
+    const label = (typeof item === 'object') ? item.local : item;
+    const boto  = (typeof item === 'object') ? (item.boto || '') : '';
+    o.value = label; o.textContent = label;
+    if (boto) o.dataset.boto = boto;
+    sel.appendChild(o);
   });
-  // Garante backward compat: valor antigo que não está na lista vira option
-  if (currentVal && !companyLocais.includes(currentVal)) {
-    const o = document.createElement('option');
-    o.value = currentVal; o.textContent = currentVal;
-    sel.insertBefore(o, sel.options[1] || null);
+  // Backward compat: valor antigo que não está na lista vira option
+  if (currentVal) {
+    const exists = Array.from(sel.options).some(o => o.value === currentVal);
+    if (!exists) {
+      const o = document.createElement('option');
+      o.value = currentVal; o.textContent = currentVal;
+      sel.insertBefore(o, sel.options[1] || null);
+    }
+    sel.value = currentVal;
   }
-  if (currentVal) sel.value = currentVal;
-  // Se empresa não tem mapeamento, volta a ser texto livre
+  // Se empresa não tem mapeamento, mostra campo texto livre
   if (!LOCAIS[EMPRESA_ID]) {
     sel.style.display = 'none';
     let txt = document.getElementById(localId + '-txt');
@@ -1526,6 +1595,13 @@ function updateLocais(zonaId, localId, currentVal) {
     txt.style.display = '';
     if (currentVal) txt.value = currentVal;
   }
+}
+
+// Preenche Nº Dispositivo automaticamente ao escolher o Local
+function autoFillBotoNum(localId, botoNumId) {
+  const sel  = document.getElementById(localId);
+  const boto = sel.options[sel.selectedIndex]?.dataset?.boto;
+  if (boto) document.getElementById(botoNumId).value = boto;
 }
 
 // ── SUPABASE ───────────────────────────────────────────────────────────────
