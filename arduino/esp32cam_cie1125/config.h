@@ -26,5 +26,5 @@
 // FRAMESIZE_UXGA  = 1600×1200 (máxima — melhor para texto)
 // FRAMESIZE_SVGA  = 800×600
 // FRAMESIZE_VGA   = 640×480
-#define CAM_FRAMESIZE   FRAMESIZE_UXGA
-#define CAM_QUALIDADE   6    // 0–63: menor = melhor qualidade JPEG
+#define CAM_FRAMESIZE   FRAMESIZE_SXGA
+#define CAM_QUALIDADE   12   // 0–63: menor = melhor qualidade JPEG
