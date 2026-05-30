@@ -877,15 +877,6 @@
           <input type="time" class="form-control" id="fTime">
         </div>
         <div class="form-group">
-          <label>Local / Pavimento <span>*</span></label>
-          <select class="form-control" id="fLocal" onchange="autoFillBotoNum('fLocal','fBotoNum')"><option value="">Selecione o laço primeiro…</option></select>
-        </div>
-
-        <div class="form-group">
-          <label>Nº Dispositivo</label>
-          <input type="text" class="form-control" id="fBotoNum" placeholder="Ex: B-07">
-        </div>
-        <div class="form-group">
           <label>Laço</label>
           <select class="form-control" id="fZona" onchange="updateLocais('fZona','fLocal')">
             <option value="">Selecione o laço…</option>
@@ -894,6 +885,14 @@
             <option value="Laço 3">Laço 3</option>
             <option value="Laço 4">Laço 4</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>Local / Pavimento <span>*</span></label>
+          <select class="form-control" id="fLocal" onchange="autoFillBotoNum('fLocal','fBotoNum')"><option value="">Selecione o laço primeiro…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Nº Dispositivo</label>
+          <input type="text" class="form-control" id="fBotoNum" placeholder="Ex: B-07">
         </div>
         <div class="form-group">
           <label>Tipo de Dispositivo</label>
