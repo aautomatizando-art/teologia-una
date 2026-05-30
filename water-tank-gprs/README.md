@@ -1,66 +1,61 @@
-# Controle de Caixa d'Agua via GPRS + Telegram
+# Controle de Caixa d'Agua via LTE-M/NB-IoT + Telegram
 
-Projeto de automacao para monitoramento e controle de nivel de caixa d'agua
-usando **ESP32 + SIM800L** com alertas via **Telegram**, sem necessidade de WiFi.
+Monitoramento e controle automatico de nivel de caixa d'agua usando
+**LilyGO T-SIM7000G** (ESP32 + modem integrado) com alertas via **Telegram**.
+Sem necessidade de WiFi — funciona via rede celular LTE-M / NB-IoT.
 
-> **Chip utilizado:** Algar Telecom M2M/IoT
+> **Chip:** Algar Telecom M2M/IoT
+> **Placa:** LilyGO T-SIM7000G (ESP32 + SIM7000G na mesma placa)
 
 ## Funcionalidades
 
-- Medicao continua do nivel da caixa via sensor ultrassonico impermeavel
-- Alerta automatico no Telegram quando o nivel baixa
-- Liga a bomba automaticamente ao detectar nivel baixo
-- Desliga a bomba e notifica quando a caixa estiver cheia
-- Relatorio de status periodico (nivel, bomba, sinal GSM, uptime)
-- Reconexao automatica ao GPRS em caso de queda de sinal
+- Medicao continua do nivel via sensor ultrassonico impermeavel (JSN-SR04T)
+- Alerta no Telegram quando o nivel baixa
+- Liga bomba automaticamente ao detectar nivel baixo
+- Desliga bomba e notifica quando a caixa estiver cheia
+- Relatorio de status a cada 5 minutos (nivel, bomba, sinal, uptime)
+- Reconexao automatica em caso de queda de sinal
+- Suporte a NB-IoT + LTE-M (melhor cobertura rural)
 
 ## Hardware Necessario
 
-| Componente           | Especificacao                      | Qtd |
-|----------------------|------------------------------------|-----|
-| Microcontrolador     | ESP32 DevKit                       |  1  |
-| Modem GSM            | SIM800L EVB (com antena SMA)       |  1  |
-| Sensor nivel         | JSN-SR04T impermeavel              |  1  |
-| Modulo rele          | Rele 5V 1 canal                    |  1  |
-| Fonte alimentacao    | 5V 3A minimo                       |  1  |
-| Regulador de tensao  | LM2596 ajustado para 4.0V          |  1  |
-| Chip SIM             | **Algar Telecom M2M/IoT**          |  1  |
+| Componente          | Especificacao                   | Qtd |
+|---------------------|---------------------------------|-----|
+| Placa principal     | LilyGO T-SIM7000G               |  1  |
+| Sensor nivel        | JSN-SR04T (impermeavel)         |  1  |
+| Modulo rele         | Rele 5V 1 canal                 |  1  |
+| Fonte alimentacao   | 5V 2A (USB-C ou conector)       |  1  |
+| Chip SIM            | Algar Telecom M2M/IoT (Micro)   |  1  |
 
-> **ATENCAO:** O chip Algar M2M/IoT vem em formato triplo (Mini/Micro/Nano).
-> Use o **Micro SIM** (tamanho do meio) no SIM800L.
+> A LilyGO T-SIM7000G ja tem o ESP32 e o SIM7000G integrados.
+> Nao e necessario regulador de tensao externo para o modem.
 
 ## Esquema de Ligacao
 
 ```
-                    +------------------+
-                    |      ESP32       |
-                    |                  |
-JSN-SR04T TRIG ---->| GPIO32           |
-JSN-SR04T ECHO <----| GPIO33           |
-JSN-SR04T VCC  ---->| 5V               |
-JSN-SR04T GND  ---->| GND              |
-                    |                  |
-Rele IN        ---->| GPIO25           |
-Rele VCC       ---->| 5V               |
-Rele GND       ---->| GND              |
-                    |                  |
-SIM800L TXD    ---->| GPIO16 (RX)      |
-SIM800L RXD    <----| GPIO17 (TX)      |
-SIM800L GND    ---->| GND (comum)      |
-                    +------------------+
+ LilyGO T-SIM7000G
+ +----------------------+
+ |  [ESP32 + SIM7000G]  |<---- Chip Algar M2M (slot Micro SIM na placa)
+ |                      |
+ |  GPIO32  ------------|----> JSN-SR04T  TRIG
+ |  GPIO33  <-----------|----  JSN-SR04T  ECHO
+ |  5V      ------------|----> JSN-SR04T  VCC
+ |  GND     ------------|----> JSN-SR04T  GND
+ |                      |
+ |  GPIO25  ------------|----> Rele  IN
+ |  5V      ------------|----> Rele  VCC
+ |  GND     ------------|----> Rele  GND
+ |                      |
+ |  GPIO12  ------------|----> LED status (opcional)
+ +----------------------+
+        |
+     USB-C
+   Fonte 5V 2A
 
-   +--------------+
-   |  Fonte 5V 3A |------------------------------> ESP32 VIN
-   |              |
-   +------+-------+
-          |
-   +------v-------+
-   |   LM2596     | ajustado 4.0V -------------> SIM800L VCC
-   |  Regulador   |               -------------> SIM800L GND (comum)
-   +--------------+
-
-ATENCAO: SIM800L NUNCA alimentar direto no 5V!
-Pico de corrente: ~2A. Use regulador dedicado.
+ Rele:
+   COM  ----> Fio fase da bomba
+   NO   ----> Fase da rede eletrica
+   (Bomba liga quando GPIO25 = HIGH)
 ```
 
 ## Configuracao
@@ -75,60 +70,67 @@ Pico de corrente: ~2A. Use regulador dedicado.
 ### 2. Editar `config.h`
 
 ```cpp
-// APN Algar M2M (ja configurado)
-#define APN "m2m.algar.com.br"
-
-// Telegram — preencha com seus dados
+// Telegram
 #define BOT_TOKEN  "1234567890:AAxxxxxxxxxxxxxxxxxxxxxx"
 #define CHAT_ID    "123456789"
 
-// Calibracao — meca na sua caixa
+// Calibracao — meca na sua caixa (valores em cm):
 #define DIST_CAIXA_VAZIA  90   // sensor a 90cm da agua = caixa vazia
 #define DIST_CAIXA_CHEIA  15   // sensor a 15cm da agua = caixa cheia
 ```
 
 ### 3. Instalar Bibliotecas
 
-Ver arquivo `libraries.txt`. Instalar via Arduino IDE:
+Ver `libraries.txt`. Instalar via:
 `Sketch > Incluir Biblioteca > Gerenciar Bibliotecas`
 
-### 4. Gravar no ESP32
+### 4. Gravar na placa
 
-| Configuracao      | Valor              |
-|-------------------|--------------------|
-| Placa             | ESP32 Dev Module   |
-| Upload Speed      | 115200             |
-| Partition Scheme  | Default 4MB        |
+| Configuracao     | Valor              |
+|------------------|--------------------|
+| Placa            | ESP32 Dev Module   |
+| Upload Speed     | 115200             |
+| Partition Scheme | Default 4MB        |
 
 ## Calibracao do Sensor
 
-O sensor e instalado na tampa da caixa, apontando para baixo:
+O JSN-SR04T e instalado na tampa da caixa, apontando para baixo:
 
 ```
-[Sensor JSN-SR04T]
-   |  <- 15cm  (DIST_CAIXA_CHEIA: caixa cheia, desliga bomba)
+[JSN-SR04T na tampa]
+   |  <- 15cm  DIST_CAIXA_CHEIA  -> caixa cheia, desliga bomba
    |
    ~  nivel da agua
    |
-   |  <- 90cm  (DIST_CAIXA_VAZIA: caixa vazia, liga bomba + alerta)
+   |  <- 90cm  DIST_CAIXA_VAZIA  -> caixa vazia, liga bomba + alerta
    |
 [Fundo da caixa]
 ```
 
 ## Mensagens no Telegram
 
-| Evento              | Mensagem                                    |
-|---------------------|---------------------------------------------|
-| Inicializacao       | Sistema iniciado! Monitorando...            |
-| Nivel baixo         | ALERTA: Caixa d'agua baixa! X%             |
-| Caixa abastecida    | Caixa d'agua abastecida! Bomba desligada.  |
-| Status (5 em 5 min) | Nivel, bomba, sinal GSM, uptime            |
+| Evento            | Mensagem                                   |
+|-------------------|--------------------------------------------|
+| Inicializacao     | Sistema iniciado! Operadora, sinal...      |
+| Nivel baixo       | ALERTA: Caixa d'agua baixa! X%            |
+| Caixa cheia       | Caixa d'agua abastecida! Bomba desligada. |
+| Status (5/5min)   | Nivel, bomba, sinal GSM, uptime           |
+
+## Modo de Rede (config.h)
+
+```cpp
+#define NETWORK_MODE 51   // NB-IoT + LTE-M (recomendado)
+// Opcoes:
+// 2  = NB-IoT apenas      (maxima cobertura rural)
+// 38 = LTE-M apenas       (mais rapido)
+// 51 = NB-IoT + LTE-M     (automatico)
+```
 
 ## Cobertura Algar Telecom
 
-A Algar Telecom atua principalmente em:
+A Algar atua principalmente em:
 - Triangulo Mineiro e Alto Paranaiba (MG)
 - Noroeste de Sao Paulo
 - Sul de Goias e norte do Parana
 
-Verifique a cobertura no site da Algar antes de instalar.
+Verifique a cobertura NB-IoT/LTE-M no site da Algar antes de instalar.
