@@ -39,6 +39,7 @@
 
 // ── Globals ───────────────────────────────────────
 bool          alarmAtivo       = false;
+unsigned long tAlarm           = 0;
 unsigned long tUltimaFoto      = 0;
 unsigned long tUltimaReconexao = 0;
 
@@ -236,6 +237,7 @@ void setup() {
     else                 Serial.println("[CAM] ERRO: camera nao iniciou");
 
     conectarWiFi();
+    tUltimaFoto = millis() - COOLDOWN_MS;   // permite foto imediata após boot
     Serial.println("[OK] Aguardando rele de alarme...\n");
 }
 
@@ -247,16 +249,19 @@ void loop() {
 
     if (releAtivo && !alarmAtivo) {
         alarmAtivo = true;
+        tAlarm     = millis();
         Serial.println("[ALARME] Rele acionado.");
         delay(DEBOUNCE_MS);
-        digitalWrite(PIN_LED_RED, LOW);    // LED vermelho aceso
+        digitalWrite(PIN_LED_RED, LOW);
         capturarEEnviar();
     }
 
-    if (!releAtivo && alarmAtivo) {
+    // Aguarda 5s após alarme antes de aceitar NORMALIZADO —
+    // evita cortar o envio da foto se o relê for breve
+    if (!releAtivo && alarmAtivo && millis() - tAlarm > 5000) {
         alarmAtivo = false;
         Serial.println("[NORMAL] Rele liberado.");
-        digitalWrite(PIN_LED_RED, HIGH);   // LED vermelho apagado
+        digitalWrite(PIN_LED_RED, HIGH);
         enviarTexto(montarLegenda(false));
     }
 
