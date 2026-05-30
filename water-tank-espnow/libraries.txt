@@ -1,0 +1,15 @@
+# Bibliotecas necessarias
+# Instalar via Arduino IDE: Sketch > Incluir Biblioteca > Gerenciar Bibliotecas
+
+# Apenas para o ESP32 #2 (Gateway):
+UniversalTelegramBot     by Brian Lough           >= 1.3.0
+ArduinoJson              by Benoit Blanchon       >= 6.21.0
+
+# ESP32 #1 (Sensor): nenhuma biblioteca adicional
+# ESP-NOW e WiFi ja estao incluidos no ESP32 Arduino Core
+
+# Placa ESP32 (para ambos):
+# Arduino IDE > Preferencias > URLs adicionais:
+# https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+# Ferramentas > Placa > Gerenciador de Placas > "ESP32 by Espressif Systems" >= 2.0.0
+# Selecionar placa: ESP32 Dev Module
