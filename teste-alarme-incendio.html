@@ -1659,6 +1659,21 @@ function updateLocais(zonaId, localId, currentVal) {
   }
 }
 
+// Retorna o valor do campo local, seja select ou input texto livre
+function getLocalVal(localId) {
+  const txt = document.getElementById(localId + '-txt');
+  if (txt && txt.style.display !== 'none') return txt.value.trim();
+  return (document.getElementById(localId)?.value || '').trim();
+}
+
+// Limpa o campo local (select + possível input texto livre)
+function clearLocalVal(localId) {
+  const sel = document.getElementById(localId);
+  if (sel) sel.value = '';
+  const txt = document.getElementById(localId + '-txt');
+  if (txt) txt.value = '';
+}
+
 // Preenche Nº Dispositivo automaticamente ao escolher o Local
 function autoFillBotoNum(localId, botoNumId) {
   const sel  = document.getElementById(localId);
@@ -2484,7 +2499,7 @@ async function addTest() {
   if (READ_ONLY) return;
   const date  = document.getElementById('fDate').value;
   const time  = document.getElementById('fTime').value;
-  const local = document.getElementById('fLocal').value.trim();
+  const local = getLocalVal('fLocal');
   if (!date)  { showToast('Informe a data do teste.', 'error'); return; }
   if (!time)  { showToast('Informe o horário do teste.', 'error'); return; }
   if (!local) { showToast('Informe o local / pavimento.', 'error'); return; }
@@ -2524,7 +2539,7 @@ async function addTest() {
 function resetForm() {
   document.getElementById('fZona').value = '';
   updateLocais('fZona', 'fLocal');
-  document.getElementById('fLocal').value = '';
+  clearLocalVal('fLocal');
   document.getElementById('fTecnico').value = '';
   document.getElementById('fBotoNum').value = '';
   document.getElementById('fZona').value = '';
@@ -2828,7 +2843,7 @@ async function saveEdit(e) {
   e.preventDefault();
   const date  = document.getElementById('eDate').value;
   const time  = document.getElementById('eTime').value;
-  const local = document.getElementById('eLocal').value.trim();
+  const local = getLocalVal('eLocal');
   if (!date)  { showToast('Informe a data.', 'error'); return; }
   if (!time)  { showToast('Informe o horário.', 'error'); return; }
   if (!local) { showToast('Informe o local.', 'error'); return; }
