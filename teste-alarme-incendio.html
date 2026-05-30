@@ -1115,64 +1115,17 @@
             </div>
           </div>
 
-          <div class="photo-card" id="pc-ft-escada">
-            <div class="photo-header">
-              <div class="photo-label"><div class="icon icon-central">🚪</div>Escada Pressurizada</div>
-            </div>
-            <div class="photo-drop" id="pd-ft-escada">
-              <input type="file" id="fi-ft-escada-cam" accept="image/*" capture="environment" style="display:none">
-              <input type="file" id="fi-ft-escada-gal" accept="image/*" style="display:none">
-              <span class="drop-icon">📤</span>
-              <div class="photo-src-btns">
-                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-escada-cam').click()">📷 Câmera</button>
-                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-escada-gal').click()">🖼️ Galeria</button>
-              </div>
-              <img class="preview" id="prev-ft-escada" style="display:none;">
-              <button class="remove-btn" onclick="removeFtPhoto('escada',event)">✕</button>
-            </div>
-          </div>
-
-          <div class="photo-card" id="pc-ft-portas">
-            <div class="photo-header">
-              <div class="photo-label"><div class="icon icon-botoeira">🔒</div>Portas Magnéticas</div>
-            </div>
-            <div class="photo-drop" id="pd-ft-portas">
-              <input type="file" id="fi-ft-portas-cam" accept="image/*" capture="environment" style="display:none">
-              <input type="file" id="fi-ft-portas-gal" accept="image/*" style="display:none">
-              <span class="drop-icon">📤</span>
-              <div class="photo-src-btns">
-                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-portas-cam').click()">📷 Câmera</button>
-                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-portas-gal').click()">🖼️ Galeria</button>
-              </div>
-              <img class="preview" id="prev-ft-portas" style="display:none;">
-              <button class="remove-btn" onclick="removeFtPhoto('portas',event)">✕</button>
-            </div>
-          </div>
-
-          <div class="photo-card" id="pc-ft-catracas">
-            <div class="photo-header">
-              <div class="photo-label"><div class="icon icon-sirene">🚧</div>Catracas</div>
-            </div>
-            <div class="photo-drop" id="pd-ft-catracas">
-              <input type="file" id="fi-ft-catracas-cam" accept="image/*" capture="environment" style="display:none">
-              <input type="file" id="fi-ft-catracas-gal" accept="image/*" style="display:none">
-              <span class="drop-icon">📤</span>
-              <div class="photo-src-btns">
-                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-catracas-cam').click()">📷 Câmera</button>
-                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-catracas-gal').click()">🖼️ Galeria</button>
-              </div>
-              <img class="preview" id="prev-ft-catracas" style="display:none;">
-              <button class="remove-btn" onclick="removeFtPhoto('catracas',event)">✕</button>
-            </div>
-          </div>
-
         </div>
       </div>
 
-      <!-- Extra photos -->
+      <!-- Named optional + free-form extra photo slots -->
+      <div id="ft-named-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;"></div>
       <div id="ft-extras-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px;"></div>
-      <div style="margin-top:12px;">
-        <button type="button" class="btn btn-ghost" id="ftAddPhotoBtn" onclick="addFtExtraPhoto()" style="font-size:13px;">➕ Adicionar Foto</button>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">
+        <button type="button" class="btn btn-ghost" id="btn-ft-escada"   onclick="showFtNamedSlot('escada','🚪','Escada Pressurizada')"  style="font-size:13px;">➕ Escada Pressurizada</button>
+        <button type="button" class="btn btn-ghost" id="btn-ft-portas"   onclick="showFtNamedSlot('portas','🔒','Portas Magnéticas')"    style="font-size:13px;">➕ Portas Magnéticas</button>
+        <button type="button" class="btn btn-ghost" id="btn-ft-catracas" onclick="showFtNamedSlot('catracas','🚧','Catracas')"           style="font-size:13px;">➕ Catracas</button>
+        <button type="button" class="btn btn-ghost" id="ftAddPhotoBtn"   onclick="addFtExtraPhoto()"                                    style="font-size:13px;">➕ Adicionar Foto</button>
       </div>
 
       <div class="form-group" style="margin-top:14px;">
@@ -1951,8 +1904,8 @@ function applyReadOnlyMode() {
     sec.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
     // Esconde controles de upload de foto e botão de remover
     sec.querySelectorAll('.photo-src-btns, .remove-btn, .drop-icon').forEach(el => { el.style.display = 'none'; });
-    // Esconde botões de salvar / editar / adicionar foto
-    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"]').forEach(el => { el.style.display = 'none'; });
+    // Esconde botões de salvar / editar / adicionar foto / named slots
+    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"], button[onclick^="showFt"]').forEach(el => { el.style.display = 'none'; });
   });
 }
 
@@ -2067,12 +2020,52 @@ function handleFtPhoto(input, slot) {
   img.src = objUrl;
 }
 
+const FT_NAMED_SLOTS = {
+  escada:   { icon: '🚪', label: 'Escada Pressurizada' },
+  portas:   { icon: '🔒', label: 'Portas Magnéticas'   },
+  catracas: { icon: '🚧', label: 'Catracas'             },
+};
+
+function showFtNamedSlot(slot, icon, label) {
+  const btn = document.getElementById('btn-ft-' + slot);
+  if (btn) btn.style.display = 'none';
+  if (document.getElementById('pc-ft-' + slot)) return; // já existe
+  const grid = document.getElementById('ft-named-grid');
+  const card = document.createElement('div');
+  card.className = 'photo-card';
+  card.id = 'pc-ft-' + slot;
+  card.innerHTML = `
+    <div class="photo-header">
+      <div class="photo-label"><div class="icon icon-central">${icon}</div>${label}</div>
+    </div>
+    <div class="photo-drop" id="pd-ft-${slot}">
+      <input type="file" id="fi-ft-${slot}-cam" accept="image/*" capture="environment" style="display:none" onchange="handleFtPhoto(this,'${slot}')">
+      <input type="file" id="fi-ft-${slot}-gal" accept="image/*" style="display:none" onchange="handleFtPhoto(this,'${slot}')">
+      <span class="drop-icon">📤</span>
+      <div class="photo-src-btns">
+        <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-${slot}-cam').click()">📷 Câmera</button>
+        <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-${slot}-gal').click()">🖼️ Galeria</button>
+      </div>
+      <img class="preview" id="prev-ft-${slot}" style="display:none;">
+      <button class="remove-btn" onclick="removeFtPhoto('${slot}',event)">✕</button>
+    </div>`;
+  grid.appendChild(card);
+}
+
 function removeFtPhoto(slot, e) {
   if (e) e.stopPropagation();
   ftPhotosTemp[slot] = null;
   ['fi-ft-'+slot+'-cam','fi-ft-'+slot+'-gal'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  if (FT_NAMED_SLOTS[slot]) {
+    // named slot: remove card and re-show its button
+    const card = document.getElementById('pc-ft-' + slot);
+    if (card) card.remove();
+    const btn = document.getElementById('btn-ft-' + slot);
+    if (btn) btn.style.display = '';
+    return;
+  }
   const prev = document.getElementById('prev-ft-' + slot);
   prev.src = ''; prev.style.display = 'none';
   document.getElementById('pc-ft-' + slot).classList.remove('has-image');
@@ -2164,13 +2157,26 @@ async function loadFinalizacao() {
     document.getElementById('ftStatusCentral').value = f.status_central || '';
     document.getElementById('ftStatusDispositivos').value = f.status_dispositivos || '';
     document.getElementById('ftObs').value = f.obs || '';
-    ['central','ac','dc','escada','portas','catracas'].forEach(slot => {
+    ['central','ac','dc'].forEach(slot => {
       const url = f['foto_' + slot];
       if (url) {
         ftPhotosTemp[slot] = url;
         const prev = document.getElementById('prev-ft-' + slot);
         prev.src = url; prev.style.display = 'block';
         document.getElementById('pc-ft-' + slot).classList.add('has-image');
+      }
+    });
+    Object.entries(FT_NAMED_SLOTS).forEach(([slot, { icon, label }]) => {
+      const url = f['foto_' + slot];
+      if (url) {
+        showFtNamedSlot(slot, icon, label);
+        ftPhotosTemp[slot] = url;
+        const prev = document.getElementById('prev-ft-' + slot);
+        if (prev) { prev.src = url; prev.style.display = 'block'; }
+        const card = document.getElementById('pc-ft-' + slot);
+        if (card) card.classList.add('has-image');
+        const drop = document.getElementById('pd-ft-' + slot)?.querySelector('.drop-icon');
+        if (drop) drop.style.display = 'none';
       }
     });
     if (f.fotos_extras) {
