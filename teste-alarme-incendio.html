@@ -2648,7 +2648,7 @@ function renderProgress() {
 
   const counts = months.map(m =>
     tests.filter(t => {
-      if (!t.date) return false;
+      if (!t.date || t.tipo !== 'Botoeira') return false;
       const parts = t.date.split('-');
       return parseInt(parts[0]) === m.year && (parseInt(parts[1]) - 1) === m.month;
     }).length
@@ -3041,7 +3041,7 @@ function buildReport() {
     }
     const counts = months.map(m =>
       tests.filter(t => {
-        if (!t.date) return false;
+        if (!t.date || t.tipo !== 'Botoeira') return false;
         const parts = t.date.split('-');
         return parseInt(parts[0]) === m.year && (parseInt(parts[1]) - 1) === m.month;
       }).length
