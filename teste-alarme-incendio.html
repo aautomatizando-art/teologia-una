@@ -1182,6 +1182,7 @@
         <div class="chart-wrapper"><canvas id="progressBar"></canvas></div>
       </div>
     </div>
+    <div id="detectorProgressGrid"></div>
   </section>
 
   <!-- ART config (admin only) -->
@@ -2651,6 +2652,29 @@ function renderProgress() {
     <span class="progress-pill">${remaining} pendentes</span>
   `;
 
+  // Detectores de Fumaça no ciclo
+  const detTests = tests.filter(t => {
+    if (t.tipo !== 'Detector de Fumaça' || !t.date) return false;
+    const [y, m] = t.date.split('-').map(Number);
+    return months.some(mo => mo.year === y && mo.month === m - 1);
+  });
+  const detIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40"><circle cx="24" cy="24" r="22" fill="#f4f4f4" stroke="#ccc" stroke-width="2"/><circle cx="24" cy="24" r="16" fill="none" stroke="#ddd" stroke-width="1.2"/><circle cx="24" cy="24" r="10" fill="#ebebeb" stroke="#d0d0d0" stroke-width="1"/><path d="M24,16 C24,16 29.5,18.5 29.5,23 C29.5,27.5 24,30.5 24,30.5 C24,30.5 18.5,27.5 18.5,23 C18.5,18.5 24,16 Z" fill="#CC1500"/><text x="24" y="26" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="Arial,sans-serif">i</text></svg>`;
+  const detGridEl = document.getElementById('detectorProgressGrid');
+  if (detGridEl) {
+    detGridEl.innerHTML = detTests.length ? `
+      <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px;">
+        <span class="section-title" style="font-size:13px;margin:0;">🔊 Detectores de Fumaça Testados no Ciclo</span>
+        <span class="badge">${detTests.length}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;">
+        ${detTests.map(t => `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 6px 8px;text-align:center;">
+          ${detIcon}
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.botoNum||'—'}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">${t.date ? formatDate(t.date) : ''}</div>
+        </div>`).join('')}
+      </div>` : '';
+  }
+
   if (progressPieChart) { progressPieChart.destroy(); progressPieChart = null; }
   if (progressBarChart) { progressBarChart.destroy(); progressBarChart = null; }
 
@@ -3013,6 +3037,12 @@ function buildReport() {
     const sc          = pct >= 100 ? 'ok' : pct >= 60 ? 'warn' : 'danger';
     rptProgressData   = { totalTested, remaining, pct, TOTAL, counts, monthLabels: months.map(m => m.label) };
 
+    const rptDetTests = tests.filter(t => {
+      if (t.tipo !== 'Detector de Fumaça' || !t.date) return false;
+      const [y, m] = t.date.split('-').map(Number);
+      return months.some(mo => mo.year === y && mo.month === m - 1);
+    });
+    const rptDetIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="36" height="36"><circle cx="24" cy="24" r="22" fill="#f4f4f4" stroke="#ccc" stroke-width="2"/><circle cx="24" cy="24" r="16" fill="none" stroke="#ddd" stroke-width="1.2"/><circle cx="24" cy="24" r="10" fill="#ebebeb" stroke="#d0d0d0" stroke-width="1"/><path d="M24,16 C24,16 29.5,18.5 29.5,23 C29.5,27.5 24,30.5 24,30.5 C24,30.5 18.5,27.5 18.5,23 C18.5,18.5 24,16 Z" fill="#CC1500"/><text x="24" y="26" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="Arial,sans-serif">i</text></svg>`;
     progressHTML = `
       <div class="section-title" style="font-size:15px;margin:28px 0 12px;">📊 Progresso — Ciclo de 3 Meses</div>
       <div class="progress-info" style="margin-bottom:16px;">
@@ -3029,7 +3059,19 @@ function buildReport() {
           <h4>Testes por Mês</h4>
           <div class="chart-wrapper"><canvas id="rptProgressBar"></canvas></div>
         </div>
-      </div>`;
+      </div>
+      ${rptDetTests.length ? `
+      <div style="display:flex;align-items:center;gap:10px;margin:20px 0 12px;">
+        <span style="font-size:13px;font-weight:700;">🔊 Detectores de Fumaça Testados no Ciclo</span>
+        <span class="badge">${rptDetTests.length}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;">
+        ${rptDetTests.map(t => `<div style="background:#f7f7f7;border:1px solid #e0e0e0;border-radius:8px;padding:8px 4px 6px;text-align:center;">
+          ${rptDetIcon}
+          <div style="font-size:10px;font-weight:700;color:#111;margin-top:4px;">${esc(t.botoNum||'—')}</div>
+          <div style="font-size:9px;color:#666;margin-top:2px;">${t.date ? formatDate(t.date) : ''}</div>
+        </div>`).join('')}
+      </div>` : ''}`;
   }
 
   // session start
