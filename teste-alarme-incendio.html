@@ -150,6 +150,13 @@
     padding: 24px;
   }
   .card + .card { margin-top: 16px; }
+  .form-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-top: 14px;
+  }
 
   /* ── FORM ── */
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
@@ -1040,6 +1047,7 @@
   <section id="problemasSection">
     <div class="section-title" style="font-size:20px;">⚠️ Problemas Identificados</div>
     <div class="form-card">
+      <p id="problemasEmptyMsg" style="font-size:13px;color:var(--muted);margin-bottom:12px;">Nenhum problema identificado. Adicione fotos se necessário.</p>
       <div id="form-problemas-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;"></div>
       <div style="margin-top:14px;">
         <button type="button" class="btn btn-ghost" id="problemasAddPhotoBtn" onclick="addProblemaPhoto()" style="font-size:13px;">➕ Adicionar Foto</button>
@@ -2017,7 +2025,7 @@ function applyReadOnlyMode() {
   if (formSec) formSec.style.display = 'none';
 
   // Sessão e Finalização: exibe os dados gravados mas bloqueia interação
-  ['sessionSection', 'finalizacaoSection'].forEach(id => {
+  ['sessionSection', 'finalizacaoSection', 'problemasSection'].forEach(id => {
     const sec = document.getElementById(id);
     if (!sec) return;
     // Desabilita campos (JS ainda consegue setar .value para exibir os dados)
@@ -2025,7 +2033,7 @@ function applyReadOnlyMode() {
     // Esconde controles de upload de foto e botão de remover
     sec.querySelectorAll('.photo-src-btns, .remove-btn, .drop-icon').forEach(el => { el.style.display = 'none'; });
     // Esconde botões de salvar / editar / adicionar foto / named slots
-    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"], button[onclick^="showFt"], button[onclick^="addSs"]').forEach(el => { el.style.display = 'none'; });
+    sec.querySelectorAll('button[onclick^="save"], button[onclick^="edit"], button[onclick^="addFt"], button[onclick^="showFt"], button[onclick^="addSs"], button[onclick^="addProblema"]').forEach(el => { el.style.display = 'none'; });
   });
 }
 
@@ -2116,9 +2124,13 @@ function removeSsExtraPhoto(idx, e)      { if (e) e.stopPropagation(); _removeEx
 function addFormExtraPhoto()              { const i = photosTemp.extras.length; photosTemp.extras.push(null); _buildExtraPhotoCard('form-extras-grid', i, 'handleFormExtraPhoto', 'removeFormExtraPhoto'); }
 function handleFormExtraPhoto(input, idx) { _handleExtraPhoto(input.files && input.files[0], photosTemp.extras, 'form-extras-grid', idx); }
 function removeFormExtraPhoto(idx, e)     { if (e) e.stopPropagation(); _removeExtraPhoto(photosTemp.extras, 'form-extras-grid', idx, 'handleFormExtraPhoto', 'removeFormExtraPhoto'); }
-function addProblemaPhoto()               { const i = problemasPhotos.length; problemasPhotos.push(null); _buildExtraPhotoCard('form-problemas-grid', i, 'handleProblemaPhoto', 'removeProblemaPhoto'); }
+function _updateProblemasEmpty() {
+  const el = document.getElementById('problemasEmptyMsg');
+  if (el) el.style.display = problemasPhotos.length ? 'none' : '';
+}
+function addProblemaPhoto()               { const i = problemasPhotos.length; problemasPhotos.push(null); _buildExtraPhotoCard('form-problemas-grid', i, 'handleProblemaPhoto', 'removeProblemaPhoto'); _updateProblemasEmpty(); }
 function handleProblemaPhoto(input, idx)  { _handleExtraPhoto(input.files && input.files[0], problemasPhotos, 'form-problemas-grid', idx); }
-function removeProblemaPhoto(idx, e)      { if (e) e.stopPropagation(); _removeExtraPhoto(problemasPhotos, 'form-problemas-grid', idx, 'handleProblemaPhoto', 'removeProblemaPhoto'); }
+function removeProblemaPhoto(idx, e)      { if (e) e.stopPropagation(); _removeExtraPhoto(problemasPhotos, 'form-problemas-grid', idx, 'handleProblemaPhoto', 'removeProblemaPhoto'); _updateProblemasEmpty(); }
 
 async function loadSessionStart() {
   const today = new Date().toISOString().slice(0,10);
@@ -2183,6 +2195,7 @@ async function loadSessionStart() {
         });
         problemasRecordId = s.id;
         document.getElementById('problemasSavedLabel').style.display = '';
+        _updateProblemasEmpty();
       } catch(_) {}
     }
   }
