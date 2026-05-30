@@ -248,12 +248,17 @@ void loop() {
     bool releAtivo = (digitalRead(PIN_RELE) == LOW);
 
     if (releAtivo && !alarmAtivo) {
-        alarmAtivo = true;
-        tAlarm     = millis();
-        Serial.println("[ALARME] Rele acionado.");
-        delay(DEBOUNCE_MS);
-        digitalWrite(PIN_LED_RED, LOW);
-        capturarEEnviar();
+        if (millis() - tUltimaFoto < COOLDOWN_MS) {
+            Serial.printf("[CAM] Cooldown: %lus restantes.\n",
+                          (COOLDOWN_MS - (millis() - tUltimaFoto)) / 1000UL);
+        } else {
+            alarmAtivo = true;
+            tAlarm     = millis();
+            Serial.println("[ALARME] Rele acionado.");
+            delay(DEBOUNCE_MS);
+            digitalWrite(PIN_LED_RED, LOW);
+            capturarEEnviar();
+        }
     }
 
     // Aguarda 5s após alarme antes de aceitar NORMALIZADO —

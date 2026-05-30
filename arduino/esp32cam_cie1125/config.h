@@ -14,7 +14,7 @@
 #define PIN_RELE        13
 
 // ── Comportamento ─────────────────────────────────
-#define COOLDOWN_MS      30000UL  // mínimo entre fotos (ms)
+#define COOLDOWN_MS      10000UL  // mínimo entre fotos (ms) — aumente para 60000 em produção
 #define DEBOUNCE_MS        300    // aguarda estabilização do relê (ms)
 
 // ── Flash LED ─────────────────────────────────────
