@@ -2051,8 +2051,11 @@ async function loadFinalizacao() {
 
 async function saveFinalizacao() {
   if (READ_ONLY) return;
-  const date = document.getElementById('ftDate').value;
-  const time = document.getElementById('ftTime').value;
+  const now  = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = now.toTimeString().slice(0, 5);
+  document.getElementById('ftDate').value = date;
+  document.getElementById('ftTime').value = time;
   const btn = document.querySelector('[onclick="saveFinalizacao()"]');
   btn.disabled = true; btn.textContent = '⏳ Salvando…';
   try {
