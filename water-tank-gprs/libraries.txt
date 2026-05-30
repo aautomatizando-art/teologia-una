@@ -1,0 +1,17 @@
+# Bibliotecas necessarias — instalar via Arduino IDE (Sketch > Incluir Biblioteca > Gerenciar Bibliotecas)
+
+TinyGSM                  by vshymanskyy          >= 0.11.7
+SSLClient                by OPEnSLab-OSU          >= 1.6.11
+UniversalTelegramBot     by Brian Lough           >= 1.3.0
+ArduinoJson              by Benoit Blanchon       >= 6.21.0
+
+# Instalacao via Arduino CLI (alternativa):
+#   arduino-cli lib install "TinyGSM"
+#   arduino-cli lib install "SSLClient"
+#   arduino-cli lib install "UniversalTelegramBot"
+#   arduino-cli lib install "ArduinoJson"
+
+# Placa ESP32:
+#   Arduino IDE > Preferencias > URLs adicionais:
+#   https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+#   Ferramentas > Placa > Gerenciador de placas > ESP32 by Espressif Systems
