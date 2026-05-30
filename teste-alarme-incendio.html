@@ -1743,6 +1743,10 @@ let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: nul
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
 
+// ── ART MANAGEMENT ────────────────────────────────────────────────────────
+const ART_KEY = 'fire_art_' + EMPRESA_ID;
+function getArt() { return localStorage.getItem(ART_KEY) || '2620260043644'; }
+
 // ── INIT ───────────────────────────────────────────────────────────────────
 (function init() {
   // verifica login principal
@@ -2871,13 +2875,6 @@ function closeReport() {
   document.getElementById('reportModal').classList.remove('open');
   if (chartPie) { chartPie.destroy(); chartPie = null; }
   if (chartBar) { chartBar.destroy(); chartBar = null; }
-}
-
-// ── ART MANAGEMENT ────────────────────────────────────────────────────────
-const ART_KEY = 'fire_art_' + EMPRESA_ID;
-
-function getArt() {
-  return localStorage.getItem(ART_KEY) || '2620260043644';
 }
 
 function showArtModal() {
