@@ -1185,6 +1185,15 @@
     </div>
   </section>
 
+  <!-- ART config (admin only) -->
+  <section id="artSection" style="margin-top:8px;display:none;">
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap;">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);">Nº ART</span>
+      <span id="artDisplayValue" style="font-family:'Fira Code',monospace;font-size:14px;font-weight:700;color:var(--text);letter-spacing:.06em;">2620260043644</span>
+      <button type="button" class="btn btn-ghost" onclick="showArtModal()" style="font-size:12px;padding:5px 12px;margin-left:auto;">🔐 Alterar ART</button>
+    </div>
+  </section>
+
 </main>
 
 <!-- REPORT MODAL -->
@@ -1360,6 +1369,41 @@
 </div>
 
 <!-- DELETE MODAL -->
+<!-- ART MODAL -->
+<div class="del-backdrop" id="artModal">
+  <div class="del-modal">
+    <div class="del-header">
+      <h3>🔐 Alterar Nº ART</h3>
+      <button class="del-close" onclick="closeArtModal()">✕</button>
+    </div>
+    <div class="del-body">
+      <!-- Step 1: senha -->
+      <div id="artStepPwd">
+        <p class="del-warn">Digite a senha de administrador para alterar o número de ART do relatório.</p>
+        <div class="del-error" id="artPwdError">⚠️ Senha incorreta. Tente novamente.</div>
+        <form onsubmit="verifyArtPwd(event)">
+          <div class="form-group">
+            <label>Senha do administrador</label>
+            <input type="password" class="form-control" id="artPwdInput" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">Continuar →</button>
+        </form>
+      </div>
+      <!-- Step 2: novo ART -->
+      <div id="artStepEdit" style="display:none;">
+        <p class="del-warn">Informe o novo número de ART. Ele será exibido na assinatura de todos os relatórios.</p>
+        <form onsubmit="saveArt(event)">
+          <div class="form-group">
+            <label>Nº ART</label>
+            <input type="text" class="form-control" id="artNewInput" placeholder="Ex: 2620260043644" style="font-family:'Fira Code',monospace;letter-spacing:.06em;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">💾 Salvar ART</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="del-backdrop" id="deleteModal">
   <div class="del-modal">
     <div class="del-header">
@@ -1740,6 +1784,9 @@ let pendingDeleteId = null;
       ['change','input'].forEach(e => inp.addEventListener(e, function(){ handleFtPhoto(this, slot); }, { passive:true }));
     });
   });
+  // ART section: visible only to admin, initialize from localStorage
+  document.getElementById('artDisplayValue').textContent = getArt();
+  if (!READ_ONLY) document.getElementById('artSection').style.display = '';
   if (READ_ONLY) applyReadOnlyMode();
   loadSessionStart();
   loadFinalizacao();
@@ -2826,6 +2873,48 @@ function closeReport() {
   if (chartBar) { chartBar.destroy(); chartBar = null; }
 }
 
+// ── ART MANAGEMENT ────────────────────────────────────────────────────────
+const ART_KEY = 'fire_art_' + EMPRESA_ID;
+
+function getArt() {
+  return localStorage.getItem(ART_KEY) || '2620260043644';
+}
+
+function showArtModal() {
+  document.getElementById('artStepPwd').style.display  = '';
+  document.getElementById('artStepEdit').style.display = 'none';
+  document.getElementById('artPwdInput').value  = '';
+  document.getElementById('artPwdError').classList.remove('show');
+  document.getElementById('artModal').classList.add('open');
+  setTimeout(() => document.getElementById('artPwdInput').focus(), 120);
+}
+
+function closeArtModal() {
+  document.getElementById('artModal').classList.remove('open');
+}
+
+function verifyArtPwd(e) {
+  e.preventDefault();
+  if (document.getElementById('artPwdInput').value !== SENHA_ADMIN) {
+    document.getElementById('artPwdError').classList.add('show');
+    return;
+  }
+  document.getElementById('artStepPwd').style.display  = 'none';
+  document.getElementById('artStepEdit').style.display = '';
+  document.getElementById('artNewInput').value = getArt();
+  setTimeout(() => document.getElementById('artNewInput').focus(), 80);
+}
+
+function saveArt(e) {
+  e.preventDefault();
+  const val = document.getElementById('artNewInput').value.trim();
+  if (!val) return;
+  localStorage.setItem(ART_KEY, val);
+  document.getElementById('artDisplayValue').textContent = val;
+  closeArtModal();
+  showToast('Nº ART atualizado!', 'success');
+}
+
 function buildReport() {
   const total = tests.length;
   const okCount = tests.filter(t => isOkStatus(t.status)).length;
@@ -3047,7 +3136,7 @@ function buildReport() {
       <!-- ART -->
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;background:#111;border-radius:8px;padding:10px 16px;">
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#aaa;">Nº ART</span>
-        <span style="font-size:15px;font-weight:900;color:#CC1500;font-family:'Fira Code',monospace;letter-spacing:.08em;">2620260043644</span>
+        <span style="font-size:15px;font-weight:900;color:#CC1500;font-family:'Fira Code',monospace;letter-spacing:.08em;">${getArt()}</span>
       </div>
 
     </div>`;
@@ -3197,7 +3286,7 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
   document.getElementById('lightboxImg').src = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); closeEditModal(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeReport(); closeDeleteModal(); closeEditModal(); closeArtModal(); } });
 
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function formatDate(d) {
