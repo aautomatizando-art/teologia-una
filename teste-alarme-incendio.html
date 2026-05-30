@@ -874,7 +874,7 @@
         </div>
         <div class="form-group">
           <label>Local / Pavimento <span>*</span></label>
-          <input type="text" class="form-control" id="fLocal" placeholder="Ex: Térreo, 3° andar…">
+          <select class="form-control" id="fLocal"><option value="">Selecione o laço primeiro…</option></select>
         </div>
 
         <div class="form-group">
@@ -883,7 +883,7 @@
         </div>
         <div class="form-group">
           <label>Laço</label>
-          <select class="form-control" id="fZona">
+          <select class="form-control" id="fZona" onchange="updateLocais('fZona','fLocal')">
             <option value="">Selecione o laço…</option>
             <option value="Laço 1">Laço 1</option>
             <option value="Laço 2">Laço 2</option>
@@ -1237,7 +1237,7 @@
             </div>
             <div class="form-group">
               <label>Local / Pavimento <span style="color:var(--rose)">*</span></label>
-              <input type="text" class="form-control" id="eLocal">
+              <select class="form-control" id="eLocal"><option value="">Selecione o laço primeiro…</option></select>
             </div>
             <div class="form-group">
               <label>Técnico Responsável</label>
@@ -1251,7 +1251,7 @@
             </div>
             <div class="form-group">
               <label>Laço</label>
-              <select class="form-control" id="eZona">
+              <select class="form-control" id="eZona" onchange="updateLocais('eZona','eLocal')">
                 <option value="">Selecione…</option>
                 <option value="Laço 1">Laço 1</option>
                 <option value="Laço 2">Laço 2</option>
@@ -1416,6 +1416,56 @@ function parseStatus(s) {
   return { b: 'ok', s: 'ok' }; // legado 'ok', 'sirene-ok' e padrão
 }
 
+const LOCAIS = {
+  'essilor-campinas': {
+    'Laço 1': [
+      'ESCADA ADM HID1 1ANDAR','PILAR ADM HID2 ENT IMP 3D','HIDRANTE 3 ADM',
+      'HIDRANTE 4 ADM','HID5 EMBALAGEM','HID6 FRENTE CASA BOMBAS',
+      'HID7 CORRED FERRAMENTARIA','HID8 DOC TECNICA','HID9 INT FERRAMENTARIA',
+      'HID10 CORRED PQP','HID11 EXT PQP'
+    ],
+    'Laço 2': [
+      'SALA DIRETORIA','EM FRENTE SL DIRETORIA','SALA SFEROFLEX',
+      'EM FRENTE AUDITORIO','DETECT 1 AUDITORIO','DETECT 2 AUDITORIO',
+      'DETECT 3 AUDITORIO','DETECT 4 AUDITORIO','SL GERENCIA COMPRAS',
+      'SETOR COMPRAS','CONTROLADORIA','DETECT 1 DESIGN','DETECT 2 DESIGN',
+      'DETECT 3 DESIGN','SALA PERSON','SL CRIACAO IMPRESS 3D',
+      'SALA REUNIAO DESIGN','DIRETORIA FRAMES','COPA',
+      'EM FRENTE SL RAY BAN','SALA RAY BAN','DETECT 1 COMPRAS',
+      'DETECT 2 COMPRAS','DETECT 3 COMPRAS','GERENCIA CONTROLADORIA',
+      'DETECTOR 1 PCP','DETECTOR 2 PCP','GERENCIA SUPPLY',
+      'GERENCIA MANUFATURA','DETEC 1 ENGENHARIA','GERENCIA ENGENHARIA',
+      'DETEC 2 ENGENHARIA','DETEC DIRETORIA EHS','DETECTOR 1 EHS',
+      'DETECTOR 2 EHS','DETEC ESCADA ADM','DETEC SALA JURIDICO',
+      'DETEC SL GERENCIA LATAM','CORREDOR BANHEIRO ADM',
+      'DETEC SL IMPRESSAO 3D','DETEC SALA ALMOX EHS',
+      'ARMAZEM TI DETEC 1','ARMAZEM TI DETEC 2','DETECTOR SALA TI',
+      'DETEC 1 SALA SERVIDOR','DETEC 2 SALA SERVIDOR',
+      'DETEC 1 ALMOX EMBALAG','DETEC 2 ALMOX EMBALAG','DETEC 3 ALMOX EMBALAG',
+      'DETEC 4 ALMOX EMBALAG','DETEC 5 ALMOX EMBALAG','DETEC 6 ALMOX EMBALAG',
+      'DETEC 7 ALMOX EMBALAG','DETEC 8 ALMOX EMBALAG','DETEC 9 ALMOX EMBALAG',
+      'DETEC 1 EMBALAGEM'
+    ],
+    'Laço 3': [
+      'HID32 AO LADO AMBULATORIO','HID14 MEIO MONTAG. FINAL',
+      'SIRENE 1 LAPIDACAO','SIRENE 2 LAPIDACAO','HID31 CABINE PRIMARIA',
+      'HID15 INJETADOS PLASTICOS','HID30 COMPRESSORES',
+      'HID38 TRATAM. RESIDUOS','HID29 TRATAM. EFLUENTES',
+      'HID17 ALMOX DE METAL','HID16 ST TAMBOREAMENTO',
+      'HID28 AREA SERRALHERIA','HID18 MONTAGEM INICIAL','HID19 MONTAGEM SOLDA'
+    ],
+    'Laço 4': [
+      'HID13 ALMOXARIFADO KIT','HID12 EXPED. MATERIAIS',
+      'HID12 ALMOX. CENTRAL REC.','HID25 PAREDE ALMOX RECEB',
+      'HID26 RESID. RESTAURANTE','HID21 POLIMENTO METAL',
+      'HID20 GALVANICA AUTOM.','BOT ENT SALA BRANCA','BOT INT SALA BRANCA',
+      'HID23 INT ALMOX PINTURA','HID22 GRAVACAO A LASER',
+      'HID34 VESTIARIOS','HID35 EM FRENTE QUIOSQUE',
+      'CENTRAL GLP PROX PORT','ACIONADOR PORTARIA','REPETIDORA PORTARIA'
+    ]
+  }
+};
+
 const EMPRESA_TOTAL = {
   'essilor-campinas':  139,
   'essilor-sumare':    254,
@@ -1443,6 +1493,39 @@ function populateTecnicoSelects() {
       sel.appendChild(o);
     });
   });
+}
+
+// Popula o select de Local baseado no Laço selecionado
+function updateLocais(zonaId, localId, currentVal) {
+  const zona = document.getElementById(zonaId).value;
+  const sel  = document.getElementById(localId);
+  if (!sel) return;
+  const companyLocais = (LOCAIS[EMPRESA_ID] || {})[zona] || [];
+  sel.innerHTML = '<option value="">Selecione o local…</option>';
+  companyLocais.forEach(l => {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l; sel.appendChild(o);
+  });
+  // Garante backward compat: valor antigo que não está na lista vira option
+  if (currentVal && !companyLocais.includes(currentVal)) {
+    const o = document.createElement('option');
+    o.value = currentVal; o.textContent = currentVal;
+    sel.insertBefore(o, sel.options[1] || null);
+  }
+  if (currentVal) sel.value = currentVal;
+  // Se empresa não tem mapeamento, volta a ser texto livre
+  if (!LOCAIS[EMPRESA_ID]) {
+    sel.style.display = 'none';
+    let txt = document.getElementById(localId + '-txt');
+    if (!txt) {
+      txt = document.createElement('input');
+      txt.type = 'text'; txt.className = 'form-control';
+      txt.id = localId + '-txt'; txt.placeholder = 'Ex: Térreo, 3° andar…';
+      sel.parentNode.insertBefore(txt, sel.nextSibling);
+    }
+    txt.style.display = '';
+    if (currentVal) txt.value = currentVal;
+  }
 }
 
 // ── SUPABASE ───────────────────────────────────────────────────────────────
@@ -1540,6 +1623,7 @@ let pendingDeleteId = null;
   document.getElementById('ftDate').value = now.toISOString().slice(0, 10);
   document.getElementById('ftTime').value = now.toTimeString().slice(0, 5);
   populateTecnicoSelects();
+  updateLocais('fZona', 'fLocal');
   bindPhotoInputs();
   ['fi-ss-central-cam','fi-ss-central-gal'].forEach(id => {
     const inp = document.getElementById(id); if (!inp) return;
@@ -1983,6 +2067,8 @@ async function addTest() {
 }
 
 function resetForm() {
+  document.getElementById('fZona').value = '';
+  updateLocais('fZona', 'fLocal');
   document.getElementById('fLocal').value = '';
   document.getElementById('fTecnico').value = '';
   document.getElementById('fBotoNum').value = '';
@@ -2192,7 +2278,8 @@ function confirmEditAuth(e) {
 function fillEditForm(test) {
   document.getElementById('eDate').value    = test.date    || '';
   document.getElementById('eTime').value    = test.time    || '';
-  document.getElementById('eLocal').value   = test.local   || '';
+  document.getElementById('eZona').value    = test.zona    || '';
+  updateLocais('eZona', 'eLocal', test.local || '');
   document.getElementById('eTecnico').value = test.tecnico || '';
   document.getElementById('eBotoNum').value = test.botoNum || '';
   document.getElementById('eZona').value    = test.zona    || '';
