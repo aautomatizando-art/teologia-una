@@ -1115,6 +1115,57 @@
             </div>
           </div>
 
+          <div class="photo-card" id="pc-ft-escada">
+            <div class="photo-header">
+              <div class="photo-label"><div class="icon icon-central">🚪</div>Escada Pressurizada</div>
+            </div>
+            <div class="photo-drop" id="pd-ft-escada">
+              <input type="file" id="fi-ft-escada-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="fi-ft-escada-gal" accept="image/*" style="display:none">
+              <span class="drop-icon">📤</span>
+              <div class="photo-src-btns">
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-escada-cam').click()">📷 Câmera</button>
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-escada-gal').click()">🖼️ Galeria</button>
+              </div>
+              <img class="preview" id="prev-ft-escada" style="display:none;">
+              <button class="remove-btn" onclick="removeFtPhoto('escada',event)">✕</button>
+            </div>
+          </div>
+
+          <div class="photo-card" id="pc-ft-portas">
+            <div class="photo-header">
+              <div class="photo-label"><div class="icon icon-botoeira">🔒</div>Portas Magnéticas</div>
+            </div>
+            <div class="photo-drop" id="pd-ft-portas">
+              <input type="file" id="fi-ft-portas-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="fi-ft-portas-gal" accept="image/*" style="display:none">
+              <span class="drop-icon">📤</span>
+              <div class="photo-src-btns">
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-portas-cam').click()">📷 Câmera</button>
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-portas-gal').click()">🖼️ Galeria</button>
+              </div>
+              <img class="preview" id="prev-ft-portas" style="display:none;">
+              <button class="remove-btn" onclick="removeFtPhoto('portas',event)">✕</button>
+            </div>
+          </div>
+
+          <div class="photo-card" id="pc-ft-catracas">
+            <div class="photo-header">
+              <div class="photo-label"><div class="icon icon-sirene">🚧</div>Catracas</div>
+            </div>
+            <div class="photo-drop" id="pd-ft-catracas">
+              <input type="file" id="fi-ft-catracas-cam" accept="image/*" capture="environment" style="display:none">
+              <input type="file" id="fi-ft-catracas-gal" accept="image/*" style="display:none">
+              <span class="drop-icon">📤</span>
+              <div class="photo-src-btns">
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-catracas-cam').click()">📷 Câmera</button>
+                <button type="button" class="photo-src-btn" onclick="document.getElementById('fi-ft-catracas-gal').click()">🖼️ Galeria</button>
+              </div>
+              <img class="preview" id="prev-ft-catracas" style="display:none;">
+              <button class="remove-btn" onclick="removeFtPhoto('catracas',event)">✕</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1988,7 +2039,7 @@ async function saveSessionStart() {
 
 // ── FINALIZAÇÃO DE TESTE ───────────────────────────────────────────────────
 
-const ftPhotosTemp = { central: null, ac: null, dc: null, extras: [] };
+const ftPhotosTemp = { central: null, ac: null, dc: null, escada: null, portas: null, catracas: null, extras: [] };
 let ftRecordId = null;
 
 function handleFtPhoto(input, slot) {
@@ -2113,7 +2164,7 @@ async function loadFinalizacao() {
     document.getElementById('ftStatusCentral').value = f.status_central || '';
     document.getElementById('ftStatusDispositivos').value = f.status_dispositivos || '';
     document.getElementById('ftObs').value = f.obs || '';
-    ['central','ac','dc'].forEach(slot => {
+    ['central','ac','dc','escada','portas','catracas'].forEach(slot => {
       const url = f['foto_' + slot];
       if (url) {
         ftPhotosTemp[slot] = url;
@@ -2155,7 +2206,7 @@ async function saveFinalizacao() {
   btn.disabled = true; btn.textContent = '⏳ Salvando…';
   try {
     const fotos = {};
-    for (const slot of ['central','ac','dc']) {
+    for (const slot of ['central','ac','dc','escada','portas','catracas']) {
       let url = ftPhotosTemp[slot];
       if (url && !url.startsWith('http')) {
         const res = await fetch(url); const blob = await res.blob();
@@ -2183,6 +2234,7 @@ async function saveFinalizacao() {
       status_central:      document.getElementById('ftStatusCentral').value,
       status_dispositivos: document.getElementById('ftStatusDispositivos').value,
       foto_central: fotos.central, foto_ac: fotos.ac, foto_dc: fotos.dc,
+      foto_escada: fotos.escada, foto_portas: fotos.portas, foto_catracas: fotos.catracas,
       fotos_extras: extrasUrls.length ? JSON.stringify(extrasUrls) : null,
       obs: document.getElementById('ftObs').value.trim()
     };
@@ -2806,9 +2858,12 @@ function buildReport() {
     </div>
     ${ftObsVal ? `<div style="margin-bottom:14px;font-size:13px;"><strong>Obs:</strong> ${esc(ftObsVal)}</div>` : ''}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:8px;">
-      ${ftPhotosTemp.central ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ftPhotosTemp.central}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.ac      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">⚡ Medição Alimentação AC</div><img src="${ftPhotosTemp.ac}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
-      ${ftPhotosTemp.dc      ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${ftPhotosTemp.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.central  ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ftPhotosTemp.central}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.ac       ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">⚡ Medição Alimentação AC</div><img src="${ftPhotosTemp.ac}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.dc       ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔋 Medição Alimentação DC</div><img src="${ftPhotosTemp.dc}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.escada   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚪 Escada Pressurizada</div><img src="${ftPhotosTemp.escada}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.portas   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔒 Portas Magnéticas</div><img src="${ftPhotosTemp.portas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
+      ${ftPhotosTemp.catracas ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚧 Catracas</div><img src="${ftPhotosTemp.catracas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
       ${(ftPhotosTemp.extras || []).filter(Boolean).map((url, i) => `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">📸 Foto Extra ${i + 1}</div><img src="${url}" style="width:100%;border-radius:8px;display:block;"></div>`).join('')}
     </div>`;
 
