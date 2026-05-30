@@ -1031,6 +1031,15 @@
         <button class="btn btn-primary btn-lg" onclick="addTest()">➕ Adicionar Teste</button>
       </div>
     </div>
+
+    <!-- PROBLEMAS IDENTIFICADOS -->
+    <div style="margin-top:18px;">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;">⚠️ Problemas Identificados</p>
+      <div id="form-problemas-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;"></div>
+      <div style="margin-top:12px;">
+        <button type="button" class="btn btn-ghost" onclick="addProblemaPhoto()" style="font-size:13px;">➕ Adicionar Foto</button>
+      </div>
+    </div>
   </section>
 
   <hr class="divider">
@@ -1687,8 +1696,9 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 function rowToTest(r) {
-  let extras = [];
-  try { if (r.photos_extras) extras = JSON.parse(r.photos_extras).map(parseExtraItem); } catch(_) {}
+  let extras = [], problemas = [];
+  try { if (r.photos_extras)    extras    = JSON.parse(r.photos_extras).map(parseExtraItem);    } catch(_) {}
+  try { if (r.photos_problemas) problemas = JSON.parse(r.photos_problemas).map(parseExtraItem); } catch(_) {}
   return {
     id: r.id, date: r.date, time: r.time_str,
     local: r.local_desc, tecnico: r.tecnico || '',
@@ -1699,7 +1709,7 @@ function rowToTest(r) {
       central:     r.photo_central     || null,
       sirene:      r.photo_sirene      || null,
       dispositivo: r.photo_dispositivo || null,
-      extras
+      extras, problemas
     }
   };
 }
@@ -1715,7 +1725,8 @@ function testToRow(t) {
     photo_central:     t.photos.central     || null,
     photo_sirene:      t.photos.sirene      || null,
     photo_dispositivo: t.photos.dispositivo || null,
-    photos_extras: (t.photos.extras && t.photos.extras.length) ? JSON.stringify(t.photos.extras) : null
+    photos_extras:    (t.photos.extras    && t.photos.extras.length)    ? JSON.stringify(t.photos.extras)    : null,
+    photos_problemas: (t.photos.problemas && t.photos.problemas.length) ? JSON.stringify(t.photos.problemas) : null
   };
 }
 
@@ -1743,7 +1754,13 @@ async function uploadAllPhotos(photos, testId) {
     const obs = document.getElementById('form-extras-grid-obs-' + i)?.value.trim() || '';
     if (url) extras.push({ url, obs });
   }
-  return { botoeira, central, sirene, dispositivo, extras };
+  const problemas = [];
+  for (let i = 0; i < (photos.problemas || []).length; i++) {
+    const url = await uploadPhoto(photos.problemas[i], testId, 'problema_' + i);
+    const obs = document.getElementById('form-problemas-grid-obs-' + i)?.value.trim() || '';
+    if (url) problemas.push({ url, obs });
+  }
+  return { botoeira, central, sirene, dispositivo, extras, problemas };
 }
 
 async function loadTests() {
@@ -1756,7 +1773,7 @@ async function loadTests() {
 }
 
 let tests = [];
-let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, extras: [] };
+let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, extras: [], problemas: [] };
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
 
@@ -2081,6 +2098,9 @@ function removeSsExtraPhoto(idx, e)      { if (e) e.stopPropagation(); _removeEx
 function addFormExtraPhoto()              { const i = photosTemp.extras.length; photosTemp.extras.push(null); _buildExtraPhotoCard('form-extras-grid', i, 'handleFormExtraPhoto', 'removeFormExtraPhoto'); }
 function handleFormExtraPhoto(input, idx) { _handleExtraPhoto(input.files && input.files[0], photosTemp.extras, 'form-extras-grid', idx); }
 function removeFormExtraPhoto(idx, e)     { if (e) e.stopPropagation(); _removeExtraPhoto(photosTemp.extras, 'form-extras-grid', idx, 'handleFormExtraPhoto', 'removeFormExtraPhoto'); }
+function addProblemaPhoto()               { const i = photosTemp.problemas.length; photosTemp.problemas.push(null); _buildExtraPhotoCard('form-problemas-grid', i, 'handleProblemaPhoto', 'removeProblemaPhoto'); }
+function handleProblemaPhoto(input, idx)  { _handleExtraPhoto(input.files && input.files[0], photosTemp.problemas, 'form-problemas-grid', idx); }
+function removeProblemaPhoto(idx, e)      { if (e) e.stopPropagation(); _removeExtraPhoto(photosTemp.problemas, 'form-problemas-grid', idx, 'handleProblemaPhoto', 'removeProblemaPhoto'); }
 
 async function loadSessionStart() {
   const today = new Date().toISOString().slice(0,10);
@@ -2567,6 +2587,9 @@ function resetForm() {
   photosTemp.extras = [];
   const feg = document.getElementById('form-extras-grid');
   if (feg) feg.innerHTML = '';
+  photosTemp.problemas = [];
+  const fpg = document.getElementById('form-problemas-grid');
+  if (fpg) fpg.innerHTML = '';
 
   const now = new Date();
   document.getElementById('fDate').value = now.toISOString().slice(0, 10);
@@ -3148,6 +3171,7 @@ function buildReport() {
             ${reportPhoto(t.photos.central,     '🖥️ Central')}
             ${reportPhoto(t.photos.sirene,      '🔔 Sirene')}
             ${(t.photos.extras || []).filter(e => e && (e.url||(typeof e==='string'&&e))).map((item, i) => { const p=parseExtraItem(item); return reportPhoto(p.url, p.obs||'📸 Extra '+(i+1)); }).join('')}
+            ${(t.photos.problemas || []).filter(e => e && (e.url||(typeof e==='string'&&e))).map((item, i) => { const p=parseExtraItem(item); return reportPhoto(p.url, p.obs||'⚠️ Problema '+(i+1)); }).join('')}
           </div>
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
