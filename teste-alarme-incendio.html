@@ -533,7 +533,8 @@
     color: var(--muted);
     margin-bottom: 16px;
   }
-  .chart-wrapper { position: relative; height: 220px; }
+  .chart-wrapper { position: relative; height: 260px; }
+  .chart-card { overflow: visible; }
 
   /* ── REPORT TEST ITEMS ── */
   .report-items { display: flex; flex-direction: column; gap: 14px; }
@@ -666,7 +667,7 @@
       color: #111 !important;
     }
     .stat-card .stat-label, .chart-card h4 { color: #555 !important; }
-    .chart-wrapper { height: 180px; }
+    .chart-wrapper { height: 220px; }
     .report-item.ok    { border-left: 3px solid #16a34a !important; }
     .report-item.falha { border-left: 3px solid #dc2626 !important; }
     .report-item-head  { border-color: #d0d0d0 !important; background: #f0f0f0 !important; color: #111 !important; }
@@ -3591,7 +3592,7 @@ function buildReport(filtered) {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { color: '#f2f2f2', padding: 16, font: { family: 'Archivo', size: 13 } }
+            labels: { color: '#aaa', padding: 16, font: { family: 'Archivo', size: 12 } }
           },
           tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/total*100)}%)` } }
         },
@@ -3622,10 +3623,18 @@ function buildReport(filtered) {
       },
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: { bottom: 10 } },
         scales: {
           x: {
             stacked: false,
-            ticks: { color: '#888', font: { family: 'Archivo', size: 11 }, maxRotation: 30 },
+            ticks: {
+              color: '#888', font: { family: 'Archivo', size: 10 },
+              maxRotation: 45, minRotation: 30,
+              callback: function(val, index) {
+                const lbl = this.getLabelForValue(val);
+                return lbl.length > 14 ? lbl.substring(0, 13) + '…' : lbl;
+              }
+            },
             grid: { color: 'rgba(255,255,255,.05)' }
           },
           y: {
@@ -3637,7 +3646,7 @@ function buildReport(filtered) {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { color: '#f2f2f2', padding: 16, font: { family: 'Archivo', size: 13 } }
+            labels: { color: '#aaa', padding: 16, font: { family: 'Archivo', size: 12 } }
           }
         }
       }
@@ -3657,7 +3666,7 @@ function buildReport(filtered) {
         options: {
           responsive: true, maintainAspectRatio: false, cutout: '65%',
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#f2f2f2', padding: 14, font: { family: 'Archivo', size: 12 } } },
+            legend: { position: 'bottom', labels: { color: '#aaa', padding: 14, font: { family: 'Archivo', size: 12 } } },
             tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${T} (${Math.round(ctx.raw/T*100)}%)` } }
           }
         }
@@ -3693,6 +3702,18 @@ function reportPhoto(src, label) {
     </div>
   </div>`;
 }
+
+function _setChartLegendColor(color) {
+  Chart.instances && Object.values(Chart.instances).forEach(c => {
+    if (c.options?.plugins?.legend?.labels) {
+      c.options.plugins.legend.labels.color = color;
+      c.update('none');
+    }
+  });
+}
+
+window.addEventListener('beforeprint', () => _setChartLegendColor('#333'));
+window.addEventListener('afterprint',  () => _setChartLegendColor('#aaa'));
 
 function printReport() {
   window.print();
