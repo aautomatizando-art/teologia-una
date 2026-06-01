@@ -1221,6 +1221,14 @@
     </div>
   </section>
 
+  <!-- RELATÓRIOS SALVOS -->
+  <section id="savedReportsSection" style="margin-top:18px;display:none;">
+    <div class="section-title" style="font-size:16px;">📁 Relatórios Salvos</div>
+    <div class="form-card" id="savedReportsList">
+      <p style="font-size:13px;color:var(--muted);">Nenhum relatório salvo ainda.</p>
+    </div>
+  </section>
+
 </main>
 
 <!-- REPORT MODAL -->
@@ -1254,6 +1262,7 @@
       <span class="report-stamp" id="reportStamp"></span>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="closeReport()">Fechar</button>
+        <button class="btn btn-ghost btn-sm" onclick="saveReport()" style="color:var(--ok);">💾 Salvar Relatório</button>
         <button class="btn btn-primary" onclick="printReport()">🖨️ Imprimir / PDF</button>
       </div>
     </div>
@@ -1789,6 +1798,76 @@ async function loadTests() {
 
 let tests = [];
 let rptSess = null; // session override for date-filtered reports
+
+// ── SAVED REPORTS ──────────────────────────────────────────────────────────
+const SAVED_REPORTS_KEY = 'fire_saved_reports_' + EMPRESA_ID;
+
+function _getSavedReports() {
+  try { return JSON.parse(localStorage.getItem(SAVED_REPORTS_KEY) || '[]'); } catch(_) { return []; }
+}
+
+function saveReport() {
+  const from  = document.getElementById('rptDateFrom').value;
+  const to    = document.getElementById('rptDateTo').value;
+  const label = prompt('Nome para este relatório:', _autoLabel(from, to));
+  if (!label) return;
+  const list = _getSavedReports();
+  list.unshift({ id: Date.now(), label, dateFrom: from, dateTo: to, createdAt: new Date().toISOString() });
+  localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(list));
+  renderSavedReports();
+  showToast('Relatório salvo!', 'success');
+}
+
+function _autoLabel(from, to) {
+  const fmt = d => d ? formatDate(d) : '';
+  if (from && to && from !== to) return `${fmt(from)} → ${fmt(to)}`;
+  if (from) return fmt(from);
+  return 'Todos os registros';
+}
+
+function deleteSavedReport(id) {
+  if (!confirm('Remover este relatório salvo?')) return;
+  const list = _getSavedReports().filter(r => r.id !== id);
+  localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(list));
+  renderSavedReports();
+}
+
+async function openSavedReport(id) {
+  const rpt = _getSavedReports().find(r => r.id === id);
+  if (!rpt) return;
+  closeReport();
+  document.getElementById('rptDateFrom').value = rpt.dateFrom || '';
+  document.getElementById('rptDateTo').value   = rpt.dateTo   || '';
+  if (rpt.dateFrom || rpt.dateTo) {
+    await applyReportFilter();
+  } else {
+    rptSess = null;
+    buildReport(tests);
+  }
+  document.getElementById('reportModal').classList.add('open');
+}
+
+function renderSavedReports() {
+  const list = _getSavedReports();
+  const sec  = document.getElementById('savedReportsSection');
+  const container = document.getElementById('savedReportsList');
+  if (!sec || !container) return;
+  if (list.length === 0) {
+    sec.style.display = 'none';
+    container.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhum relatório salvo ainda.</p>';
+    return;
+  }
+  sec.style.display = '';
+  container.innerHTML = list.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;">${esc(r.label)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Salvo em ${new Date(r.createdAt).toLocaleString('pt-BR')}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openSavedReport(${r.id})">📊 Abrir</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--rose);" onclick="deleteSavedReport(${r.id})">🗑️ Remover</button>
+    </div>`).join('');
+}
 let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, extras: [] };
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
@@ -1842,6 +1921,7 @@ function getArt() { return localStorage.getItem(ART_KEY) || '2620260043644'; }
   document.getElementById('artDisplayValue').textContent = getArt();
   if (!READ_ONLY) document.getElementById('artSection').style.display = '';
   if (READ_ONLY) applyReadOnlyMode();
+  renderSavedReports();
   loadSessionStart();
   loadFinalizacao();
   loadTests();
