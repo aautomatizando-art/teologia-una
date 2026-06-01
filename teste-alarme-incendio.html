@@ -698,7 +698,8 @@
     .report-footer { display: flex !important; }
     .del-backdrop { display: none !important; }
     /* ── Um registro por página, fotos em tamanho real ── */
-    .report-items { gap: 0 !important; }
+    /* display:block necessário para page-break funcionar dentro de flex */
+    .report-items { display: block !important; gap: 0 !important; }
     .report-item {
       page-break-before: always !important;
       break-before: page !important;
