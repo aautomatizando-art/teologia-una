@@ -3205,13 +3205,23 @@ async function clearAll() {
 }
 
 // ── REPORT ─────────────────────────────────────────────────────────────────
+let _reportCharts = [];
+
+function _destroyReportCharts() {
+  _reportCharts.forEach(c => { try { c.destroy(); } catch(_) {} });
+  _reportCharts = [];
+  chartPie = null;
+  chartBar = null;
+}
+
 function openReport() {
   rptSess = null;
   const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
-  buildReport(tests.filter(t => t.date === today));
+  // Open modal FIRST so canvas elements have proper dimensions
   document.getElementById('reportModal').classList.add('open');
+  requestAnimationFrame(() => buildReport(tests.filter(t => t.date === today)));
 }
 
 async function applyReportFilter() {
@@ -3273,8 +3283,7 @@ function clearReportFilter() {
 
 function closeReport() {
   document.getElementById('reportModal').classList.remove('open');
-  if (chartPie) { chartPie.destroy(); chartPie = null; }
-  if (chartBar) { chartBar.destroy(); chartBar = null; }
+  _destroyReportCharts();
 }
 
 function showArtModal() {
@@ -3603,8 +3612,11 @@ function buildReport(filtered) {
     img.onclick = () => openLightbox(img.src);
   });
 
-  // render charts after DOM ready
-  requestAnimationFrame(() => {
+  // Destroy previous report charts before creating new ones
+  _destroyReportCharts();
+
+  // Double rAF: first frame applies layout, second creates charts with real canvas dimensions
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     // pie
     const ctxPie = document.getElementById('chartPie').getContext('2d');
     chartPie = new Chart(ctxPie, {
@@ -3631,6 +3643,7 @@ function buildReport(filtered) {
         cutout: '60%'
       }
     });
+    _reportCharts.push(chartPie);
 
     // bar — group by local
     const locals = {};
@@ -3683,11 +3696,12 @@ function buildReport(filtered) {
         }
       }
     });
+    _reportCharts.push(chartBar);
 
     // progress charts (só para empresas com TOTAL definido)
     if (rptProgressData) {
       const { totalTested, remaining, TOTAL: T, counts, monthLabels } = rptProgressData;
-      new Chart(document.getElementById('rptProgressPie').getContext('2d'), {
+      _reportCharts.push(new Chart(document.getElementById('rptProgressPie').getContext('2d'), {
         type: 'doughnut',
         data: {
           labels: ['Testados', 'Pendentes'],
@@ -3702,8 +3716,8 @@ function buildReport(filtered) {
             tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${T} (${Math.round(ctx.raw/T*100)}%)` } }
           }
         }
-      });
-      new Chart(document.getElementById('rptProgressBar').getContext('2d'), {
+      }));
+      _reportCharts.push(new Chart(document.getElementById('rptProgressBar').getContext('2d'), {
         type: 'bar',
         data: {
           labels: monthLabels,
@@ -3712,16 +3726,16 @@ function buildReport(filtered) {
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
-            x: { ticks: { color: '#888', font: { family: 'Archivo', size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+            x: { ticks: { color: '#888', font: { family: 'Arquivo', size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
             y: { beginAtZero: true, max: T,
               ticks: { color: '#888', font: { family: 'Archivo' }, stepSize: Math.ceil(T / 5) },
               grid: { color: 'rgba(255,255,255,.07)' } }
           },
           plugins: { legend: { display: false } }
         }
-      });
+      }));
     }
-  });
+  }));  // end double-rAF
 }
 
 function reportPhoto(src, label) {
