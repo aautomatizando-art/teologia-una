@@ -1331,14 +1331,10 @@
       </div>
       <button class="modal-close" onclick="closeReport()" style="position:absolute;top:12px;right:12px;">✕</button>
     </div>
-    <!-- FILTRO DE DATA -->
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
-      <span style="font-size:12px;font-weight:700;color:var(--muted);">📅 Período:</span>
-      <input type="date" id="rptDateFrom" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);">
-      <span style="font-size:12px;color:var(--muted);">até</span>
-      <input type="date" id="rptDateTo"   style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);">
-      <button class="btn btn-primary btn-sm" onclick="applyReportFilter()">🔍 Filtrar</button>
-      <button class="btn btn-ghost btn-sm"   onclick="clearReportFilter()">✕ Ver Todos</button>
+    <!-- inputs de filtro ocultos, usados internamente pelo JS -->
+    <div style="display:none;">
+      <input type="date" id="rptDateFrom">
+      <input type="date" id="rptDateTo">
     </div>
     <div class="modal-body" id="reportBody"></div>
     <div class="report-footer">
@@ -1898,7 +1894,6 @@ function saveReport() {
   list.unshift({ id: Date.now(), label, dateFrom: from, dateTo: to, createdAt: new Date().toISOString() });
   localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(list));
   renderSavedReports();
-  showToast('Relatório salvo!', 'success');
 }
 
 function _autoLabel(from, to) {
