@@ -686,6 +686,29 @@
     .stat-rate .stat-value  { color: #15803d !important; }
     .report-footer { display: flex !important; }
     .del-backdrop { display: none !important; }
+    /* ── Um registro por página, fotos em tamanho real ── */
+    .report-items { gap: 0 !important; }
+    .report-item {
+      page-break-before: always !important;
+      break-before: page !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+    .report-item-photos {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 14px !important;
+      padding: 14px !important;
+    }
+    .report-photo { aspect-ratio: unset !important; }
+    .report-photo .rp-img { min-height: 220px !important; }
+    .report-photo .rp-img img {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 55vh !important;
+      object-fit: contain !important;
+    }
   }
 
   /* ── DELETE MODAL ── */
