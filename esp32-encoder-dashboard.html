@@ -163,6 +163,34 @@
   .footer{text-align:center;padding:32px 0 48px;font-size:12px;color:var(--muted);}
   .tag-esp{display:inline-flex;align-items:center;gap:5px;font-family:'Fira Code',monospace;font-size:11px;
     padding:2px 8px;background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.2);border-radius:4px;color:var(--sky);}
+
+  /* ── VIDA ÚTIL ── */
+  .vu-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;
+    margin-bottom:24px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;}
+  @media(max-width:700px){.vu-card{grid-template-columns:1fr;}}
+  .vu-left{display:flex;flex-direction:column;gap:16px;}
+  .vu-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+  .vu-pct-row{display:flex;align-items:baseline;gap:8px;}
+  .vu-pct{font-family:'Archivo Black',sans-serif;font-size:52px;line-height:1;transition:color .4s;}
+  .vu-pct-sym{font-size:24px;font-weight:700;color:var(--muted);}
+  .vu-detail{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+  .vu-detail span{display:flex;justify-content:space-between;gap:24px;}
+  .vu-detail b{color:var(--text);font-weight:600;}
+  .vu-bar-wrap{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;}
+  .vu-bar{height:100%;border-radius:4px;transition:width .6s ease, background .4s;}
+  .vu-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .vu-input-row label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap;}
+  .vu-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+    color:var(--text);font-family:'Fira Code',monospace;font-size:14px;padding:8px 12px;outline:none;width:140px;transition:var(--transition);}
+  .vu-input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(53,200,255,.1);}
+  .vu-right{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .vu-donut-wrap{position:relative;width:180px;height:180px;flex-shrink:0;}
+  .vu-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+  .vu-donut-pct{font-family:'Archivo Black',sans-serif;font-size:30px;line-height:1;transition:color .4s;}
+  .vu-donut-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+  .vu-legend{display:flex;gap:16px;font-size:11px;color:var(--muted);}
+  .vu-legend span{display:flex;align-items:center;gap:5px;}
+  .vu-legend-dot{width:8px;height:8px;border-radius:50%;}
 </style>
 </head>
 <body>
@@ -270,6 +298,43 @@
       <div class="kpi-value" id="valStatus" style="font-size:22px;color:var(--muted)">&#9679; Offline</div>
       <div class="kpi-sub" id="valLastSeen">Última leitura: --</div>
       <div class="kpi-glow"></div>
+    </div>
+  </div>
+
+  <!-- VIDA ÚTIL -->
+  <div class="section-label">Vida Útil do Equipamento</div>
+  <div class="vu-card" id="vuCard">
+    <div class="vu-left">
+      <div class="vu-title">Consumo da Vida Útil — Posição Total vs Meta</div>
+      <div class="vu-pct-row">
+        <span class="vu-pct" id="vuPct" style="color:var(--ok)">0</span>
+        <span class="vu-pct-sym">%</span>
+      </div>
+      <div class="vu-bar-wrap"><div class="vu-bar" id="vuBar" style="width:0%;background:var(--ok);"></div></div>
+      <div class="vu-detail">
+        <span>Posição atual <b id="vuCurrent">0.000 m</b></span>
+        <span>Vida útil configurada <b id="vuTarget">1000.000 m</b></span>
+        <span>Restante <b id="vuRemaining">1000.000 m</b></span>
+      </div>
+      <div class="vu-input-row">
+        <label>Vida Útil (m)</label>
+        <input class="vu-input" id="vuInput" type="number" min="1" step="0.001" value="1000" placeholder="ex: 5000">
+        <button class="btn btn-primary" style="padding:8px 14px;font-size:12px;" onclick="applyVidaUtil()">&#10003; Aplicar</button>
+      </div>
+    </div>
+    <div class="vu-right">
+      <div class="vu-donut-wrap">
+        <canvas id="chartVU"></canvas>
+        <div class="vu-donut-center">
+          <span class="vu-donut-pct" id="vuDonutPct" style="color:var(--ok)">0%</span>
+          <span class="vu-donut-lbl">consumido</span>
+        </div>
+      </div>
+      <div class="vu-legend">
+        <span><span class="vu-legend-dot" style="background:var(--ok)"></span>0–70%</span>
+        <span><span class="vu-legend-dot" style="background:var(--warn)"></span>70–90%</span>
+        <span><span class="vu-legend-dot" style="background:var(--danger)"></span>&gt;90%</span>
+      </div>
     </div>
   </div>
 
@@ -496,6 +561,8 @@ function updateUI() {
 
   document.getElementById('avgSpeed').textContent =
     'média: ' + (speedHistory.reduce((a,b)=>a+b,0)/Math.max(speedHistory.length,1)).toFixed(3) + ' m/s';
+
+  updateVidaUtil();
 }
 
 /* ═══════════════════════════════════════════
@@ -567,6 +634,71 @@ function pushHistory(speed, pos) {
   chartSpeed.update('none');
   chartPos.update('none');
 }
+
+/* ═══════════════════════════════════════════
+   VIDA ÚTIL
+═══════════════════════════════════════════ */
+let vidaUtilM = 1000;
+
+const ctxVU = document.getElementById('chartVU').getContext('2d');
+const chartVU = new Chart(ctxVU, {
+  type: 'doughnut',
+  data: {
+    datasets: [{
+      data: [0, 100],
+      backgroundColor: ['#4ade80', '#1e1e1e'],
+      borderWidth: 0,
+      hoverOffset: 0,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    cutout: '74%',
+    animation: { duration: 500 },
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    events: [],
+  }
+});
+
+function vuColor(pct) {
+  if (pct >= 90) return '#ef4444';
+  if (pct >= 70) return '#f59e0b';
+  return '#4ade80';
+}
+
+function updateVidaUtil() {
+  const posM = pulsesToMeters(Math.abs(totalPulses));
+  const pct  = vidaUtilM > 0 ? Math.min((posM / vidaUtilM) * 100, 100) : 0;
+  const remaining = Math.max(vidaUtilM - posM, 0);
+  const color = vuColor(pct);
+  const pctRound = pct.toFixed(1);
+
+  document.getElementById('vuPct').textContent = pctRound;
+  document.getElementById('vuPct').style.color = color;
+  document.getElementById('vuBar').style.width = pct + '%';
+  document.getElementById('vuBar').style.background = color;
+  document.getElementById('vuCurrent').textContent = posM.toFixed(3) + ' m';
+  document.getElementById('vuTarget').textContent = vidaUtilM.toFixed(3) + ' m';
+  document.getElementById('vuRemaining').textContent = remaining.toFixed(3) + ' m';
+  document.getElementById('vuDonutPct').textContent = pctRound + '%';
+  document.getElementById('vuDonutPct').style.color = color;
+
+  chartVU.data.datasets[0].data = [pct, Math.max(100 - pct, 0)];
+  chartVU.data.datasets[0].backgroundColor = [color, '#1e1e1e'];
+  chartVU.update('none');
+}
+
+function applyVidaUtil() {
+  const v = parseFloat(document.getElementById('vuInput').value);
+  if (v > 0) {
+    vidaUtilM = v;
+    updateVidaUtil();
+    addLog('info', `Vida útil configurada para ${vidaUtilM.toFixed(3)} m`);
+  }
+}
+
+document.getElementById('vuInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyVidaUtil(); });
 
 /* ═══════════════════════════════════════════
    IDLE / ALERT
@@ -828,6 +960,7 @@ function resetCounter() {
   timeLabels.length = 0; speedHistory.length = 0; posHistory.length = 0;
   chartSpeed.update(); chartPos.update();
   updateUI();
+  updateVidaUtil();
   addLog('info', 'Contador zerado manualmente');
 }
 
