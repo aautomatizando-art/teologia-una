@@ -3623,8 +3623,16 @@ function buildReport(filtered) {
     c.width = _CW; c.height = _CH;
   });
 
+  function _chartErr(id, e) {
+    const w = document.getElementById(id);
+    if (w && w.parentElement) w.outerHTML = `<div style="color:#f87171;font-size:11px;padding:8px;word-break:break-all;">⚠ ${e}</div>`;
+  }
+
   // pie
-  chartPie = new Chart(document.getElementById('chartPie').getContext('2d'), {
+  const _pie = document.getElementById('chartPie');
+  if (!_pie) { _chartErr('chartPie', 'canvas not found'); }
+  else try {
+  chartPie = new Chart(_pie.getContext('2d'), {
       type: 'doughnut',
       data: {
         labels: ['Funcionando OK', 'Falha'],
@@ -3649,6 +3657,7 @@ function buildReport(filtered) {
       }
     });
     _reportCharts.push(chartPie);
+  } catch(e) { _chartErr('chartPie', e.message || e); }
 
     // bar — group by local
     const locals = {};
@@ -3661,7 +3670,10 @@ function buildReport(filtered) {
     const okData = labels.map(l => locals[l].ok);
     const failData = labels.map(l => locals[l].falha);
 
-    chartBar = new Chart(document.getElementById('chartBar').getContext('2d'), {
+    const _bar = document.getElementById('chartBar');
+    if (!_bar) { _chartErr('chartBar', 'canvas not found'); }
+    else try {
+    chartBar = new Chart(_bar.getContext('2d'), {
       type: 'bar',
       data: {
         labels,
@@ -3701,6 +3713,7 @@ function buildReport(filtered) {
       }
     });
     _reportCharts.push(chartBar);
+    } catch(e) { _chartErr('chartBar', e.message || e); }
 
     // progress charts (só para empresas com TOTAL definido)
     if (rptProgressData) {
