@@ -2848,7 +2848,7 @@ function renderList() {
   badge.textContent = tests.length + ' registro' + (tests.length !== 1 ? 's' : '');
 
   const btnReport = document.getElementById('btnReport');
-  btnReport.disabled = tests.length === 0;
+  btnReport.disabled = false;
 
   if (tests.length === 0) {
     container.innerHTML = `<div class="empty-state">
@@ -3206,7 +3206,6 @@ async function clearAll() {
 
 // ── REPORT ─────────────────────────────────────────────────────────────────
 function openReport() {
-  if (tests.length === 0) return;
   rptSess = null;
   const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
@@ -3323,11 +3322,15 @@ function buildReport(filtered) {
   // date range
   const sorted = [...allTests].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
   const first = sorted[0], last = sorted[sorted.length-1];
-  const rangeStr = total > 1
-    ? `${formatDate(first.date)} → ${formatDate(last.date)}`
-    : formatDate(first.date);
+  const rangeStr = total === 0
+    ? (document.getElementById('rptDateFrom')?.value || localDateStr())
+    : (total > 1
+      ? `${formatDate(first.date)} → ${formatDate(last.date)}`
+      : formatDate(first.date));
 
-  document.getElementById('reportSubtitle').textContent = `${total} teste(s) · ${rangeStr}`;
+  document.getElementById('reportSubtitle').textContent = total
+    ? `${total} teste(s) · ${rangeStr}`
+    : `Sem registros · ${formatDate(rangeStr)}`;
   document.getElementById('reportStamp').textContent = `Gerado em ${new Date().toLocaleString('pt-BR')}`;
 
   // stats
