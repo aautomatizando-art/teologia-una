@@ -759,10 +759,8 @@
       min-width: 0 !important;
     }
     .modal-body { padding: 12px !important; }
-    .rpt-section {
-      width: 100% !important;
-    }
-    .rpt-overview { page-break-inside: avoid !important; break-inside: avoid !important; }
+    .rpt-section { width: 100% !important; }
+    .chart-card { overflow: hidden !important; }
   }
 
   /* ── DELETE MODAL ── */
@@ -3733,17 +3731,19 @@ function reportPhoto(src, label) {
   </div>`;
 }
 
-function _setChartLegendColor(color) {
+function _setChartPrintMode(forPrint) {
   Chart.instances && Object.values(Chart.instances).forEach(c => {
-    if (c.options?.plugins?.legend?.labels) {
-      c.options.plugins.legend.labels.color = color;
-      c.update('none');
+    if (c.options?.plugins?.legend) {
+      c.options.plugins.legend.display = !forPrint;
+      if (c.options.plugins.legend.labels)
+        c.options.plugins.legend.labels.color = forPrint ? '#333' : '#aaa';
     }
+    c.update('none');
   });
 }
 
-window.addEventListener('beforeprint', () => _setChartLegendColor('#333'));
-window.addEventListener('afterprint',  () => _setChartLegendColor('#aaa'));
+window.addEventListener('beforeprint', () => _setChartPrintMode(true));
+window.addEventListener('afterprint',  () => _setChartPrintMode(false));
 
 function printReport() {
   window.print();
