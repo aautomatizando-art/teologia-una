@@ -709,6 +709,25 @@
       max-height: 55vh !important;
       object-fit: contain !important;
     }
+    /* ── Status Início / Problemas / Finalização: each on its own page ── */
+    .rpt-finalizacao,
+    .rpt-problemas {
+      page-break-before: always !important;
+      break-before: page !important;
+    }
+    .rpt-session img,
+    .rpt-finalizacao img,
+    .rpt-problemas img {
+      max-height: 35vh !important;
+      width: 100% !important;
+      object-fit: contain !important;
+      display: block !important;
+    }
+    .rpt-session [style*="minmax"],
+    .rpt-finalizacao [style*="minmax"],
+    .rpt-problemas [style*="minmax"] {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
   }
 
   /* ── DELETE MODAL ── */
@@ -3379,6 +3398,7 @@ function buildReport(filtered) {
     : ssPhotosExtras.map((url, i) => ({ url, obs: document.getElementById('ss-extras-grid-obs-'+i)?.value.trim()||'' }));
 
   const sessionHTML = `
+    <div class="rpt-section rpt-session">
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">🔍 Status Início de Teste</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;">
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Data</div><div style="font-weight:600;">${ssDate ? formatDate(ssDate) : '—'}</div></div>
@@ -3397,7 +3417,7 @@ function buildReport(filtered) {
       ${ssFoto ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🖥️ Status Atual da Central</div><img src="${ssFoto}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
       ${rptSsExtras.filter(e => e.url).map((e, i) => `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">${e.obs ? esc(e.obs) : '📸 Foto Extra '+(i+1)}</div><img src="${e.url}" style="width:100%;border-radius:8px;display:block;"></div>`).join('')}
     </div>` : ''}
-    <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">`;
+    </div>`;
 
   // test items
   const itemsHTML = `
@@ -3447,7 +3467,7 @@ function buildReport(filtered) {
   const rptFtNamed = rptSess?.namedObs ?? {};
 
   const finalizacaoHTML = `
-    <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">
+    <div class="rpt-section rpt-finalizacao">
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">✅ Finalização de Teste</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;">
       <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:3px;">Data</div><div style="font-weight:600;">${ftDateVal ? formatDate(ftDateVal) : '—'}</div></div>
@@ -3464,6 +3484,7 @@ function buildReport(filtered) {
       ${rptFtP.portas   ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🔒 Portas Magnéticas${(rptSess ? rptFtNamed.portas : document.getElementById('obs-ft-portas')?.value.trim()) ? ' — '+esc(rptSess ? rptFtNamed.portas : document.getElementById('obs-ft-portas').value.trim()) : ''}</div><img src="${rptFtP.portas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
       ${rptFtP.catracas ? `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">🚧 Catracas${(rptSess ? rptFtNamed.catracas : document.getElementById('obs-ft-catracas')?.value.trim()) ? ' — '+esc(rptSess ? rptFtNamed.catracas : document.getElementById('obs-ft-catracas').value.trim()) : ''}</div><img src="${rptFtP.catracas}" style="width:100%;border-radius:8px;display:block;"></div>` : ''}
       ${(rptFtP.extras || []).filter(e => e && (e.url||(typeof e==='string'&&e))).map((e, i) => { const item=parseExtraItem(e); const obs=rptSess ? item.obs : (document.getElementById('obs-ft-extra-'+i)?.value.trim()||item.obs||''); return `<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">${obs ? esc(obs) : '📸 Foto Extra '+(i+1)}</div><img src="${item.url}" style="width:100%;border-radius:8px;display:block;"></div>`; }).join('')}
+    </div>
     </div>`;
 
   const signatureHTML = `
@@ -3520,13 +3541,14 @@ function buildReport(filtered) {
     ? Object.entries(rptSess.probPhotos).filter(([,url]) => url).map(([i, url]) => ({ url, obs: rptSess.probObs[i] || '' }))
     : problemasPhotos.map((url, i) => ({ url, obs: document.getElementById('form-problemas-grid-obs-'+i)?.value.trim()||'' })).filter(e => e.url);
   const problemasHTML = rptProbEntries.length ? `
-    <hr style="border:none;border-top:2px solid #f59e0b;margin:24px 0;">
+    <div class="rpt-section rpt-problemas">
     <div class="section-title" style="font-size:15px;margin-bottom:16px;color:#b45309;">⚠️ Problemas Identificados</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;">
       ${rptProbEntries.map((e, i) => `<div>
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b45309;margin-bottom:6px;">${e.obs ? esc(e.obs) : 'Problema ' + (i + 1)}</div>
           <img src="${e.url}" style="width:100%;border-radius:8px;display:block;border:2px solid #f59e0b;">
         </div>`).join('')}
+    </div>
     </div>` : '';
 
   document.getElementById('reportBody').innerHTML = sessionHTML + statsHTML + chartsHTML + progressHTML + itemsHTML + problemasHTML + finalizacaoHTML + signatureHTML;
