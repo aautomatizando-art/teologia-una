@@ -475,11 +475,157 @@ function selectModule(mod) {
 }
 
 async function loadDashboardData() {
-  const { data } = await db.from('fire_tests').select('empresa_id, status, local_desc');
-  const allTests = data || [];
-  renderStats(allTests);
-  renderCompanies(allTests);
-  requestAnimationFrame(() => renderCharts(allTests));
+  if (activeModule === 'preventiva') {
+    const { data } = await db.from('preventiva_bombas').select('empresa_id, date, payload');
+    renderPreventivaDashboard(data || []);
+  } else {
+    // restaura rótulos originais
+    const lbls = ['Total de testes','Funcionamento OK','Falhas','Taxa de aprovação'];
+    document.querySelectorAll('.stat-lbl').forEach((el, i) => { if (lbls[i]) el.textContent = lbls[i]; });
+    const { data } = await db.from('fire_tests').select('empresa_id, status, local_desc');
+    const allTests = data || [];
+    renderStats(allTests);
+    renderCompanies(allTests);
+    requestAnimationFrame(() => renderCharts(allTests));
+  }
+}
+
+// ─── PREVENTIVA DASHBOARD ─────────────────────────────────────────────────
+function extractSpecs(payload) {
+  if (!payload) return { dentro: 0, fora: 0 };
+  let dentro = 0, fora = 0;
+  const keys = ['jockey_spec','principal_spec','rede_spec','shutoff_spec'];
+  ['bomba1','bomba2'].forEach(b => {
+    keys.forEach(k => {
+      const v = payload[b]?.[k];
+      if (v === 'dentro') dentro++;
+      else if (v === 'fora') fora++;
+    });
+  });
+  return { dentro, fora };
+}
+
+function renderPreventivaDashboard(records) {
+  // atualiza rótulos das stats
+  const lbls = ['Total de inspeções','Dentro do especificado','Fora do especificado','Conformidade'];
+  document.querySelectorAll('.stat-lbl').forEach((el, i) => { if (lbls[i]) el.textContent = lbls[i]; });
+
+  let totalDentro = 0, totalFora = 0;
+  const byEmpresa = {};
+  records.forEach(r => {
+    if (!byEmpresa[r.empresa_id]) byEmpresa[r.empresa_id] = { count: 0, fora: 0 };
+    byEmpresa[r.empresa_id].count++;
+    const s = extractSpecs(r.payload);
+    totalDentro += s.dentro;
+    totalFora   += s.fora;
+    if (s.fora > 0) byEmpresa[r.empresa_id].fora++;
+  });
+
+  const total = records.length;
+  const specTotal = totalDentro + totalFora;
+  const rate = specTotal ? Math.round(totalDentro / specTotal * 100) : 0;
+  document.getElementById('stTotal').textContent = total;
+  document.getElementById('stOk').textContent    = totalDentro;
+  document.getElementById('stFail').textContent  = totalFora;
+  document.getElementById('stRate').textContent  = specTotal ? rate + '%' : '—';
+
+  renderCompaniesPreventiva(byEmpresa);
+  requestAnimationFrame(() => renderChartsPreventiva(records, byEmpresa));
+}
+
+function renderCompaniesPreventiva(byEmpresa) {
+  const grid = document.getElementById('companiesGrid');
+  grid.innerHTML = EMPRESAS.map(emp => {
+    const info = byEmpresa[emp.id] || { count: 0, fora: 0 };
+    const a = emp.accent;
+    const aa = (op) => { const r=parseInt(a.slice(1,3),16),g=parseInt(a.slice(3,5),16),b=parseInt(a.slice(5,7),16); return `rgba(${r},${g},${b},${op})`; };
+    return `
+    <div class="company-card" style="--accent:${a}">
+      <div class="card-top-bar" style="background:${a}"></div>
+      <div class="company-card-body">
+        <div class="card-head">
+          <div class="company-logo-area">
+            <div class="company-logo-badge" style="border-color:${aa(.25)};background:${aa(.07)}">
+              <div class="company-logo-icon" style="background:${aa(.2)}">${emp.icon}</div>
+              <div>
+                <div class="company-logo-text" style="color:${a}">${emp.nome}</div>
+                ${emp.unidade ? `<div class="company-logo-sub">${emp.unidade}</div>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="card-badge badge-tests">${info.count} inspeç${info.count===1?'ão':'ões'}</span>
+            ${info.fora>0?`<span class="card-badge badge-fail">⚠ ${info.fora} fora</span>`:''}
+          </div>
+        </div>
+        <div class="company-name">${emp.nome}${emp.unidade?` <span style="font-size:13px;color:var(--muted);font-family:Archivo,sans-serif;font-weight:500">${emp.unidade}</span>`:''}</div>
+        <div class="company-sector">${emp.setor}</div>
+        <div class="company-desc">${emp.desc}</div>
+        <button class="btn-records" onclick="openCompanyLogin('${emp.id}')"
+                style="color:${a};border-color:${aa(.3)};background:${aa(.1)}">
+          🔐 Acessar Preventiva
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderChartsPreventiva(records, byEmpresa) {
+  const section = document.getElementById('chartsSection');
+  if (records.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  if (dashPie) { dashPie.destroy(); dashPie = null; }
+  if (dashBar) { dashBar.destroy(); dashBar = null; }
+
+  // Totais de dentro/fora
+  let totalDentro = 0, totalFora = 0;
+  records.forEach(r => {
+    const s = extractSpecs(r.payload);
+    totalDentro += s.dentro; totalFora += s.fora;
+  });
+  const specTotal = totalDentro + totalFora;
+
+  dashPie = new Chart(document.getElementById('dashPieChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Dentro do especificado', 'Fora do especificado'],
+      datasets: [{ data: [totalDentro, totalFora],
+        backgroundColor: ['#4ade80','#ff3577'],
+        borderColor: ['#161616'], borderWidth: 3, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#f2f2f2', padding: 16, font: { family: 'Archivo', size: 13 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${specTotal?Math.round(ctx.raw/specTotal*100):0}%)` } }
+      }
+    }
+  });
+
+  // Bar por empresa
+  const empLabels = EMPRESAS.map(e => e.unidade || e.nome.split(' ')[0]);
+  const empCounts = EMPRESAS.map(e => (byEmpresa[e.id]?.count) || 0);
+  const empFora   = EMPRESAS.map(e => (byEmpresa[e.id]?.fora)  || 0);
+
+  dashBar = new Chart(document.getElementById('dashBarChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: empLabels,
+      datasets: [
+        { label: 'Inspeções', data: empCounts, backgroundColor: '#35c8ff', borderRadius: 5 },
+        { label: 'Fora do esp.', data: empFora, backgroundColor: '#ff3577', borderRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#888', font: { family: 'Archivo', size: 10 }, maxRotation: 35 }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { beginAtZero: true, ticks: { color: '#888', stepSize: 1, font: { family: 'Archivo' } }, grid: { color: 'rgba(255,255,255,.07)' } }
+      },
+      plugins: { legend: { position: 'bottom', labels: { color: '#f2f2f2', padding: 16, font: { family: 'Archivo', size: 13 } } } }
+    }
+  });
 }
 
 // ─── COMPANY LOGIN MODAL ──────────────────────────────────────────────────
