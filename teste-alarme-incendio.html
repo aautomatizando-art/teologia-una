@@ -533,7 +533,7 @@
     color: var(--muted);
     margin-bottom: 16px;
   }
-  .chart-wrapper { position: relative; height: 190px; }
+  .chart-wrapper { position: relative; height: 155px; }
   .chart-wrapper > svg { display: block; width: 100%; }
   .chart-card { overflow: visible; }
 
@@ -669,7 +669,7 @@
       color: #111 !important;
     }
     .stat-card .stat-label, .chart-card h4 { color: #555 !important; }
-    .chart-wrapper { height: 150px !important; }
+    .chart-wrapper { height: 130px !important; }
     .chart-card { padding: 10px !important; }
     .chart-card h4 { margin-bottom: 8px !important; font-size: 11px !important; }
     .charts-grid { gap: 10px !important; margin-bottom: 12px !important; }
@@ -3226,7 +3226,7 @@ function _svgDonut(slices) {
       <span style="width:8px;height:8px;border-radius:50%;background:${d.c};flex-shrink:0;"></span>${d.l}: <b style="color:#ddd">${d.v}</b>
     </span>`).join('');
   // Altura fixa para não escalar além do wrapper em telas largas
-  return `<svg viewBox="0 0 160 160" style="height:130px;width:auto;display:block;margin:0 auto;">
+  return `<svg viewBox="0 0 160 160" style="height:100px;width:auto;display:block;margin:0 auto;">
     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#2a2a2a" stroke-width="${SW}"/>
     ${arcs.join('')}
     <text x="${CX}" y="${CY + 7}" text-anchor="middle" fill="#e5e5e5" font-size="18" font-weight="bold" font-family="Archivo,sans-serif">${lbl}</text>
@@ -3247,7 +3247,7 @@ function _cssBar(lbls, datasets, maxOverride) {
     }).join('');
     const s = lbl.length > 10 ? lbl.substring(0, 9) + '…' : lbl;
     return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:1px;">
-      <div style="display:flex;align-items:flex-end;gap:2px;width:100%;height:100px;">${bars}</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;width:100%;height:72px;">${bars}</div>
       <div style="font-size:8px;color:#888;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s}</div>
     </div>`;
   }).join('');
@@ -3255,7 +3255,7 @@ function _cssBar(lbls, datasets, maxOverride) {
     `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#aaa;white-space:nowrap;">
       <span style="width:10px;height:3px;background:${ds.color};display:inline-block;border-radius:2px;"></span>${ds.label}
     </span>`).join('');
-  return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px;padding:10px 2px 0;overflow:hidden;">${cols}</div>
+  return `<div style="display:flex;align-items:flex-end;gap:3px;height:88px;padding:8px 2px 0;overflow:hidden;">${cols}</div>
     <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:6px 4px 0;">${legend}</div>`;
 }
 
