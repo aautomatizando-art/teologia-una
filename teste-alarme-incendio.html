@@ -626,6 +626,7 @@
   .empty-state p { font-size: 14px; }
 
   /* ── PRINT ── */
+  @page { size: A4 portrait; margin: 1cm; }
   @media print {
     /* Override all CSS variables to light theme */
     :root {
@@ -735,6 +736,21 @@
     .rpt-finalizacao [style*="minmax"],
     .rpt-problemas [style*="minmax"] {
       grid-template-columns: repeat(2, 1fr) !important;
+    }
+    /* Force desktop layout on mobile print */
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+    .charts-grid {
+      grid-template-columns: 1fr 1fr !important;
+    }
+    .modal, .modal-body, .modal-backdrop {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+    .rpt-section {
+      width: 100% !important;
     }
   }
 
