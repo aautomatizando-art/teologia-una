@@ -534,7 +534,7 @@
     margin-bottom: 16px;
   }
   .chart-wrapper { position: relative; height: 260px; }
-  .chart-wrapper canvas { display: block; width: 100% !important; height: 100% !important; }
+  .chart-wrapper > svg { display: block; width: 100%; }
   .chart-card { overflow: visible; }
 
   /* ── REPORT TEST ITEMS ── */
@@ -3206,13 +3206,56 @@ async function clearAll() {
 }
 
 // ── REPORT ─────────────────────────────────────────────────────────────────
-let _reportCharts = [];
 
-function _destroyReportCharts() {
-  _reportCharts.forEach(c => { try { c.destroy(); } catch(_) {} });
-  _reportCharts = [];
-  chartPie = null;
-  chartBar = null;
+// Gráfico donut SVG — sem canvas, sem timing issues
+function _svgDonut(slices) {
+  const R = 58, CX = 100, CY = 95, SW = 26, C = 2 * Math.PI * R;
+  const total = slices.reduce((s, d) => s + d.v, 0) || 1;
+  let off = 0;
+  const arcs = slices.map(d => {
+    const len = (d.v / total) * C;
+    const el = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${d.c}" stroke-width="${SW}"
+      stroke-dasharray="${len.toFixed(2)} ${C.toFixed(2)}"
+      stroke-dashoffset="${(C * 0.25 - off).toFixed(2)}"
+      transform="rotate(-90 ${CX} ${CY})"/>`;
+    off += len; return el;
+  });
+  const lbl = total > 0 ? `${Math.round(slices[0].v / total * 100)}%` : '—';
+  const legend = slices.map(d =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#aaa;white-space:nowrap;">
+      <span style="width:9px;height:9px;border-radius:50%;background:${d.c};flex-shrink:0;"></span>${d.l}: <b style="color:#ddd">${d.v}</b>
+    </span>`).join('');
+  return `<svg viewBox="0 0 200 190" style="width:100%;display:block;">
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#2a2a2a" stroke-width="${SW}"/>
+    ${arcs.join('')}
+    <text x="${CX}" y="${CY + 9}" text-anchor="middle" fill="#e5e5e5" font-size="22" font-weight="bold" font-family="Archivo,sans-serif">${lbl}</text>
+  </svg>
+  <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:4px 8px 2px;">${legend}</div>`;
+}
+
+// Gráfico de barras CSS — sem canvas
+function _cssBar(lbls, datasets, maxOverride) {
+  const maxVal = maxOverride || Math.max(...datasets.flatMap(d => d.data), 1);
+  const cols = lbls.map((lbl, i) => {
+    const bars = datasets.map(ds => {
+      const v = ds.data[i] || 0;
+      const h = Math.round(v / maxVal * 100);
+      return `<div style="flex:1;background:${ds.color};height:${h}%;border-radius:3px 3px 0 0;min-height:${v>0?2:0}px;position:relative;" title="${ds.label}: ${v}">
+        ${v > 0 ? `<span style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:9px;color:#ddd;white-space:nowrap;margin-bottom:1px;">${v}</span>` : ''}
+      </div>`;
+    }).join('');
+    const s = lbl.length > 12 ? lbl.substring(0, 11) + '…' : lbl;
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;">
+      <div style="display:flex;align-items:flex-end;gap:2px;width:100%;height:130px;">${bars}</div>
+      <div style="font-size:9px;color:#888;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s}</div>
+    </div>`;
+  }).join('');
+  const legend = datasets.map(ds =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#aaa;white-space:nowrap;">
+      <span style="width:12px;height:3px;background:${ds.color};display:inline-block;border-radius:2px;"></span>${ds.label}
+    </span>`).join('');
+  return `<div style="display:flex;align-items:flex-end;gap:4px;height:155px;padding:14px 4px 0;">${cols}</div>
+    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:6px 4px 2px;">${legend}</div>`;
 }
 
 function openReport() {
@@ -3220,11 +3263,8 @@ function openReport() {
   const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
-  // Abrir modal ANTES de buildReport e forçar reflow síncrono
-  // para que offsetWidth do wrapper seja não-zero quando os gráficos forem criados
-  document.getElementById('reportModal').classList.add('open');
-  void document.getElementById('reportModal').offsetHeight; // força layout
   buildReport(tests.filter(t => t.date === today));
+  document.getElementById('reportModal').classList.add('open');
 }
 
 async function applyReportFilter() {
@@ -3286,7 +3326,6 @@ function clearReportFilter() {
 
 function closeReport() {
   document.getElementById('reportModal').classList.remove('open');
-  _destroyReportCharts();
 }
 
 function showArtModal() {
@@ -3354,16 +3393,28 @@ function buildReport(filtered) {
       <div class="stat-card stat-rate"><div class="stat-value">${rate}%</div><div class="stat-label">Taxa de Aprovação</div></div>
     </div>`;
 
-  // charts
+  // charts — SVG/CSS, sem canvas
+  const _locals = {};
+  allTests.forEach(t => {
+    if (!_locals[t.local]) _locals[t.local] = { ok: 0, f: 0 };
+    if (isOkStatus(t.status)) _locals[t.local].ok++; else _locals[t.local].f++;
+  });
+  const _locLbls = Object.keys(_locals);
   const chartsHTML = `
     <div class="charts-grid">
       <div class="chart-card">
         <h4>Resultado Geral</h4>
-        <div class="chart-wrapper"><canvas id="chartPie"></canvas></div>
+        <div class="chart-wrapper">${_svgDonut([
+          {v: okCount,   c: '#4ade80', l: 'OK'},
+          {v: failCount, c: '#ff3577', l: 'Falha'}
+        ])}</div>
       </div>
       <div class="chart-card">
         <h4>Testes por Local</h4>
-        <div class="chart-wrapper"><canvas id="chartBar"></canvas></div>
+        <div class="chart-wrapper">${_cssBar(_locLbls, [
+          {label:'OK',    color:'#4ade80', data: _locLbls.map(l => _locals[l].ok)},
+          {label:'Falha', color:'#ff3577', data: _locLbls.map(l => _locals[l].f)}
+        ])}</div>
       </div>
     </div>`;
 
@@ -3410,11 +3461,16 @@ function buildReport(filtered) {
       <div class="charts-grid">
         <div class="chart-card">
           <h4>Dispositivos Testados no Ciclo</h4>
-          <div class="chart-wrapper"><canvas id="rptProgressPie"></canvas></div>
+          <div class="chart-wrapper">${_svgDonut([
+            {v: totalTested, c: '#c8f135', l: 'Testados'},
+            {v: remaining,   c: '#2e2e2e', l: 'Pendentes'}
+          ])}</div>
         </div>
         <div class="chart-card">
           <h4>Testes por Mês</h4>
-          <div class="chart-wrapper"><canvas id="rptProgressBar"></canvas></div>
+          <div class="chart-wrapper">${_cssBar(months.map(m => m.label), [
+            {label:'Testados', color:'#c8f135', data: counts}
+          ], TOTAL)}</div>
         </div>
       </div>
       ${rptDetTests.length ? `
@@ -3614,134 +3670,6 @@ function buildReport(filtered) {
     img.style.cursor = 'pointer';
     img.onclick = () => openLightbox(img.src);
   });
-
-  // Destroy previous report charts before creating new ones
-  _destroyReportCharts();
-
-  // Dimensionar cada canvas pelo wrapper real (modal já está aberto e layoutado)
-  ['chartPie','chartBar','rptProgressPie','rptProgressBar'].forEach(id => {
-    const c = document.getElementById(id); if (!c) return;
-    const w = c.parentElement.offsetWidth  || 480;
-    const h = c.parentElement.offsetHeight || 230;
-    c.width = w; c.height = h;
-  });
-
-  // pie
-  chartPie = new Chart(document.getElementById('chartPie').getContext('2d'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Funcionando OK', 'Falha'],
-        datasets: [{
-          data: [okCount, failCount],
-          backgroundColor: ['#4ade80', '#ff3577'],
-          borderColor: ['#0e0e0e'],
-          borderWidth: 3,
-          hoverOffset: 8
-        }]
-      },
-      options: {
-        responsive: false, maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#aaa', padding: 16, font: { family: 'Archivo', size: 12 } }
-          },
-          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/(total||1)*100)}%)` } }
-        },
-        cutout: '60%'
-      }
-    });
-    _reportCharts.push(chartPie);
-
-    // bar — group by local
-    const locals = {};
-    allTests.forEach(t => {
-      const k = t.local;
-      if (!locals[k]) locals[k] = { ok: 0, falha: 0 };
-      if (isOkStatus(t.status)) locals[k].ok++; else locals[k].falha++;
-    });
-    const labels = Object.keys(locals);
-    const okData = labels.map(l => locals[l].ok);
-    const failData = labels.map(l => locals[l].falha);
-
-    chartBar = new Chart(document.getElementById('chartBar').getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          { label: 'OK', data: okData, backgroundColor: '#4ade80', borderRadius: 6 },
-          { label: 'Falha', data: failData, backgroundColor: '#ff3577', borderRadius: 6 }
-        ]
-      },
-      options: {
-        responsive: false, maintainAspectRatio: false,
-        layout: { padding: { bottom: 10 } },
-        scales: {
-          x: {
-            stacked: false,
-            ticks: {
-              color: '#888', font: { family: 'Archivo', size: 10 },
-              maxRotation: 45, minRotation: 30,
-              callback: function(val, index) {
-                const lbl = this.getLabelForValue(val);
-                return lbl.length > 14 ? lbl.substring(0, 13) + '…' : lbl;
-              }
-            },
-            grid: { color: 'rgba(255,255,255,.05)' }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#888', stepSize: 1, font: { family: 'Archivo' } },
-            grid: { color: 'rgba(255,255,255,.07)' }
-          }
-        },
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#aaa', padding: 16, font: { family: 'Archivo', size: 12 } }
-          }
-        }
-      }
-    });
-    _reportCharts.push(chartBar);
-
-    // progress charts (só para empresas com TOTAL definido)
-    if (rptProgressData) {
-      const { totalTested, remaining, TOTAL: T, counts, monthLabels } = rptProgressData;
-      _reportCharts.push(new Chart(document.getElementById('rptProgressPie').getContext('2d'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Testados', 'Pendentes'],
-          datasets: [{ data: [totalTested, remaining],
-            backgroundColor: ['#c8f135', '#2e2e2e'],
-            borderColor: ['#161616'], borderWidth: 3, hoverOffset: 8 }]
-        },
-        options: {
-          responsive: false, maintainAspectRatio: false, cutout: '65%',
-          plugins: {
-            legend: { position: 'bottom', labels: { color: '#aaa', padding: 14, font: { family: 'Archivo', size: 12 } } },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} de ${T} (${Math.round(ctx.raw/T*100)}%)` } }
-          }
-        }
-      }));
-      _reportCharts.push(new Chart(document.getElementById('rptProgressBar').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: monthLabels,
-          datasets: [{ label: 'Dispositivos testados', data: counts, backgroundColor: '#c8f135', borderRadius: 5 }]
-        },
-        options: {
-          responsive: false, maintainAspectRatio: false,
-          scales: {
-            x: { ticks: { color: '#888', font: { family: 'Archivo', size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } },
-            y: { beginAtZero: true, max: T,
-              ticks: { color: '#888', font: { family: 'Archivo' }, stepSize: Math.ceil(T / 5) },
-              grid: { color: 'rgba(255,255,255,.07)' } }
-          },
-          plugins: { legend: { display: false } }
-        }
-      }));
-    }
 }
 
 function reportPhoto(src, label) {
