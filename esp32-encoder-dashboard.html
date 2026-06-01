@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Encoder Incremental · ESP32</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0e0e0e; --bg2:#161616; --bg3:#1e1e1e; --bg4:#262626;
+    --border:#2e2e2e; --text:#f2f2f2; --muted:#888;
+    --sky:#35c8ff; --ok:#4ade80; --fail:#ff3577;
+    --gold:#ffd166; --orange:#ff6b35; --accent:#35c8ff;
+    --warn:#f59e0b; --danger:#ef4444;
+    --radius:12px; --radius-sm:8px; --transition:.2s ease;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
+
+  /* ── HEADER ── */
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,48px);position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:1400px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .header-left{display:flex;align-items:center;gap:14px;}
+  .header-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.8vw,15px);white-space:nowrap;}
+  .header-title span{color:var(--sky);}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
+  .chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
+  .chip-warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
+  .chip-fail{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
+  .chip-off{color:var(--muted);border-color:var(--border);background:var(--bg3);}
+  .dot{width:7px;height:7px;border-radius:50%;}
+  .dot-ok{background:var(--ok);box-shadow:0 0 6px var(--ok);}
+  .dot-warn{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:blink 1s infinite;}
+  .dot-fail{background:var(--danger);box-shadow:0 0 6px var(--danger);animation:blink .5s infinite;}
+  .dot-off{background:var(--muted);}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);
+    font-family:'Archivo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);border:1px solid;}
+  .btn-ghost{background:transparent;border-color:var(--border);color:var(--muted);}
+  .btn-ghost:hover{border-color:var(--sky);color:var(--sky);}
+  .btn-primary{background:var(--sky);border-color:var(--sky);color:#000;font-weight:700;}
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--danger);}
+  .btn-danger:hover{background:rgba(239,68,68,.2);}
+  .btn-demo{background:rgba(255,166,0,.1);border-color:rgba(255,166,0,.3);color:var(--gold);}
+  .btn-demo:hover{background:rgba(255,166,0,.2);}
+
+  /* ── BODY ── */
+  .body{max-width:1400px;margin:0 auto;padding:32px clamp(16px,4vw,48px);}
+
+  /* ── ALERT BANNER ── */
+  .alert-banner{display:none;align-items:center;gap:14px;padding:16px 22px;
+    background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);
+    border-radius:var(--radius);margin-bottom:24px;animation:fadeUp .4s ease;}
+  .alert-banner.show{display:flex;}
+  .alert-icon{font-size:28px;flex-shrink:0;}
+  .alert-text{flex:1;}
+  .alert-text strong{color:var(--danger);font-family:'Archivo Black',sans-serif;font-size:16px;display:block;}
+  .alert-text small{color:var(--muted);font-size:13px;}
+  .alert-actions{display:flex;gap:10px;flex-shrink:0;}
+
+  /* ── KPI CARDS ── */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+  .kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;position:relative;overflow:hidden;transition:border-color var(--transition);}
+  .kpi-card.active{border-color:rgba(53,200,255,.3);}
+  .kpi-card.warn-card{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04);}
+  .kpi-card.danger-card{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04);}
+  .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:10px;}
+  .kpi-value{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,4vw,40px);line-height:1;margin-bottom:6px;}
+  .kpi-unit{font-family:'Archivo',sans-serif;font-size:14px;font-weight:600;color:var(--muted);margin-left:4px;}
+  .kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  .kpi-glow{position:absolute;bottom:-30px;right:-30px;width:120px;height:120px;border-radius:50%;opacity:.07;pointer-events:none;}
+  .kpi-card:nth-child(1) .kpi-glow{background:var(--sky);}
+  .kpi-card:nth-child(2) .kpi-glow{background:var(--ok);}
+  .kpi-card:nth-child(3) .kpi-glow{background:var(--gold);}
+  .kpi-card:nth-child(4) .kpi-glow{background:var(--orange);}
+  .kpi-card:nth-child(5) .kpi-glow{background:var(--fail);}
+
+  /* ── DIRECTION INDICATOR ── */
+  .direction-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;}
+  .dir-fwd{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:var(--ok);}
+  .dir-rev{background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.3);color:var(--orange);}
+  .dir-stop{background:rgba(136,136,136,.12);border:1px solid rgba(136,136,136,.3);color:var(--muted);}
+
+  /* ── GAUGE ── */
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0;}
+  canvas.gauge{display:block;}
+
+  /* ── CHARTS GRID ── */
+  .charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;}
+  @media(max-width:900px){.charts-grid{grid-template-columns:1fr;}}
+  .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .chart-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .chart-card-head h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+  .chart-wrap{position:relative;height:220px;}
+
+  /* ── CONFIG PANEL ── */
+  .config-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px;}
+  .config-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;cursor:pointer;user-select:none;}
+  .config-panel-head h3{font-family:'Archivo Black',sans-serif;font-size:14px;display:flex;align-items:center;gap:10px;}
+  .config-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+  .form-control{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+    color:var(--text);font-family:'Fira Code',monospace;font-size:14px;padding:10px 14px;outline:none;width:100%;transition:var(--transition);}
+  .form-control:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(53,200,255,.1);}
+  .form-hint{font-size:11px;color:var(--muted);}
+
+  /* ── LOG TABLE ── */
+  .log-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;}
+  .log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .log-head h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+  .log-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .log-table th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);}
+  .log-table td{padding:8px 12px;border-bottom:1px solid rgba(46,46,46,.5);font-family:'Fira Code',monospace;font-size:12px;}
+  .log-table tr:last-child td{border-bottom:none;}
+  .log-table tr:hover td{background:rgba(255,255,255,.02);}
+  .log-type-reading{color:var(--sky);}
+  .log-type-alert{color:var(--danger);}
+  .log-type-info{color:var(--muted);}
+
+  /* ── SUPERVISOR MODAL ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:24px;}
+  .modal-overlay.show{display:flex;animation:fadeIn .2s ease;}
+  .modal{background:var(--bg2);border:1px solid rgba(239,68,68,.4);border-radius:20px;
+    max-width:480px;width:100%;padding:clamp(24px,5vw,40px);box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .3s ease;}
+  .modal-icon{width:60px;height:60px;background:rgba(239,68,68,.15);border-radius:16px;
+    display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:20px;}
+  .modal h2{font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:8px;}
+  .modal p{color:var(--muted);font-size:14px;margin-bottom:24px;line-height:1.6;}
+  .modal-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:24px;}
+  .modal-info-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
+  .modal-info-row span:first-child{color:var(--muted);}
+  .modal-info-row span:last-child{font-family:'Fira Code',monospace;font-weight:500;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .supervisor-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+  .supervisor-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+    background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);}
+  .supervisor-item-left{display:flex;align-items:center;gap:10px;}
+  .supervisor-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:'Archivo Black',sans-serif;}
+  .supervisor-info strong{display:block;font-size:13px;}
+  .supervisor-info small{font-size:11px;color:var(--muted);}
+  .btn-call{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;
+    background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:var(--transition);border:none;cursor:pointer;}
+  .btn-call:hover{filter:brightness(1.1);transform:translateY(-1px);}
+
+  /* ── FIRMWARE MODAL ── */
+  .fw-modal{max-width:740px;}
+  .fw-modal pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;overflow:auto;max-height:400px;font-family:'Fira Code',monospace;font-size:11px;line-height:1.7;color:#ccc;margin-bottom:20px;}
+  .fw-modal .kw{color:#c792ea;} .fw-modal .fn{color:#82aaff;} .fw-modal .str{color:#c3e88d;} .fw-modal .cmt{color:#546e7a;font-style:italic;} .fw-modal .num{color:#f78c6c;}
+
+  /* ── MISC ── */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+  .pulse-ring{animation:pulseRing 2s ease-in-out infinite;}
+  @keyframes pulseRing{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.05);opacity:.7;}}
+  .footer{text-align:center;padding:32px 0 48px;font-size:12px;color:var(--muted);}
+  .tag-esp{display:inline-flex;align-items:center;gap:5px;font-family:'Fira Code',monospace;font-size:11px;
+    padding:2px 8px;background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.2);border-radius:4px;color:var(--sky);}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <span class="tag-esp">&#9654; ESP32 DevKit</span>
+      <span class="header-title">Dashboard <span>Encoder Incremental</span> · PNP 360ppr</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span id="connChip" class="chip chip-off"><span class="dot dot-off" id="connDot"></span><span id="connLabel">Desconectado</span></span>
+      <button class="btn btn-ghost" onclick="toggleConfig()">&#9881; Configurar</button>
+      <button class="btn btn-demo" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
+      <button class="btn btn-ghost" onclick="openFirmware()">&#60;/&#62; Firmware</button>
+      <button class="btn btn-danger" id="resetBtn" onclick="resetCounter()">&#8635; Zerar</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ BODY ═══════════ -->
+<main class="body">
+
+  <!-- ALERT BANNER -->
+  <div class="alert-banner" id="alertBanner">
+    <div class="alert-icon">&#9888;</div>
+    <div class="alert-text">
+      <strong>ALERTA: Encoder parado há mais de 1 minuto!</strong>
+      <small id="alertSubtext">Última leitura registrada às --:--:-- · Posição: -- m</small>
+    </div>
+    <div class="alert-actions">
+      <button class="btn btn-danger" onclick="openSupervisorModal()">&#128222; Chamar Supervisor</button>
+      <button class="btn btn-ghost" onclick="dismissAlert()">Dispensar</button>
+    </div>
+  </div>
+
+  <!-- CONFIG PANEL -->
+  <div class="config-panel" id="configPanel" style="display:none;">
+    <div class="config-panel-head" onclick="toggleConfig()">
+      <h3>&#9881; Configuração da Conexão &amp; Encoder</h3>
+      <span style="color:var(--muted);font-size:18px;">&#8963;</span>
+    </div>
+    <div class="config-body">
+      <div class="form-group">
+        <label>IP do ESP32</label>
+        <input class="form-control" id="cfgIp" value="192.168.1.100" placeholder="ex: 192.168.1.100">
+        <span class="form-hint">WebSocket: ws://IP/ws · HTTP: http://IP/data</span>
+      </div>
+      <div class="form-group">
+        <label>Porta WebSocket</label>
+        <input class="form-control" id="cfgPort" value="80" placeholder="80">
+      </div>
+      <div class="form-group">
+        <label>Diâmetro da Roda / Polia (mm)</label>
+        <input class="form-control" id="cfgDiameter" value="100" placeholder="100">
+        <span class="form-hint">Circunferência = π × d → metros por pulso</span>
+      </div>
+      <div class="form-group">
+        <label>Pulsos por Revolução</label>
+        <input class="form-control" id="cfgPpr" value="360" placeholder="360">
+      </div>
+      <div class="form-group">
+        <label>Timeout de Alerta (s)</label>
+        <input class="form-control" id="cfgTimeout" value="60" placeholder="60">
+        <span class="form-hint">Dispara alerta se sem leitura por este tempo</span>
+      </div>
+      <div class="form-group" style="align-self:end;">
+        <button class="btn btn-primary" style="height:42px;" onclick="applyConfig()">&#10003; Aplicar e Conectar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="section-label">Leituras em Tempo Real</div>
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card" id="kpiPos">
+      <div class="kpi-label">Posição Total</div>
+      <div class="kpi-value c-sky" id="valPos">0.000<span class="kpi-unit">m</span></div>
+      <div class="kpi-sub" id="valPulses">0 pulsos acumulados</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card" id="kpiSpeed">
+      <div class="kpi-label">Velocidade</div>
+      <div class="kpi-value" id="valSpeed" style="color:var(--ok)">0.000<span class="kpi-unit">m/s</span></div>
+      <div class="kpi-sub" id="valSpeedMin">0.00 m/min</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card" id="kpiRpm">
+      <div class="kpi-label">Rotação</div>
+      <div class="kpi-value" id="valRpm" style="color:var(--gold)">0<span class="kpi-unit">RPM</span></div>
+      <div class="kpi-sub" id="valFreq">0.00 Hz</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card" id="kpiDir">
+      <div class="kpi-label">Direção</div>
+      <div class="kpi-value" id="valDir" style="font-size:28px;display:flex;align-items:center;gap:10px;">
+        <span id="dirBadge" class="direction-badge dir-stop">&#8212; Parado</span>
+      </div>
+      <div class="kpi-sub" id="valDirSub">Aguardando movimento</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card" id="kpiStatus">
+      <div class="kpi-label">Status do Sinal</div>
+      <div class="kpi-value" id="valStatus" style="font-size:22px;color:var(--muted)">&#9679; Offline</div>
+      <div class="kpi-sub" id="valLastSeen">Última leitura: --</div>
+      <div class="kpi-glow"></div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section-label">Histórico</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <h4>Velocidade (m/s) — Últimos 60s</h4>
+        <span id="avgSpeed" style="font-size:12px;color:var(--muted);">média: 0.000 m/s</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartSpeed"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <h4>Posição (m) — Acumulada</h4>
+      </div>
+      <div class="chart-wrap"><canvas id="chartPos"></canvas></div>
+    </div>
+  </div>
+
+  <!-- EVENT LOG -->
+  <div class="section-label">Log de Eventos</div>
+  <div class="log-card">
+    <div class="log-head">
+      <h4>Últimos eventos registrados</h4>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="clearLog()">Limpar</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="log-table">
+        <thead><tr><th>Hora</th><th>Tipo</th><th>Posição (m)</th><th>Velocidade (m/s)</th><th>Pulsos</th><th>Detalhes</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<div class="footer">ESP32 Encoder Dashboard · Encoder PNP Incremental 360ppr · <span class="tag-esp">WebSocket</span></div>
+
+<!-- ═══════════ SUPERVISOR MODAL ═══════════ -->
+<div class="modal-overlay" id="supervisorModal">
+  <div class="modal">
+    <div class="modal-icon">&#9888;</div>
+    <h2>Chamar Supervisor</h2>
+    <p>O encoder está parado há mais de <strong id="modalIdleTime">--</strong>. Selecione o supervisor responsável para notificar.</p>
+    <div class="modal-info" id="modalInfo">
+      <div class="modal-info-row"><span>Última leitura</span><span id="mLastRead">--</span></div>
+      <div class="modal-info-row"><span>Posição na parada</span><span id="mLastPos">-- m</span></div>
+      <div class="modal-info-row"><span>Velocidade na parada</span><span id="mLastSpeed">-- m/s</span></div>
+      <div class="modal-info-row"><span>IP do ESP32</span><span id="mEspIp">--</span></div>
+    </div>
+    <div class="supervisor-list" id="supervisorList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('supervisorModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ FIRMWARE MODAL ═══════════ -->
+<div class="modal-overlay" id="firmwareModal">
+  <div class="modal fw-modal" style="max-height:90vh;overflow-y:auto;">
+    <div class="modal-icon" style="background:rgba(53,200,255,.1);">&#60;/&#62;</div>
+    <h2>Firmware ESP32 — Encoder PNP 360ppr</h2>
+    <p style="margin-bottom:16px;">Código Arduino pronto para upload. Conecte o canal A do encoder ao GPIO 18 e o canal B ao GPIO 19. Alimentação 5 V / GND.</p>
+    <pre id="firmwareCode"></pre>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="copyFirmware()">&#128203; Copiar Código</button>
+      <button class="btn btn-ghost" onclick="closeModal('firmwareModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════ */
+let cfg = {
+  ip: '192.168.1.100',
+  port: 80,
+  diameterMm: 100,
+  ppr: 360,
+  timeoutSec: 60,
+};
+
+const supervisors = [
+  { name: 'Carlos Silva',  role: 'Supervisor Turno A', phone: '5511999990001', avatar: 'CS', color: '#35c8ff' },
+  { name: 'Fernanda Lima', role: 'Engenheira de Manutenção', phone: '5511999990002', avatar: 'FL', color: '#4ade80' },
+  { name: 'Roberto Souza', role: 'Gerente de Produção', phone: '5511999990003', avatar: 'RS', color: '#ffd166' },
+];
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let ws = null;
+let demoMode = false;
+let demoInterval = null;
+let totalPulses = 0;
+let lastPulses = 0;
+let lastPulseTime = null;
+let lastSamplePulses = 0;
+let lastSampleTime = Date.now();
+let currentSpeed = 0;
+let currentDir = 0; // 1=fwd, -1=rev, 0=stop
+let alertFired = false;
+let alertDismissed = false;
+let idleTimer = null;
+let lastReadingTs = null;
+let connState = 'off'; // off | ok | warn | fail
+
+const speedHistory = [];
+const posHistory = [];
+const timeLabels = [];
+const MAX_HIST = 60;
+
+/* ═══════════════════════════════════════════
+   CALCULATIONS
+═══════════════════════════════════════════ */
+function pulsesToMeters(p) {
+  const circ = (Math.PI * cfg.diameterMm) / 1000; // meters
+  return (p / cfg.ppr) * circ;
+}
+
+function metersToDisplay(m) {
+  return m.toFixed(3);
+}
+
+/* ═══════════════════════════════════════════
+   WEBSOCKET
+═══════════════════════════════════════════ */
+function connect() {
+  if (ws) { ws.close(); ws = null; }
+  setConn('warn', 'Conectando...');
+  try {
+    ws = new WebSocket(`ws://${cfg.ip}:${cfg.port}/ws`);
+    ws.onopen = () => {
+      setConn('ok', 'Online');
+      addLog('info', 'WebSocket conectado ao ESP32');
+    };
+    ws.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data);
+        handleData(d);
+      } catch(_) {}
+    };
+    ws.onerror = () => setConn('fail', 'Erro WS');
+    ws.onclose = () => {
+      setConn('off', 'Desconectado');
+      addLog('info', 'WebSocket desconectado');
+    };
+  } catch(err) {
+    setConn('fail', 'Falha');
+    addLog('alert', 'Falha ao conectar: ' + err.message);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   DATA HANDLER
+   Expects JSON: { pulses, direction, timestamp }
+   direction: 1=forward, -1=reverse
+═══════════════════════════════════════════ */
+function handleData(d) {
+  const now = Date.now();
+  const dt = (now - lastSampleTime) / 1000; // seconds
+  const deltaPulses = (d.pulses || 0) - lastSamplePulses;
+
+  totalPulses = d.pulses || totalPulses;
+  currentDir = d.direction || (deltaPulses > 0 ? 1 : deltaPulses < 0 ? -1 : 0);
+
+  if (dt > 0) {
+    currentSpeed = pulsesToMeters(Math.abs(deltaPulses)) / dt;
+  }
+
+  lastSamplePulses = d.pulses || totalPulses;
+  lastSampleTime = now;
+  lastReadingTs = now;
+
+  updateUI();
+  pushHistory(currentSpeed, pulsesToMeters(totalPulses));
+  resetIdleTimer();
+
+  if (alertFired && !alertDismissed && currentSpeed > 0) {
+    dismissAlert();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   UI UPDATE
+═══════════════════════════════════════════ */
+function updateUI() {
+  const posM = pulsesToMeters(Math.abs(totalPulses));
+  const speedMs = currentSpeed;
+  const rpm = (speedMs / ((Math.PI * cfg.diameterMm / 1000))) * 60;
+  const freq = (speedMs / (Math.PI * cfg.diameterMm / 1000));
+
+  document.getElementById('valPos').innerHTML = metersToDisplay(posM) + '<span class="kpi-unit">m</span>';
+  document.getElementById('valPulses').textContent = totalPulses.toLocaleString('pt-BR') + ' pulsos acumulados';
+
+  document.getElementById('valSpeed').innerHTML = speedMs.toFixed(3) + '<span class="kpi-unit">m/s</span>';
+  document.getElementById('valSpeedMin').textContent = (speedMs * 60).toFixed(2) + ' m/min';
+
+  document.getElementById('valRpm').innerHTML = rpm.toFixed(1) + '<span class="kpi-unit">RPM</span>';
+  document.getElementById('valFreq').textContent = freq.toFixed(2) + ' Hz';
+
+  const dirBadge = document.getElementById('dirBadge');
+  if (speedMs < 0.001) {
+    dirBadge.className = 'direction-badge dir-stop';
+    dirBadge.innerHTML = '&#8212; Parado';
+    document.getElementById('valDirSub').textContent = 'Sem movimento detectado';
+  } else if (currentDir >= 0) {
+    dirBadge.className = 'direction-badge dir-fwd';
+    dirBadge.innerHTML = '&#8594; Avanço';
+    document.getElementById('valDirSub').textContent = 'Sentido horário';
+  } else {
+    dirBadge.className = 'direction-badge dir-rev';
+    dirBadge.innerHTML = '&#8592; Retorno';
+    document.getElementById('valDirSub').textContent = 'Sentido anti-horário';
+  }
+
+  document.getElementById('valStatus').innerHTML = '&#9679; Online';
+  document.getElementById('valStatus').style.color = 'var(--ok)';
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('valLastSeen').textContent = 'Última leitura: ' + ts;
+
+  document.getElementById('avgSpeed').textContent =
+    'média: ' + (speedHistory.reduce((a,b)=>a+b,0)/Math.max(speedHistory.length,1)).toFixed(3) + ' m/s';
+}
+
+/* ═══════════════════════════════════════════
+   CHART
+═══════════════════════════════════════════ */
+const ctxSpeed = document.getElementById('chartSpeed').getContext('2d');
+const ctxPos   = document.getElementById('chartPos').getContext('2d');
+
+const chartSpeed = new Chart(ctxSpeed, {
+  type: 'line',
+  data: {
+    labels: timeLabels,
+    datasets: [{
+      label: 'm/s',
+      data: speedHistory,
+      borderColor: '#4ade80',
+      backgroundColor: 'rgba(74,222,128,.08)',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.4,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 200 },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#666', maxTicksLimit: 8, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+      y: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' }, min: 0 }
+    }
+  }
+});
+
+const chartPos = new Chart(ctxPos, {
+  type: 'line',
+  data: {
+    labels: timeLabels,
+    datasets: [{
+      label: 'm',
+      data: posHistory,
+      borderColor: '#35c8ff',
+      backgroundColor: 'rgba(53,200,255,.08)',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.3,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 200 },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#666', maxTicksLimit: 6, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+      y: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' }, min: 0 }
+    }
+  }
+});
+
+function pushHistory(speed, pos) {
+  const t = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  if (timeLabels.length >= MAX_HIST) {
+    timeLabels.shift(); speedHistory.shift(); posHistory.shift();
+  }
+  timeLabels.push(t);
+  speedHistory.push(parseFloat(speed.toFixed(4)));
+  posHistory.push(parseFloat(pos.toFixed(4)));
+  chartSpeed.update('none');
+  chartPos.update('none');
+}
+
+/* ═══════════════════════════════════════════
+   IDLE / ALERT
+═══════════════════════════════════════════ */
+function resetIdleTimer() {
+  if (idleTimer) clearTimeout(idleTimer);
+  alertFired = false;
+  document.getElementById('alertBanner').classList.remove('show');
+  idleTimer = setTimeout(fireAlert, cfg.timeoutSec * 1000);
+}
+
+function fireAlert() {
+  if (alertDismissed) return;
+  alertFired = true;
+  const lastTs = lastReadingTs ? new Date(lastReadingTs).toLocaleTimeString('pt-BR') : '--';
+  const lastPos = metersToDisplay(pulsesToMeters(Math.abs(totalPulses)));
+  document.getElementById('alertSubtext').textContent =
+    `Última leitura: ${lastTs} · Posição: ${lastPos} m`;
+  document.getElementById('alertBanner').classList.add('show');
+  addLog('alert', `ALERTA: Encoder sem leitura por ${cfg.timeoutSec}s`);
+  document.getElementById('valStatus').innerHTML = '&#9888; Inativo';
+  document.getElementById('valStatus').style.color = 'var(--danger)';
+}
+
+function dismissAlert() {
+  alertDismissed = true;
+  alertFired = false;
+  document.getElementById('alertBanner').classList.remove('show');
+  setTimeout(() => { alertDismissed = false; }, 10000);
+}
+
+/* ═══════════════════════════════════════════
+   LOG
+═══════════════════════════════════════════ */
+let logCount = 0;
+function addLog(type, detail) {
+  const tbody = document.getElementById('logBody');
+  const ts = new Date().toLocaleTimeString('pt-BR');
+  const posM = metersToDisplay(pulsesToMeters(Math.abs(totalPulses)));
+  const spdMs = currentSpeed.toFixed(3);
+  const cls = type === 'alert' ? 'log-type-alert' : type === 'reading' ? 'log-type-reading' : 'log-type-info';
+  const typeLabel = type === 'alert' ? '⚠ Alerta' : type === 'reading' ? '● Leitura' : '○ Info';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${ts}</td><td class="${cls}">${typeLabel}</td><td>${posM}</td><td>${spdMs}</td><td>${totalPulses.toLocaleString('pt-BR')}</td><td>${detail}</td>`;
+  tbody.prepend(tr);
+  logCount++;
+  if (tbody.rows.length > 50) tbody.deleteRow(tbody.rows.length - 1);
+}
+
+function clearLog() {
+  document.getElementById('logBody').innerHTML = '';
+}
+
+/* ═══════════════════════════════════════════
+   DEMO MODE
+═══════════════════════════════════════════ */
+let demoPhase = 0;
+let demoPulseAcc = 0;
+
+function toggleDemo() {
+  demoMode = !demoMode;
+  const btn = document.getElementById('demoBtn');
+  if (demoMode) {
+    btn.textContent = '⏹ Parar Demo';
+    btn.style.background = 'rgba(239,68,68,.15)';
+    btn.style.borderColor = 'rgba(239,68,68,.4)';
+    btn.style.color = 'var(--danger)';
+    setConn('ok', 'Demo Online');
+    addLog('info', 'Modo demonstração iniciado');
+    runDemo();
+  } else {
+    btn.textContent = '▶ Demo';
+    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
+    if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
+    setConn('off', 'Desconectado');
+  }
+}
+
+function runDemo() {
+  let tick = 0;
+  demoInterval = setInterval(() => {
+    tick++;
+    demoPhase = Math.floor(tick / 30) % 5;
+    let pulseDelta = 0;
+
+    switch(demoPhase) {
+      case 0: pulseDelta = Math.round(8 + Math.random() * 4);  currentDir =  1; break; // aceleração
+      case 1: pulseDelta = Math.round(20 + Math.random() * 6); currentDir =  1; break; // velocidade
+      case 2: pulseDelta = Math.round(10 + Math.random() * 3); currentDir =  1; break; // desaceleração
+      case 3: pulseDelta = 0; currentDir = 0; break;                                    // parado
+      case 4: pulseDelta = Math.round(5 + Math.random() * 3);  currentDir = -1; break; // retorno
+    }
+
+    if (pulseDelta > 0 || demoPhase === 3) {
+      demoPulseAcc += pulseDelta * currentDir;
+      handleData({ pulses: demoPulseAcc, direction: currentDir });
+      if (tick % 5 === 0) addLog('reading', `Demo tick #${tick}`);
+    }
+  }, 500);
+}
+
+/* ═══════════════════════════════════════════
+   SUPERVISOR MODAL
+═══════════════════════════════════════════ */
+function openSupervisorModal() {
+  const idleSecs = lastReadingTs ? Math.round((Date.now() - lastReadingTs) / 1000) : cfg.timeoutSec;
+  const idleStr = idleSecs >= 60 ? `${Math.floor(idleSecs/60)}min ${idleSecs%60}s` : `${idleSecs}s`;
+  document.getElementById('modalIdleTime').textContent = idleStr;
+  document.getElementById('mLastRead').textContent = lastReadingTs ? new Date(lastReadingTs).toLocaleTimeString('pt-BR') : '--';
+  document.getElementById('mLastPos').textContent = metersToDisplay(pulsesToMeters(Math.abs(totalPulses))) + ' m';
+  document.getElementById('mLastSpeed').textContent = currentSpeed.toFixed(3) + ' m/s';
+  document.getElementById('mEspIp').textContent = cfg.ip;
+
+  const msg = encodeURIComponent(
+    `⚠ *ALERTA ENCODER* ⚠\n\nEncoder parado há ${idleStr}.\nÚltima leitura: ${lastReadingTs ? new Date(lastReadingTs).toLocaleTimeString('pt-BR') : '--'}\nPosição: ${metersToDisplay(pulsesToMeters(Math.abs(totalPulses)))} m\nVelocidade: ${currentSpeed.toFixed(3)} m/s\nESP32: ${cfg.ip}\n\nAção necessária.`
+  );
+
+  const list = document.getElementById('supervisorList');
+  list.innerHTML = supervisors.map(s => `
+    <div class="supervisor-item">
+      <div class="supervisor-item-left">
+        <div class="supervisor-avatar" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}44;">${s.avatar}</div>
+        <div class="supervisor-info">
+          <strong>${s.name}</strong>
+          <small>${s.role}</small>
+        </div>
+      </div>
+      <a class="btn-call" href="https://wa.me/${s.phone}?text=${msg}" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </a>
+    </div>
+  `).join('');
+
+  document.getElementById('supervisorModal').classList.add('show');
+  addLog('alert', 'Supervisor notificado via modal');
+}
+
+/* ═══════════════════════════════════════════
+   FIRMWARE CODE
+═══════════════════════════════════════════ */
+const FIRMWARE = `// ESP32 – Encoder Incremental PNP 360ppr
+// Canal A → GPIO 18  |  Canal B → GPIO 19
+// Alimentação encoder: 5V / GND
+// WebSocket: ws://<IP_ESP32>/ws
+
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <WebSocketsServer.h>
+#include <ArduinoJson.h>
+
+const char* SSID     = "SUA_REDE";
+const char* PASSWORD = "SUA_SENHA";
+
+#define PIN_A  18
+#define PIN_B  19
+#define PPR    360
+
+volatile long pulseCount = 0;
+volatile int  direction  = 1;
+
+WebServer       server(80);
+WebSocketsServer wsServer(80);
+
+void IRAM_ATTR onEncoderA() {
+  bool a = digitalRead(PIN_A);
+  bool b = digitalRead(PIN_B);
+  direction = (a == b) ? 1 : -1;
+  pulseCount += direction;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_A, INPUT_PULLUP);
+  pinMode(PIN_B, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
+
+  WiFi.begin(SSID, PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
+  Serial.println("\\nIP: " + WiFi.localIP().toString());
+
+  server.on("/data", HTTP_GET, []() {
+    StaticJsonDocument<128> doc;
+    doc["pulses"]    = pulseCount;
+    doc["direction"] = direction;
+    doc["timestamp"] = millis();
+    String out; serializeJson(doc, out);
+    server.send(200, "application/json", out);
+  });
+  server.begin();
+
+  wsServer.begin();
+  wsServer.onEvent([](uint8_t, WStype_t type, uint8_t*, size_t) {});
+}
+
+unsigned long lastBroadcast = 0;
+
+void loop() {
+  server.handleClient();
+  wsServer.loop();
+
+  if (millis() - lastBroadcast >= 200) {
+    lastBroadcast = millis();
+    StaticJsonDocument<128> doc;
+    doc["pulses"]    = pulseCount;
+    doc["direction"] = direction;
+    doc["timestamp"] = millis();
+    String msg; serializeJson(doc, msg);
+    wsServer.broadcastTXT(msg);
+  }
+}`;
+
+function openFirmware() {
+  document.getElementById('firmwareCode').textContent = FIRMWARE;
+  document.getElementById('firmwareModal').classList.add('show');
+}
+
+function copyFirmware() {
+  navigator.clipboard.writeText(FIRMWARE).then(() => {
+    const btn = document.querySelector('#firmwareModal .btn-primary');
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => { btn.textContent = '📋 Copiar Código'; }, 2000);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function setConn(state, label) {
+  connState = state;
+  const chip = document.getElementById('connChip');
+  const dot  = document.getElementById('connDot');
+  const lbl  = document.getElementById('connLabel');
+  chip.className = `chip chip-${state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'fail' ? 'fail' : 'off'}`;
+  dot.className  = `dot dot-${state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'fail' ? 'fail' : 'off'}`;
+  lbl.textContent = label;
+}
+
+function toggleConfig() {
+  const p = document.getElementById('configPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+function applyConfig() {
+  cfg.ip          = document.getElementById('cfgIp').value.trim();
+  cfg.port        = parseInt(document.getElementById('cfgPort').value) || 80;
+  cfg.diameterMm  = parseFloat(document.getElementById('cfgDiameter').value) || 100;
+  cfg.ppr         = parseInt(document.getElementById('cfgPpr').value) || 360;
+  cfg.timeoutSec  = parseInt(document.getElementById('cfgTimeout').value) || 60;
+  document.getElementById('configPanel').style.display = 'none';
+  addLog('info', `Config: IP=${cfg.ip} Ø=${cfg.diameterMm}mm PPR=${cfg.ppr} timeout=${cfg.timeoutSec}s`);
+  connect();
+}
+
+function resetCounter() {
+  totalPulses = 0; demoPulseAcc = 0; lastSamplePulses = 0;
+  currentSpeed = 0; currentDir = 0;
+  timeLabels.length = 0; speedHistory.length = 0; posHistory.length = 0;
+  chartSpeed.update(); chartPos.update();
+  updateUI();
+  addLog('info', 'Contador zerado manualmente');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+/* init */
+addLog('info', 'Dashboard iniciado · aguardando conexão');
+resetIdleTimer();
+</script>
+</body>
+</html>
