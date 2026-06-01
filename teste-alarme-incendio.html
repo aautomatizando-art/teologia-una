@@ -533,7 +533,7 @@
     color: var(--muted);
     margin-bottom: 16px;
   }
-  .chart-wrapper { position: relative; height: 260px; }
+  .chart-wrapper { position: relative; height: 190px; }
   .chart-wrapper > svg { display: block; width: 100%; }
   .chart-card { overflow: visible; }
 
@@ -3209,7 +3209,7 @@ async function clearAll() {
 
 // Gráfico donut SVG — sem canvas, sem timing issues
 function _svgDonut(slices) {
-  const R = 58, CX = 100, CY = 95, SW = 26, C = 2 * Math.PI * R;
+  const R = 48, CX = 80, CY = 80, SW = 22, C = 2 * Math.PI * R;
   const total = slices.reduce((s, d) => s + d.v, 0) || 1;
   let off = 0;
   const arcs = slices.map(d => {
@@ -3222,15 +3222,16 @@ function _svgDonut(slices) {
   });
   const lbl = total > 0 ? `${Math.round(slices[0].v / total * 100)}%` : '—';
   const legend = slices.map(d =>
-    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#aaa;white-space:nowrap;">
-      <span style="width:9px;height:9px;border-radius:50%;background:${d.c};flex-shrink:0;"></span>${d.l}: <b style="color:#ddd">${d.v}</b>
+    `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#aaa;white-space:nowrap;">
+      <span style="width:8px;height:8px;border-radius:50%;background:${d.c};flex-shrink:0;"></span>${d.l}: <b style="color:#ddd">${d.v}</b>
     </span>`).join('');
-  return `<svg viewBox="0 0 200 190" style="width:100%;display:block;">
+  // Altura fixa para não escalar além do wrapper em telas largas
+  return `<svg viewBox="0 0 160 160" style="height:130px;width:auto;display:block;margin:0 auto;">
     <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#2a2a2a" stroke-width="${SW}"/>
     ${arcs.join('')}
-    <text x="${CX}" y="${CY + 9}" text-anchor="middle" fill="#e5e5e5" font-size="22" font-weight="bold" font-family="Archivo,sans-serif">${lbl}</text>
+    <text x="${CX}" y="${CY + 7}" text-anchor="middle" fill="#e5e5e5" font-size="18" font-weight="bold" font-family="Archivo,sans-serif">${lbl}</text>
   </svg>
-  <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:4px 8px 2px;">${legend}</div>`;
+  <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;padding:6px 8px 0;">${legend}</div>`;
 }
 
 // Gráfico de barras CSS — sem canvas
@@ -3241,21 +3242,21 @@ function _cssBar(lbls, datasets, maxOverride) {
       const v = ds.data[i] || 0;
       const h = Math.round(v / maxVal * 100);
       return `<div style="flex:1;background:${ds.color};height:${h}%;border-radius:3px 3px 0 0;min-height:${v>0?2:0}px;position:relative;" title="${ds.label}: ${v}">
-        ${v > 0 ? `<span style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:9px;color:#ddd;white-space:nowrap;margin-bottom:1px;">${v}</span>` : ''}
+        ${v > 0 ? `<span style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:8px;color:#ddd;white-space:nowrap;">${v}</span>` : ''}
       </div>`;
     }).join('');
-    const s = lbl.length > 12 ? lbl.substring(0, 11) + '…' : lbl;
-    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;">
-      <div style="display:flex;align-items:flex-end;gap:2px;width:100%;height:130px;">${bars}</div>
-      <div style="font-size:9px;color:#888;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s}</div>
+    const s = lbl.length > 10 ? lbl.substring(0, 9) + '…' : lbl;
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:1px;">
+      <div style="display:flex;align-items:flex-end;gap:2px;width:100%;height:100px;">${bars}</div>
+      <div style="font-size:8px;color:#888;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s}</div>
     </div>`;
   }).join('');
   const legend = datasets.map(ds =>
-    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#aaa;white-space:nowrap;">
-      <span style="width:12px;height:3px;background:${ds.color};display:inline-block;border-radius:2px;"></span>${ds.label}
+    `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#aaa;white-space:nowrap;">
+      <span style="width:10px;height:3px;background:${ds.color};display:inline-block;border-radius:2px;"></span>${ds.label}
     </span>`).join('');
-  return `<div style="display:flex;align-items:flex-end;gap:4px;height:155px;padding:14px 4px 0;">${cols}</div>
-    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:6px 4px 2px;">${legend}</div>`;
+  return `<div style="display:flex;align-items:flex-end;gap:3px;height:120px;padding:10px 2px 0;overflow:hidden;">${cols}</div>
+    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:6px 4px 0;">${legend}</div>`;
 }
 
 function openReport() {
