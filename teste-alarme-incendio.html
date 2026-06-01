@@ -720,8 +720,11 @@
       page-break-before: auto !important;
       break-before: auto !important;
     }
-    /* Images in all sections fit the page height */
-    .rpt-section img {
+    /* Images in photo sections fit the page height (excludes signature logos) */
+    .rpt-session img,
+    .rpt-finalizacao img,
+    .rpt-problemas img,
+    .rpt-items .report-item img {
       max-height: 35vh !important;
       width: 100% !important;
       object-fit: contain !important;
