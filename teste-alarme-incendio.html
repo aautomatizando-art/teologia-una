@@ -709,20 +709,24 @@
       max-height: 55vh !important;
       object-fit: contain !important;
     }
-    /* ── Status Início / Problemas / Finalização: each on its own page ── */
-    .rpt-finalizacao,
-    .rpt-problemas {
+    /* ── Every section after the first starts on its own page ── */
+    .rpt-section ~ .rpt-section {
       page-break-before: always !important;
       break-before: page !important;
     }
-    .rpt-session img,
-    .rpt-finalizacao img,
-    .rpt-problemas img {
+    /* First record in rpt-items shares its page with the section heading */
+    .rpt-items > .report-items > .report-item:first-child {
+      page-break-before: auto !important;
+      break-before: auto !important;
+    }
+    /* Images in all sections fit the page height */
+    .rpt-section img {
       max-height: 35vh !important;
       width: 100% !important;
       object-fit: contain !important;
       display: block !important;
     }
+    /* Photo grids in summary sections: 2 columns */
     .rpt-session [style*="minmax"],
     .rpt-finalizacao [style*="minmax"],
     .rpt-problemas [style*="minmax"] {
@@ -3298,15 +3302,18 @@ function buildReport(filtered) {
 
   // stats
   const statsHTML = `
+    <div class="rpt-section rpt-stats">
     <div class="stats-grid">
       <div class="stat-card stat-total"><div class="stat-value">${total}</div><div class="stat-label">Total de Testes</div></div>
       <div class="stat-card stat-ok"><div class="stat-value">${okCount}</div><div class="stat-label">Aprovados</div></div>
       <div class="stat-card stat-fail"><div class="stat-value">${failCount}</div><div class="stat-label">Falhas</div></div>
       <div class="stat-card stat-rate"><div class="stat-value">${rate}%</div><div class="stat-label">Taxa de Aprovação</div></div>
+    </div>
     </div>`;
 
   // charts
   const chartsHTML = `
+    <div class="rpt-section rpt-charts">
     <div class="charts-grid">
       <div class="chart-card">
         <h4>Resultado Geral</h4>
@@ -3316,6 +3323,7 @@ function buildReport(filtered) {
         <h4>Testes por Local</h4>
         <div class="chart-wrapper"><canvas id="chartBar"></canvas></div>
       </div>
+    </div>
     </div>`;
 
   // progresso ciclo 3 meses
@@ -3352,6 +3360,7 @@ function buildReport(filtered) {
     });
     const rptDetIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="36" height="36"><circle cx="24" cy="24" r="22" fill="#f4f4f4" stroke="#ccc" stroke-width="2"/><circle cx="24" cy="24" r="16" fill="none" stroke="#ddd" stroke-width="1.2"/><circle cx="24" cy="24" r="10" fill="#ebebeb" stroke="#d0d0d0" stroke-width="1"/><path d="M24,16 C24,16 29.5,18.5 29.5,23 C29.5,27.5 24,30.5 24,30.5 C24,30.5 18.5,27.5 18.5,23 C18.5,18.5 24,16 Z" fill="#CC1500"/><text x="24" y="26" text-anchor="middle" fill="white" font-size="8" font-weight="bold" font-family="Arial,sans-serif">i</text></svg>`;
     progressHTML = `
+      <div class="rpt-section rpt-progress">
       <div class="section-title" style="font-size:15px;margin:28px 0 12px;">📊 Progresso — Ciclo de 3 Meses</div>
       <div class="progress-info" style="margin-bottom:16px;">
         <span class="progress-pill ${sc}">${pct}% concluído</span>
@@ -3379,7 +3388,8 @@ function buildReport(filtered) {
           <div style="font-size:10px;font-weight:700;color:#111;margin-top:4px;">${esc(t.botoNum||'—')}</div>
           <div style="font-size:9px;color:#666;margin-top:2px;">${t.date ? formatDate(t.date) : ''}</div>
         </div>`).join('')}
-      </div>` : ''}`;
+      </div>` : ''}
+      </div>`;
   }
 
   // session start — use rptSess override when a past date is loaded
@@ -3421,6 +3431,7 @@ function buildReport(filtered) {
 
   // test items
   const itemsHTML = `
+    <div class="rpt-section rpt-items">
     <div class="section-title" style="font-size:15px;margin-bottom:16px;">📋 Detalhamento dos Testes</div>
     <div class="report-items">
       ${sorted.map((t,i) => `
@@ -3455,6 +3466,7 @@ function buildReport(filtered) {
           ${t.obs ? `<div class="report-notes-row"><strong>Obs:</strong> ${esc(t.obs)}</div>` : ''}
         </div>
       `).join('')}
+    </div>
     </div>`;
 
   // finalização de teste — use rptSess override when available
@@ -3488,6 +3500,7 @@ function buildReport(filtered) {
     </div>`;
 
   const signatureHTML = `
+    <div class="rpt-section rpt-signature">
     <div style="margin-top:32px;border-top:2px solid #CC1500;padding-top:20px;">
 
       <!-- Logos + título -->
@@ -3535,6 +3548,7 @@ function buildReport(filtered) {
         <span style="font-size:15px;font-weight:900;color:#CC1500;font-family:'Fira Code',monospace;letter-spacing:.08em;">${getArt()}</span>
       </div>
 
+    </div>
     </div>`;
 
   const rptProbEntries = rptSess
