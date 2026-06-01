@@ -143,6 +143,29 @@
   .footer-logos{display:flex;align-items:center;gap:12px;}
   .footer-copy{font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;}
 
+  /* ══════════ MODULES ══════════ */
+  #screen-modules{flex-direction:column;}
+  .modules-body{flex:1;max-width:900px;margin:0 auto;padding:48px clamp(16px,4vw,48px);width:100%;}
+  .modules-greeting{text-align:center;margin-bottom:40px;}
+  .modules-greeting h1{font-family:'Archivo Black',sans-serif;font-size:clamp(22px,4vw,32px);margin-bottom:8px;}
+  .modules-greeting p{color:var(--muted);font-size:15px;}
+  .modules-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:600px){.modules-grid{grid-template-columns:1fr;}}
+  .module-card{background:var(--bg2);border:2px solid var(--border);border-radius:20px;padding:36px 28px;
+    cursor:pointer;transition:all .25s ease;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .module-card:hover{transform:translateY(-6px);box-shadow:0 20px 56px rgba(0,0,0,.5);}
+  .module-card.fire:hover{border-color:var(--fire);}
+  .module-card.water:hover{border-color:var(--sky);}
+  .module-icon{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;}
+  .module-icon.fire{background:linear-gradient(135deg,#CC1500,#ff6b35);box-shadow:0 8px 28px rgba(204,21,0,.35);}
+  .module-icon.water{background:linear-gradient(135deg,#0c6ef2,#35c8ff);box-shadow:0 8px 28px rgba(53,200,255,.3);}
+  .module-title{font-family:'Archivo Black',sans-serif;font-size:17px;line-height:1.3;}
+  .module-desc{font-size:13px;color:var(--muted);line-height:1.5;}
+  .module-btn{margin-top:8px;padding:10px 24px;border-radius:var(--radius-sm);font-family:'Archivo',sans-serif;
+    font-weight:700;font-size:13px;border:none;cursor:pointer;transition:var(--transition);}
+  .module-btn.fire{background:linear-gradient(135deg,#CC1500,#ff6b35);color:#fff;}
+  .module-btn.water{background:linear-gradient(135deg,#0c6ef2,#35c8ff);color:#fff;}
+
   /* ══════════ COMPANY LOGIN MODAL ══════════ */
   .cmodal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
     z-index:200;display:none;align-items:center;justify-content:center;padding:24px;}
@@ -216,6 +239,42 @@
   </div>
 </div>
 
+<!-- ══════════════════════ MODULES ══════════════════════ -->
+<div class="screen" id="screen-modules">
+  <header class="dash-header">
+    <div class="dash-header-inner">
+      <div class="dash-left">
+        <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="32"></div>
+        <div class="dash-title">Pro Hid <span>Sistemas de Incêndio</span></div>
+      </div>
+      <div class="dash-right">
+        <img src="logo-volt.svg" alt="Volt Energy" height="28">
+        <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
+      </div>
+    </div>
+  </header>
+  <div class="modules-body">
+    <div class="modules-greeting">
+      <h1>Selecione o Módulo</h1>
+      <p>Escolha o tipo de registro que deseja acessar.</p>
+    </div>
+    <div class="modules-grid">
+      <div class="module-card fire" onclick="selectModule('alarm')">
+        <div class="module-icon fire">🔥</div>
+        <div class="module-title">Dashboard Alarme de Incêndio SDAI</div>
+        <div class="module-desc">Registros de testes de alarme, dispositivos e relatórios por contrato.</div>
+        <button class="module-btn fire">Acessar →</button>
+      </div>
+      <div class="module-card water" onclick="selectModule('preventiva')">
+        <div class="module-icon water">💧</div>
+        <div class="module-title">Dashboard Registro de Testes e Preventiva nas Bombas</div>
+        <div class="module-desc">Testes de integridade, preventiva nas bombas e inspeção de sprinklers.</div>
+        <button class="module-btn water">Acessar →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════ DASHBOARD ══════════════════════ -->
 <div class="screen" id="screen-dashboard">
 
@@ -223,9 +282,10 @@
     <div class="dash-header-inner">
       <div class="dash-left">
         <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="32"></div>
-        <div class="dash-title">Dashboard <span>Alarme de Incêndio SDAI</span></div>
+        <div class="dash-title" id="dashModuleTitle">Dashboard <span>Alarme de Incêndio SDAI</span></div>
       </div>
       <div class="dash-right">
+        <button class="btn-logout" onclick="showModules()" style="border-color:var(--sky);color:var(--sky);">← Módulos</button>
         <img src="logo-volt.svg" alt="Volt Energy" height="28">
         <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
       </div>
@@ -374,7 +434,7 @@ function doLogin(e) {
   e.preventDefault();
   if (document.getElementById('senhaInput').value === SENHA_SISTEMA) {
     sessionStorage.setItem('fire_auth', '1');
-    showDashboard();
+    showModules();
   } else {
     const err = document.getElementById('loginError');
     err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');
@@ -385,15 +445,33 @@ function doLogin(e) {
 function doLogout() { sessionStorage.removeItem('fire_auth'); showLogin(); }
 
 // ─── SCREENS ──────────────────────────────────────────────────────────────
+let activeModule = 'alarm';
+
+function _hideAll() {
+  ['screen-login','screen-modules','screen-dashboard'].forEach(id =>
+    document.getElementById(id).classList.remove('active'));
+}
 function showLogin() {
+  _hideAll();
   document.getElementById('screen-login').classList.add('active');
-  document.getElementById('screen-dashboard').classList.remove('active');
   setTimeout(() => document.getElementById('senhaInput').focus(), 80);
 }
+function showModules() {
+  _hideAll();
+  document.getElementById('screen-modules').classList.add('active');
+}
 function showDashboard() {
-  document.getElementById('screen-login').classList.remove('active');
+  _hideAll();
   document.getElementById('screen-dashboard').classList.add('active');
   loadDashboardData();
+}
+function selectModule(mod) {
+  activeModule = mod;
+  const t = document.getElementById('dashModuleTitle');
+  if (t) t.innerHTML = mod === 'preventiva'
+    ? 'Dashboard <span>Preventiva nas Bombas</span>'
+    : 'Dashboard <span>Alarme de Incêndio SDAI</span>';
+  showDashboard();
 }
 
 async function loadDashboardData() {
@@ -438,7 +516,8 @@ function submitCompanyLogin(e) {
     }
     closeCompanyModal();
     const nomeFull = emp.nome + (emp.unidade ? ' ' + emp.unidade : '');
-    location.href = `teste-alarme-incendio.html?empresa=${encodeURIComponent(emp.id)}&nome=${encodeURIComponent(nomeFull)}`;
+    const page = activeModule === 'preventiva' ? 'preventiva-bombas.html' : 'teste-alarme-incendio.html';
+    location.href = `${page}?empresa=${encodeURIComponent(emp.id)}&nome=${encodeURIComponent(nomeFull)}`;
   } else {
     const err = document.getElementById('clError');
     err.classList.remove('show'); void err.offsetWidth; err.classList.add('show');

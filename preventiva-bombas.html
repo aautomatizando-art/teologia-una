@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preventiva nas Bombas · Pro Hid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#262626;
+  --border:#2e2e2e;--text:#f2f2f2;--muted:#888;
+  --rose:#ff3577;--sky:#35c8ff;--ok:#4ade80;--fail:#ff3577;
+  --lime:#c8f135;--water:#35c8ff;
+  --radius:12px;--radius-sm:8px;--transition:.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;min-height:100vh;}
+.logo-pill{background:#fff;border-radius:8px;padding:4px 9px;display:inline-flex;align-items:center;flex-shrink:0;}
+
+/* HEADER */
+.site-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,48px);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+.header-inner{max-width:1100px;margin:0 auto;height:68px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.header-brand{display:flex;align-items:center;gap:12px;}
+.header-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.8vw,15px);color:var(--text);line-height:1.2;}
+.header-title span{color:var(--water);}
+.header-actions{display:flex;gap:10px;align-items:center;}
+
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:32px clamp(16px,4vw,48px) 80px;}
+.section-title{font-family:'Archivo Black',sans-serif;font-size:11px;font-weight:900;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.form-control{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Archivo',sans-serif;font-size:14px;padding:10px 14px;outline:none;width:100%;transition:var(--transition);}
+.form-control:focus{border-color:var(--water);box-shadow:0 0 0 3px rgba(53,200,255,.1);}
+textarea.form-control{resize:vertical;min-height:80px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius-sm);
+  font-family:'Archivo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition);border:1px solid transparent;}
+.btn-primary{background:var(--water);color:#0e0e0e;border-color:var(--water);}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-ghost{background:transparent;color:var(--text);border-color:var(--border);}
+.btn-ghost:hover{border-color:var(--text);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-save{background:linear-gradient(135deg,#0c6ef2,#35c8ff);color:#fff;border:none;padding:12px 28px;
+  font-family:'Archivo Black',sans-serif;font-size:15px;border-radius:var(--radius-sm);cursor:pointer;
+  transition:var(--transition);box-shadow:0 4px 18px rgba(53,200,255,.3);}
+.btn-save:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(53,200,255,.45);}
+
+/* SIM/NÃO TOGGLE */
+.sn-toggle{display:flex;gap:8px;flex-wrap:wrap;}
+.sn-toggle label{cursor:pointer;}
+.sn-toggle input[type=radio]{display:none;}
+.sn-toggle input+span{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);font-size:13px;font-weight:600;transition:var(--transition);background:var(--bg3);}
+.sn-toggle input:checked+span.sim{background:rgba(74,222,128,.15);border-color:var(--ok);color:var(--ok);}
+.sn-toggle input:checked+span.nao{background:rgba(255,53,119,.15);border-color:var(--fail);color:var(--fail);}
+.sn-toggle input+span:hover{border-color:var(--muted);}
+
+/* SPEC BUTTONS */
+.spec-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.btn-spec{padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg3);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);}
+.btn-spec:hover{border-color:var(--muted);color:var(--text);}
+.btn-spec.active-dentro{background:rgba(74,222,128,.15);border-color:var(--ok);color:var(--ok);}
+.btn-spec.active-fora{background:rgba(255,53,119,.15);border-color:var(--fail);color:var(--fail);}
+
+/* PHOTO CARD */
+.photo-card{background:var(--bg3);border:1px dashed var(--border);border-radius:var(--radius-sm);
+  overflow:hidden;position:relative;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+.photo-card img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.photo-card .photo-add{font-size:24px;color:var(--muted);pointer-events:none;}
+.photo-card .photo-lbl{font-size:11px;color:var(--muted);pointer-events:none;}
+.photo-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-card.has-photo .photo-add,.photo-card.has-photo .photo-lbl{display:none;}
+.photo-card .photo-del{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.7);color:#fff;
+  border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;display:none;z-index:2;align-items:center;justify-content:center;}
+.photo-card.has-photo .photo-del{display:flex;}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+
+/* TEST POINT CARD */
+.test-point{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.test-point-title{font-size:13px;font-weight:700;color:var(--water);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em;}
+.test-point-photos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.test-point-previsto{font-size:12px;color:var(--muted);margin-bottom:6px;}
+.test-point-previsto strong{color:var(--text);}
+
+/* TABLE */
+.chuveiros-table{width:100%;border-collapse:collapse;font-size:13px;}
+.chuveiros-table th,.chuveiros-table td{border:1px solid var(--border);padding:10px 12px;text-align:left;}
+.chuveiros-table th{background:var(--bg3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.chuveiros-table td select,.chuveiros-table td input{background:transparent;border:none;color:var(--text);
+  font-family:'Archivo',sans-serif;font-size:13px;outline:none;width:100%;cursor:pointer;}
+.chuveiros-table td select option{background:var(--bg3);}
+.chuveiros-table .rowspan-cell{background:var(--bg3);font-weight:700;text-align:center;vertical-align:middle;color:var(--water);font-size:12px;}
+
+/* FOOTER */
+.site-footer{background:var(--bg2);border-top:1px solid var(--border);padding:16px clamp(16px,4vw,48px);margin-top:40px;}
+.site-footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.footer-copy{font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--bg3);border:1px solid var(--border);padding:10px 20px;border-radius:999px;
+  font-size:13px;font-weight:600;z-index:400;transition:transform .3s ease,opacity .3s ease;opacity:0;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+#toast.ok{border-color:var(--ok);color:var(--ok);}
+#toast.err{border-color:var(--fail);color:var(--fail);}
+
+/* PRINT */
+@media print{
+  .site-header,.site-footer,.no-print{display:none!important;}
+  body{background:#fff!important;color:#111!important;}
+  .form-card,.test-point{border:1px solid #ccc!important;background:#fff!important;}
+  .form-control,select{background:#fff!important;color:#111!important;}
+  .photo-card{border:1px solid #ccc!important;}
+}
+
+@media(max-width:600px){
+  .test-point-photos{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="32"></div>
+      <a href="index.html" class="btn btn-ghost btn-sm no-print" style="text-decoration:none;">← Voltar</a>
+      <div>
+        <div class="header-title">Registro de Testes e <span>Preventiva nas Bombas</span></div>
+        <div style="font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;" id="headerEmpresa"></div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm no-print" onclick="saveAll()" id="btnSave">💾 Salvar</button>
+      <button class="btn btn-primary btn-sm no-print" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+<!-- ══ PROJETO ══ -->
+<section>
+  <div class="section-title">📋 Projeto</div>
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Instalação em conformidade com o aceito no projeto</label>
+        <div class="sn-toggle">
+          <label><input type="radio" name="proj_conformidade" value="sim"><span class="sim">✅ Sim</span></label>
+          <label><input type="radio" name="proj_conformidade" value="nao"><span class="nao">❌ Não</span></label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Equipamento usado é aprovado</label>
+        <div class="sn-toggle">
+          <label><input type="radio" name="proj_equipamento" value="sim"><span class="sim">✅ Sim</span></label>
+          <label><input type="radio" name="proj_equipamento" value="nao"><span class="nao">❌ Não</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ INSTRUÇÕES ══ -->
+<section>
+  <div class="section-title">📌 Instruções</div>
+  <div class="form-card">
+    <div class="form-group">
+      <label>O responsável pelos equipamentos de combate a incêndios foi instruído quanto à localização de válvulas de controle e sobre cuidados e manutenção dos novos equipamentos?</label>
+      <div class="sn-toggle" style="margin-top:8px;">
+        <label><input type="radio" name="instr_responsavel" value="sim"><span class="sim">✅ Sim</span></label>
+        <label><input type="radio" name="instr_responsavel" value="nao"><span class="nao">❌ Não</span></label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ LOCALIZAÇÃO DOS SISTEMAS ══ -->
+<section>
+  <div class="section-title">📍 Localização dos Sistemas</div>
+  <div class="form-card">
+    <div class="form-group" style="margin-bottom:20px;">
+      <label>Edificações atendidas pelo sistema</label>
+      <select class="form-control" id="locEdificacao" style="max-width:300px;">
+        <option value="">Selecione…</option>
+        <option value="Warehouse">Warehouse</option>
+        <option value="Mezaninos">Mezaninos</option>
+        <option value="Laboratório">Laboratório</option>
+      </select>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table class="chuveiros-table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Ano de Fabricação</th>
+            <th>Tamanho do Orifício</th>
+            <th>Temperatura de Operação</th>
+          </tr>
+        </thead>
+        <tbody id="chuveirosBody">
+          <!-- rows inserted by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TUBOS E CONEXÕES ══ -->
+<section>
+  <div class="section-title">🔧 Tubos e Conexões</div>
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Tipo de Tubo</label>
+        <select class="form-control" id="tipoTubo">
+          <option value="">Selecione…</option>
+          <option value="AÇO CARBONO NBR 5580">AÇO CARBONO NBR 5580</option>
+          <option value="AÇO INOX">AÇO INOX</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Conexões</label>
+        <select class="form-control" id="tipoConexao">
+          <option value="">Selecione…</option>
+          <option value="Grooved">Grooved</option>
+          <option value="BSP">BSP</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MODELO BOMBA PRINCIPAL ══ -->
+<section>
+  <div class="section-title">⚙️ Modelo Bomba Principal</div>
+  <div class="form-card">
+    <div class="sn-toggle">
+      <label><input type="radio" name="modelo_bomba" value="Diesel"><span class="sim">🛢️ Diesel</span></label>
+      <label><input type="radio" name="modelo_bomba" value="Elétrica"><span class="sim" style="--ok:var(--sky)">⚡ Elétrica</span></label>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BOMBA 1 ══ -->
+<hr class="divider">
+<section>
+  <div class="section-title">🔴 Bomba 1</div>
+
+  <!-- Partida Jockey -->
+  <div class="test-point">
+    <div class="test-point-title">Partida da Jockey – Queda de Pressão</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b1-jockey-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_jockey_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_jockey_local','pc-b1-jockey-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b1-jockey-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_jockey_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_jockey_mano','pc-b1-jockey-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>90 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b1_jockey_spec" data-value="dentro" onclick="setSpec(this,'b1_jockey_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b1_jockey_spec" data-value="fora" onclick="setSpec(this,'b1_jockey_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Partida Bomba Principal -->
+  <div class="test-point">
+    <div class="test-point-title">Partida Bomba Principal – Queda de Pressão</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b1-principal-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_principal_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_principal_local','pc-b1-principal-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b1-principal-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_principal_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_principal_mano','pc-b1-principal-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>85 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b1_principal_spec" data-value="dentro" onclick="setSpec(this,'b1_principal_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b1_principal_spec" data-value="fora" onclick="setSpec(this,'b1_principal_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Rede -->
+  <div class="test-point">
+    <div class="test-point-title">Rede – Válvulas Abertas</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b1-rede-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_rede_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_rede_local','pc-b1-rede-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b1-rede-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_rede_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_rede_mano','pc-b1-rede-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>110 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b1_rede_spec" data-value="dentro" onclick="setSpec(this,'b1_rede_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b1_rede_spec" data-value="fora" onclick="setSpec(this,'b1_rede_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Shut Off -->
+  <div class="test-point">
+    <div class="test-point-title">Shut Off</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b1-shutoff-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_shutoff_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_shutoff_local','pc-b1-shutoff-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b1-shutoff-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b1_shutoff_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b1_shutoff_mano','pc-b1-shutoff-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>120 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b1_shutoff_spec" data-value="dentro" onclick="setSpec(this,'b1_shutoff_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b1_shutoff_spec" data-value="fora" onclick="setSpec(this,'b1_shutoff_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Resumo + fotos extras Bomba 1 -->
+  <div class="form-card">
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Resumo</label>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;padding:10px 12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);">
+        Realizados testes de integridade do sistema, mediante acionamento de bombas, submetendo-se a pressões similares ao exigido por Norma. Inspeção visual nas redes (spk + hid) como um todo.
+      </p>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Fotos</label>
+      <div class="photos-grid" id="b1-extras-grid"></div>
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea class="form-control" id="b1_obs" rows="3" placeholder="Observações da Bomba 1…"></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BOMBA 2 ══ -->
+<hr class="divider">
+<section>
+  <div class="section-title">🔵 Bomba 2</div>
+
+  <!-- Partida Jockey -->
+  <div class="test-point">
+    <div class="test-point-title">Partida da Jockey – Queda de Pressão</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b2-jockey-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_jockey_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_jockey_local','pc-b2-jockey-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b2-jockey-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_jockey_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_jockey_mano','pc-b2-jockey-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>90 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b2_jockey_spec" data-value="dentro" onclick="setSpec(this,'b2_jockey_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b2_jockey_spec" data-value="fora" onclick="setSpec(this,'b2_jockey_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Partida Bomba Principal -->
+  <div class="test-point">
+    <div class="test-point-title">Partida Bomba Principal – Queda de Pressão</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b2-principal-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_principal_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_principal_local','pc-b2-principal-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b2-principal-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_principal_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_principal_mano','pc-b2-principal-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>76 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b2_principal_spec" data-value="dentro" onclick="setSpec(this,'b2_principal_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b2_principal_spec" data-value="fora" onclick="setSpec(this,'b2_principal_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Rede -->
+  <div class="test-point">
+    <div class="test-point-title">Rede – Válvulas Abertas</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b2-rede-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_rede_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_rede_local','pc-b2-rede-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b2-rede-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_rede_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_rede_mano','pc-b2-rede-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>115 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b2_rede_spec" data-value="dentro" onclick="setSpec(this,'b2_rede_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b2_rede_spec" data-value="fora" onclick="setSpec(this,'b2_rede_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Shut Off -->
+  <div class="test-point">
+    <div class="test-point-title">Shut Off</div>
+    <div class="test-point-photos">
+      <div class="form-group">
+        <label>Foto do Local</label>
+        <div class="photo-card" id="pc-b2-shutoff-local">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_shutoff_local')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_shutoff_local','pc-b2-shutoff-local')">✕</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Manômetro</label>
+        <div class="photo-card" id="pc-b2-shutoff-mano">
+          <span class="photo-add">📷</span><span class="photo-lbl">Adicionar Foto</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'b2_shutoff_mano')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'b2_shutoff_mano','pc-b2-shutoff-mano')">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-point-previsto">Previsto: <strong>140 mca</strong></div>
+    <div class="spec-group">
+      <button class="btn-spec" data-field="b2_shutoff_spec" data-value="dentro" onclick="setSpec(this,'b2_shutoff_spec')">✅ Dentro do especificado</button>
+      <button class="btn-spec" data-field="b2_shutoff_spec" data-value="fora" onclick="setSpec(this,'b2_shutoff_spec')">❌ Fora do especificado</button>
+    </div>
+  </div>
+
+  <!-- Fotos extras Bomba 2 -->
+  <div class="form-card">
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Fotos</label>
+      <div class="photos-grid" id="b2-extras-grid"></div>
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea class="form-control" id="b2_obs" rows="3" placeholder="Observações da Bomba 2…"></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SOLDAGEM ══ -->
+<hr class="divider">
+<section>
+  <div class="section-title">🔥 Soldagem</div>
+  <div class="form-card">
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div class="form-group">
+        <label>Atesta que a soldagem foi feita por profissional qualificado?</label>
+        <div class="sn-toggle" style="margin-top:8px;">
+          <label><input type="radio" name="sold_qualificado" value="sim"><span class="sim">✅ Sim</span></label>
+          <label><input type="radio" name="sold_qualificado" value="nao"><span class="nao">❌ Não</span></label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Atesta que todos os cuidados foram tomados de acordo com o documentado quanto aos procedimentos de controle de qualidade para assegurar que todos os discos foram retirados, que aberturas em tubulações foram alisadas, que as escórias e outros resíduos de soldagem foram removidos, que os diâmetros internos da tubulação não foram alterados?</label>
+        <div class="sn-toggle" style="margin-top:8px;">
+          <label><input type="radio" name="sold_cuidados" value="sim"><span class="sim">✅ Sim</span></label>
+          <label><input type="radio" name="sold_cuidados" value="nao"><span class="nao">❌ Não</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TANQUES DE DIESEL ══ -->
+<hr class="divider">
+<section>
+  <div class="section-title">🛢️ Tanques de Diesel</div>
+  <div class="form-card">
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Fotos</label>
+      <div class="photos-grid" id="tanques-extras-grid"></div>
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <textarea class="form-control" id="tanques_obs" rows="3" placeholder="Observações dos tanques de diesel…"></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CONCLUSÃO / RESUMO ══ -->
+<hr class="divider">
+<section>
+  <div class="section-title">✅ Conclusão / Resumo</div>
+  <div class="form-card">
+    <div class="form-group">
+      <label>Texto de conclusão</label>
+      <textarea class="form-control" id="conclusao" rows="5" placeholder="Descreva a conclusão geral do laudo de preventiva…"></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- BOTTOM SAVE -->
+<div class="no-print" style="display:flex;justify-content:flex-end;gap:12px;margin-top:28px;padding-bottom:20px;">
+  <button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  <button class="btn-save" onclick="saveAll()">💾 Salvar Registro</button>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div class="logo-pill"><img src="logo-prohid.svg" alt="Pro Hid" height="26"></div>
+    </div>
+    <span class="footer-copy">© 2025 Pro Hid · Tecnologia em Engenharia de Incêndio</span>
+  </div>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const SUPA_URL = 'https://zcevjbtzucwpmioiqtis.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZXZqYnR6dWN3cG1pb2lxdGlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDg3NDQsImV4cCI6MjA5NTU4NDc0NH0.ymeNSclnQOI_Jxzm0iMayYTAzVRWffHuQakML5NyaSw';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const PARAMS    = new URLSearchParams(location.search);
+const EMPRESA_ID = PARAMS.get('empresa') || 'default';
+const EMPRESA_NOME = PARAMS.get('nome') || 'Pro Hid';
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+(function checkAuth() {
+  if (sessionStorage.getItem('fire_auth') !== '1') { location.href = 'index.html'; return; }
+  if (EMPRESA_ID !== 'default' && sessionStorage.getItem('fire_company_' + EMPRESA_ID) !== '1') {
+    location.href = 'index.html'; return;
+  }
+  const h = document.getElementById('headerEmpresa');
+  if (h) h.textContent = EMPRESA_NOME;
+  document.title = 'Preventiva nas Bombas · ' + EMPRESA_NOME;
+})();
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// ── PHOTOS ────────────────────────────────────────────────────────────────
+const photoURLs = {};
+
+function localDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+async function handlePhoto(input, field) {
+  const file = input.files[0];
+  if (!file) return;
+  const cardId = input.closest('.photo-card').id;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const card = document.getElementById(cardId);
+    let img = card.querySelector('img');
+    if (!img) { img = document.createElement('img'); card.prepend(img); }
+    img.src = e.target.result;
+    card.classList.add('has-photo');
+  };
+  reader.readAsDataURL(file);
+
+  try {
+    const blob = await compressImage(file);
+    const path = `preventiva/${EMPRESA_ID}/${localDateStr()}/${field}.jpg`;
+    const { error } = await db.storage.from('fire-photos').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (!error) {
+      photoURLs[field] = db.storage.from('fire-photos').getPublicUrl(path).data.publicUrl;
+    }
+  } catch(e) { console.warn('Upload foto:', e); }
+}
+
+function removePhoto(e, field, cardId) {
+  e.stopPropagation();
+  const card = document.getElementById(cardId);
+  const img = card.querySelector('img');
+  if (img) img.remove();
+  card.classList.remove('has-photo');
+  delete photoURLs[field];
+}
+
+function compressImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1400;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.82);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function setPhotoFromURL(url, cardId, field) {
+  if (!url) return;
+  photoURLs[field] = url;
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  let img = card.querySelector('img');
+  if (!img) { img = document.createElement('img'); card.prepend(img); }
+  img.src = url;
+  card.classList.add('has-photo');
+}
+
+// ── SPEC BUTTONS ──────────────────────────────────────────────────────────
+const specValues = {};
+
+function setSpec(btn, field) {
+  specValues[field] = btn.dataset.value;
+  document.querySelectorAll(`[data-field="${field}"]`).forEach(b => {
+    b.className = 'btn-spec';
+    if (b.dataset.value === btn.dataset.value) b.classList.add('active-' + btn.dataset.value);
+  });
+}
+
+function restoreSpec(field, value) {
+  if (!value) return;
+  specValues[field] = value;
+  document.querySelectorAll(`[data-field="${field}"]`).forEach(b => {
+    b.className = 'btn-spec';
+    if (b.dataset.value === value) b.classList.add('active-' + value);
+  });
+}
+
+// ── CHUVEIROS TABLE ───────────────────────────────────────────────────────
+function buildChuveirosTable() {
+  const tbody = document.getElementById('chuveirosBody');
+  const rows = 3;
+  let html = '';
+  for (let i = 0; i < rows; i++) {
+    html += `<tr>`;
+    if (i === 0) html += `<td class="rowspan-cell" rowspan="${rows}">Chuveiros Automáticos</td>`;
+    html += `
+      <td><select id="chv_marca_${i}">
+        <option value="">—</option>
+        <option value="Tyco">Tyco</option>
+        <option value="Gerdal">Gerdal</option>
+        <option value="Amanco">Amanco</option>
+      </select></td>
+      <td><select id="chv_modelo_${i}">
+        <option value="">—</option>
+        <option value="ESFR-25">ESFR-25</option>
+        <option value="TY3231">TY3231</option>
+        <option value="TY4151">TY4151</option>
+      </select></td>
+      <td><input type="text" id="chv_ano_${i}" placeholder="Ano" style="width:80px;"></td>
+      <td><select id="chv_orificio_${i}">
+        <option value="">—</option>
+        <option value='1/2"'>1/2"</option>
+        <option value='3/4"'>3/4"</option>
+        <option value='1"'>1"</option>
+      </select></td>
+      <td style="color:var(--muted);font-weight:700;">68°C</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+// ── EXTRA PHOTOS GRIDS ───────────────────────────────────────────────────
+function buildExtrasGrid(containerId, prefix, count = 4) {
+  const grid = document.getElementById(containerId);
+  let html = '';
+  for (let i = 1; i <= count; i++) {
+    const field = `${prefix}_extra_${i}`;
+    const cardId = `pc-${prefix}-extra-${i}`;
+    html += `
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="photo-card" id="${cardId}">
+          <span class="photo-add">📷</span>
+          <span class="photo-lbl">Foto ${i}</span>
+          <input type="file" accept="image/*" onchange="handlePhoto(this,'${field}')">
+          <button type="button" class="photo-del" onclick="removePhoto(event,'${field}','${cardId}')">✕</button>
+        </div>
+        <input type="text" class="form-control" id="${field}_desc" placeholder="Descrição ${i}…" style="font-size:12px;padding:6px 10px;">
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ── COLLECT DATA ──────────────────────────────────────────────────────────
+function radio(name) {
+  const el = document.querySelector(`[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function collectData() {
+  const chuveiros = [0,1,2].map(i => ({
+    marca:    val(`chv_marca_${i}`),
+    modelo:   val(`chv_modelo_${i}`),
+    ano:      val(`chv_ano_${i}`),
+    orificio: val(`chv_orificio_${i}`),
+    temp:     '68°C'
+  }));
+
+  function extrasData(prefix) {
+    return [1,2,3,4].map(i => ({
+      url:  photoURLs[`${prefix}_extra_${i}`] || '',
+      desc: val(`${prefix}_extra_${i}_desc`)
+    }));
+  }
+
+  return {
+    projeto: {
+      conformidade:      radio('proj_conformidade'),
+      equipamento:       radio('proj_equipamento')
+    },
+    instrucoes: {
+      responsavel:       radio('instr_responsavel')
+    },
+    localizacao: {
+      edificacao:        val('locEdificacao'),
+      chuveiros
+    },
+    tubos: {
+      tipo:              val('tipoTubo'),
+      conexoes:          val('tipoConexao')
+    },
+    modelo_bomba:        radio('modelo_bomba'),
+    bomba1: {
+      jockey_local:      photoURLs['b1_jockey_local']    || '',
+      jockey_mano:       photoURLs['b1_jockey_mano']     || '',
+      jockey_spec:       specValues['b1_jockey_spec']    || '',
+      principal_local:   photoURLs['b1_principal_local'] || '',
+      principal_mano:    photoURLs['b1_principal_mano']  || '',
+      principal_spec:    specValues['b1_principal_spec'] || '',
+      rede_local:        photoURLs['b1_rede_local']      || '',
+      rede_mano:         photoURLs['b1_rede_mano']       || '',
+      rede_spec:         specValues['b1_rede_spec']      || '',
+      shutoff_local:     photoURLs['b1_shutoff_local']   || '',
+      shutoff_mano:      photoURLs['b1_shutoff_mano']    || '',
+      shutoff_spec:      specValues['b1_shutoff_spec']   || '',
+      extras:            extrasData('b1'),
+      obs:               val('b1_obs')
+    },
+    bomba2: {
+      jockey_local:      photoURLs['b2_jockey_local']    || '',
+      jockey_mano:       photoURLs['b2_jockey_mano']     || '',
+      jockey_spec:       specValues['b2_jockey_spec']    || '',
+      principal_local:   photoURLs['b2_principal_local'] || '',
+      principal_mano:    photoURLs['b2_principal_mano']  || '',
+      principal_spec:    specValues['b2_principal_spec'] || '',
+      rede_local:        photoURLs['b2_rede_local']      || '',
+      rede_mano:         photoURLs['b2_rede_mano']       || '',
+      rede_spec:         specValues['b2_rede_spec']      || '',
+      shutoff_local:     photoURLs['b2_shutoff_local']   || '',
+      shutoff_mano:      photoURLs['b2_shutoff_mano']    || '',
+      shutoff_spec:      specValues['b2_shutoff_spec']   || '',
+      extras:            extrasData('b2'),
+      obs:               val('b2_obs')
+    },
+    soldagem: {
+      qualificado:       radio('sold_qualificado'),
+      cuidados:          radio('sold_cuidados')
+    },
+    tanques: {
+      extras:            extrasData('tanques'),
+      obs:               val('tanques_obs')
+    },
+    conclusao:           val('conclusao')
+  };
+}
+
+// ── RESTORE DATA ──────────────────────────────────────────────────────────
+function restoreData(d) {
+  if (!d) return;
+
+  function setRadio(name, val) {
+    if (!val) return;
+    const el = document.querySelector(`[name="${name}"][value="${val}"]`);
+    if (el) el.checked = true;
+  }
+  function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v || ''; }
+
+  setRadio('proj_conformidade',  d.projeto?.conformidade);
+  setRadio('proj_equipamento',   d.projeto?.equipamento);
+  setRadio('instr_responsavel',  d.instrucoes?.responsavel);
+  setVal('locEdificacao',        d.localizacao?.edificacao);
+
+  (d.localizacao?.chuveiros || []).forEach((c, i) => {
+    setVal(`chv_marca_${i}`,    c.marca);
+    setVal(`chv_modelo_${i}`,   c.modelo);
+    setVal(`chv_ano_${i}`,      c.ano);
+    setVal(`chv_orificio_${i}`, c.orificio);
+  });
+
+  setVal('tipoTubo',    d.tubos?.tipo);
+  setVal('tipoConexao', d.tubos?.conexoes);
+  setRadio('modelo_bomba', d.modelo_bomba);
+
+  function restoreBomba(bd, prefix) {
+    if (!bd) return;
+    setPhotoFromURL(bd.jockey_local,    `pc-${prefix}-jockey-local`,    `${prefix}_jockey_local`);
+    setPhotoFromURL(bd.jockey_mano,     `pc-${prefix}-jockey-mano`,     `${prefix}_jockey_mano`);
+    restoreSpec(`${prefix}_jockey_spec`,    bd.jockey_spec);
+    setPhotoFromURL(bd.principal_local, `pc-${prefix}-principal-local`, `${prefix}_principal_local`);
+    setPhotoFromURL(bd.principal_mano,  `pc-${prefix}-principal-mano`,  `${prefix}_principal_mano`);
+    restoreSpec(`${prefix}_principal_spec`, bd.principal_spec);
+    setPhotoFromURL(bd.rede_local,      `pc-${prefix}-rede-local`,      `${prefix}_rede_local`);
+    setPhotoFromURL(bd.rede_mano,       `pc-${prefix}-rede-mano`,       `${prefix}_rede_mano`);
+    restoreSpec(`${prefix}_rede_spec`,      bd.rede_spec);
+    setPhotoFromURL(bd.shutoff_local,   `pc-${prefix}-shutoff-local`,   `${prefix}_shutoff_local`);
+    setPhotoFromURL(bd.shutoff_mano,    `pc-${prefix}-shutoff-mano`,    `${prefix}_shutoff_mano`);
+    restoreSpec(`${prefix}_shutoff_spec`,   bd.shutoff_spec);
+    (bd.extras || []).forEach((e, i) => {
+      const field = `${prefix}_extra_${i+1}`;
+      setPhotoFromURL(e.url, `pc-${prefix}-extra-${i+1}`, field);
+      setVal(`${field}_desc`, e.desc);
+    });
+    setVal(`${prefix}_obs`, bd.obs);
+  }
+
+  restoreBomba(d.bomba1, 'b1');
+  restoreBomba(d.bomba2, 'b2');
+
+  setRadio('sold_qualificado', d.soldagem?.qualificado);
+  setRadio('sold_cuidados',    d.soldagem?.cuidados);
+
+  (d.tanques?.extras || []).forEach((e, i) => {
+    const field = `tanques_extra_${i+1}`;
+    setPhotoFromURL(e.url, `pc-tanques-extra-${i+1}`, field);
+    setVal(`${field}_desc`, e.desc);
+  });
+  setVal('tanques_obs', d.tanques?.obs);
+  setVal('conclusao',   d.conclusao);
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────
+async function saveAll() {
+  const btn = document.getElementById('btnSave');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Salvando…'; }
+  try {
+    const payload = collectData();
+    const today   = localDateStr();
+    const { error } = await db.from('preventiva_bombas').upsert(
+      { empresa_id: EMPRESA_ID, date: today, payload, updated_at: new Date().toISOString() },
+      { onConflict: 'empresa_id,date' }
+    );
+    if (error) throw error;
+    showToast('✅ Registro salvo com sucesso!', 'ok');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Erro ao salvar: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+(async function init() {
+  buildChuveirosTable();
+  buildExtrasGrid('b1-extras-grid',      'b1',      4);
+  buildExtrasGrid('b2-extras-grid',      'b2',      4);
+  buildExtrasGrid('tanques-extras-grid', 'tanques', 4);
+
+  const today = localDateStr();
+  try {
+    const { data } = await db.from('preventiva_bombas')
+      .select('payload').eq('empresa_id', EMPRESA_ID).eq('date', today).maybeSingle();
+    if (data?.payload) restoreData(data.payload);
+  } catch(e) { console.warn('Load:', e); }
+})();
+</script>
+</body>
+</html>
