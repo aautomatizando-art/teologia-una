@@ -1931,7 +1931,9 @@ function _autoLabel(from, to) {
 }
 
 async function deleteSavedReport(id) {
-  if (!confirm('Remover este relatório salvo?')) return;
+  const pwd = prompt('Digite a senha do administrador para remover este relatório:');
+  if (pwd === null) return;
+  if (pwd !== SENHA_ADMIN) { alert('Senha incorreta.'); return; }
   await db.from('fire_saved_reports').delete().eq('id', id).eq('empresa_id', EMPRESA_ID);
   await refreshSavedReports();
 }
