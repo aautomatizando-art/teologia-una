@@ -3219,9 +3219,8 @@ function openReport() {
   const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
-  // Open modal FIRST so canvas elements have proper dimensions
+  buildReport(tests.filter(t => t.date === today));
   document.getElementById('reportModal').classList.add('open');
-  requestAnimationFrame(() => buildReport(tests.filter(t => t.date === today)));
 }
 
 async function applyReportFilter() {
@@ -3615,8 +3614,8 @@ function buildReport(filtered) {
   // Destroy previous report charts before creating new ones
   _destroyReportCharts();
 
-  // Double rAF: first frame applies layout, second creates charts with real canvas dimensions
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // setTimeout(0): fires after classList.add('open') is processed and layout is complete
+  setTimeout(() => {
     // pie
     const ctxPie = document.getElementById('chartPie').getContext('2d');
     chartPie = new Chart(ctxPie, {
@@ -3735,7 +3734,7 @@ function buildReport(filtered) {
         }
       }));
     }
-  }));  // end double-rAF
+  }, 0);  // end setTimeout
 }
 
 function reportPhoto(src, label) {
