@@ -3220,8 +3220,8 @@ function openReport() {
   const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
+  buildReport(tests.filter(t => t.date === today));
   document.getElementById('reportModal').classList.add('open');
-  requestAnimationFrame(() => buildReport(tests.filter(t => t.date === today)));
 }
 
 async function applyReportFilter() {
@@ -3615,31 +3615,16 @@ function buildReport(filtered) {
   // Destroy previous report charts before creating new ones
   _destroyReportCharts();
 
-  // Retry until the chart WRAPPER (not canvas) has non-zero width.
-  // On PC the grid uses 1fr 1fr which may not be computed yet at innerHTML-set time.
-  let _chartRetry = 0;
-  function _tryBuildCharts() {
-    const pieCanvas = document.getElementById('chartPie');
-    if (!pieCanvas) return; // modal closed
-    const wrapW = pieCanvas.parentElement.offsetWidth;
-    const wrapH = pieCanvas.parentElement.offsetHeight || 260;
-    if (wrapW === 0) {
-      if (++_chartRetry < 30) { setTimeout(_tryBuildCharts, 50); return; }
-    }
+  // Charts are created synchronously — canvas just needs to be in the DOM (not visible).
+  // Fixed 480×230 px; CSS (max-width:100%; height:auto) scales them to fill the container.
+  const _CW = 480, _CH = 230;
+  ['chartPie','chartBar','rptProgressPie','rptProgressBar'].forEach(id => {
+    const c = document.getElementById(id); if (!c) return;
+    c.width = _CW; c.height = _CH;
+  });
 
-    // Set explicit pixel dimensions on each canvas so Chart.js doesn't need to
-    // read the parent at creation time (avoids race with CSS grid layout on PC).
-    const cW = wrapW || 480;
-    const cH = wrapH || 260;
-    [['chartPie','chartBar'],['rptProgressPie','rptProgressBar']].flat().forEach(id => {
-      const c = document.getElementById(id);
-      if (!c) return;
-      c.width  = c.parentElement.offsetWidth  || cW;
-      c.height = c.parentElement.offsetHeight || cH;
-    });
-
-    // pie
-    chartPie = new Chart(document.getElementById('chartPie').getContext('2d'), {
+  // pie
+  chartPie = new Chart(document.getElementById('chartPie').getContext('2d'), {
       type: 'doughnut',
       data: {
         labels: ['Funcionando OK', 'Falha'],
@@ -3754,8 +3739,6 @@ function buildReport(filtered) {
         }
       }));
     }
-  }
-  setTimeout(_tryBuildCharts, 50);
 }
 
 function reportPhoto(src, label) {
