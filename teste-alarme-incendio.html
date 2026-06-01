@@ -518,7 +518,13 @@
 
   /* ── CHARTS ── */
   .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
-  @media (max-width: 600px) { .charts-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) {
+    .charts-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .chart-card { padding: 10px !important; }
+    .chart-card h4 { font-size: 10px !important; margin-bottom: 6px !important; }
+    .chart-wrapper { height: 105px !important; }
+    .chart-wrapper > svg { height: 72px !important; }
+  }
   .chart-card {
     background: var(--bg3);
     border: 1px solid var(--border);
