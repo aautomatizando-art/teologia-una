@@ -1265,6 +1265,14 @@
       📋 Registros de Teste
       <span class="badge" id="countBadge">0 registros</span>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <input type="search" id="listSearch" placeholder="🔍 Buscar local, zona, botão…" class="form-control" style="flex:1;min-width:140px;" oninput="renderList()">
+      <select id="listStatus" class="form-control" style="flex:0 0 auto;" onchange="renderList()">
+        <option value="">Todos</option>
+        <option value="ok">✅ OK</option>
+        <option value="fail">❌ Falha</option>
+      </select>
+    </div>
 
     <div id="testsList">
       <div class="empty-state">
@@ -1335,6 +1343,13 @@
     <div style="display:none;">
       <input type="date" id="rptDateFrom">
       <input type="date" id="rptDateTo">
+    </div>
+    <!-- PAINEL RELATÓRIOS SALVOS DENTRO DO MODAL -->
+    <div id="rptSavedPanel" style="display:none;padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
+      <button onclick="toggleRptSaved()" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px;padding:4px 0;width:100%;">
+        <span id="rptSavedArrow">▶</span> 📁 Relatórios Salvos <span id="rptSavedCount" style="font-size:11px;font-weight:400;"></span>
+      </button>
+      <div id="rptSavedPanelList" style="display:none;margin-top:6px;max-height:180px;overflow-y:auto;"></div>
     </div>
     <div class="modal-body" id="reportBody"></div>
     <div class="report-footer">
@@ -1945,7 +1960,37 @@ function renderSavedReports() {
       <button class="btn btn-primary btn-sm" onclick="openSavedReport(${r.id})">📊 Abrir</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--rose);" onclick="deleteSavedReport(${r.id})">🗑️ Remover</button>
     </div>`).join('');
+  renderModalSavedReports();
 }
+
+function renderModalSavedReports() {
+  const list = _getSavedReports();
+  const panel = document.getElementById('rptSavedPanel');
+  const container = document.getElementById('rptSavedPanelList');
+  const count = document.getElementById('rptSavedCount');
+  if (!panel || !container) return;
+  if (list.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  count.textContent = `(${list.length})`;
+  container.innerHTML = list.map(r => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:12px;">${esc(r.label)}</div>
+        <div style="font-size:10px;color:var(--muted);">${new Date(r.createdAt).toLocaleString('pt-BR')}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openSavedReport(${r.id})" style="font-size:11px;padding:4px 10px;">Abrir</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--rose);font-size:11px;padding:4px 8px;" onclick="deleteSavedReport(${r.id})">🗑️</button>
+    </div>`).join('');
+}
+
+function toggleRptSaved() {
+  const list = document.getElementById('rptSavedPanelList');
+  const arrow = document.getElementById('rptSavedArrow');
+  const open = list.style.display === 'none';
+  list.style.display = open ? '' : 'none';
+  arrow.textContent = open ? '▼' : '▶';
+}
+
 let photosTemp = { botoeira: null, central: null, sirene: null, dispositivo: null, extras: [] };
 let chartPie = null, chartBar = null;
 let pendingDeleteId = null;
@@ -2847,12 +2892,12 @@ function resetForm() {
 function renderList() {
   const container = document.getElementById('testsList');
   const badge = document.getElementById('countBadge');
-  badge.textContent = tests.length + ' registro' + (tests.length !== 1 ? 's' : '');
 
   const btnReport = document.getElementById('btnReport');
   btnReport.disabled = false;
 
   if (tests.length === 0) {
+    badge.textContent = '0 registros';
     container.innerHTML = `<div class="empty-state">
       <div class="empty-icon">🧯</div>
       <p>Nenhum teste registrado ainda.<br>Preencha o formulário acima e clique em <strong>Adicionar Teste</strong>.</p>
@@ -2860,7 +2905,26 @@ function renderList() {
     return;
   }
 
-  container.innerHTML = '<div class="tests-list">' + tests.map((t, i) => `
+  const q  = (document.getElementById('listSearch')?.value || '').toLowerCase().trim();
+  const sf = document.getElementById('listStatus')?.value || '';
+  let visible = tests;
+  if (q) visible = visible.filter(t =>
+    [(t.local||''),(t.zona||''),(t.status||''),(t.botoNum||''),(t.tecnico||'')]
+      .some(v => v.toLowerCase().includes(q))
+  );
+  if (sf === 'ok')   visible = visible.filter(t =>  isOkStatus(t.status));
+  if (sf === 'fail') visible = visible.filter(t => !isOkStatus(t.status));
+
+  badge.textContent = (q || sf)
+    ? `${visible.length} / ${tests.length} registro${tests.length !== 1 ? 's' : ''}`
+    : `${tests.length} registro${tests.length !== 1 ? 's' : ''}`;
+
+  if (visible.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum registro encontrado.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = '<div class="tests-list">' + visible.map((t, i) => `
     <div class="test-item status-${statusCls(t.status)}" id="ti-${t.id}">
       <div class="test-item-header">
         <span class="test-num">#${String(i+1).padStart(2,'0')}</span>
@@ -3266,6 +3330,7 @@ function openReport() {
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
   buildReport(tests.filter(t => t.date === today));
+  renderModalSavedReports();
   document.getElementById('reportModal').classList.add('open');
 }
 
