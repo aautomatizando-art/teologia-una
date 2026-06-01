@@ -640,7 +640,7 @@
     }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { background: #fff !important; color: #111 !important; }
-    main, .site-header, .modal-close, .btn, .form-actions { display: none !important; }
+    main, .site-header, .site-footer, .modal-close, .btn, .form-actions { display: none !important; }
     .modal-backdrop {
       position: static !important;
       background: transparent !important;
@@ -3743,8 +3743,28 @@ function _setChartPrintMode(forPrint) {
   });
 }
 
-window.addEventListener('beforeprint', () => _setChartPrintMode(true));
-window.addEventListener('afterprint',  () => _setChartPrintMode(false));
+window.addEventListener('beforeprint', () => {
+  _setChartPrintMode(true);
+  // Canvas loses colors on mobile print — replace with <img> snapshot
+  document.querySelectorAll('.chart-wrapper canvas').forEach(canvas => {
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL('image/png');
+    img.style.cssText = 'width:100%;height:100%;display:block;';
+    img.dataset.chartPrint = '1';
+    canvas.parentNode.insertBefore(img, canvas);
+    canvas.style.display = 'none';
+    canvas.dataset.chartHidden = '1';
+  });
+});
+
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('canvas[data-chart-hidden]').forEach(c => {
+    c.style.display = '';
+    delete c.dataset.chartHidden;
+  });
+  document.querySelectorAll('img[data-chart-print]').forEach(i => i.remove());
+  _setChartPrintMode(false);
+});
 
 function printReport() {
   window.print();
