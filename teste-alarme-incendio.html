@@ -713,11 +713,11 @@
       padding: 14px !important;
     }
     .report-photo { aspect-ratio: unset !important; }
-    .report-photo .rp-img { min-height: 220px !important; }
+    .report-photo .rp-img { min-height: unset !important; }
     .report-photo .rp-img img {
       width: 100% !important;
       height: auto !important;
-      max-height: 55vh !important;
+      max-height: 180px !important;
       object-fit: contain !important;
     }
     /* ── Every section after the first starts on its own page ── */
@@ -730,12 +730,12 @@
       page-break-before: auto !important;
       break-before: auto !important;
     }
-    /* Images in photo sections fit the page height (excludes signature logos) */
+    /* Images in photo sections — fixed px so viewport size doesn't affect print */
     .rpt-session img,
     .rpt-finalizacao img,
     .rpt-problemas img,
     .rpt-items .report-item img {
-      max-height: 35vh !important;
+      max-height: 180px !important;
       width: 100% !important;
       object-fit: contain !important;
       display: block !important;
