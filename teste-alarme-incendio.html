@@ -1266,12 +1266,14 @@
       <span class="badge" id="countBadge">0 registros</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
-      <input type="search" id="listSearch" placeholder="🔍 Buscar local, zona, botão…" class="form-control" style="flex:1;min-width:140px;" oninput="renderList()">
-      <select id="listStatus" class="form-control" style="flex:0 0 auto;" onchange="renderList()">
+      <input type="search" id="listSearch" placeholder="Buscar local, zona, botão…" class="form-control" style="flex:1;min-width:140px;" oninput="renderList()">
+      <select id="listStatus" class="form-control" style="flex:0 0 auto;width:auto;min-width:100px;" onchange="renderList()">
         <option value="">Todos</option>
         <option value="ok">✅ OK</option>
         <option value="fail">❌ Falha</option>
       </select>
+      <button class="btn btn-primary btn-sm" onclick="renderList()" style="flex-shrink:0;">🔍 Filtrar</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('listSearch').value='';document.getElementById('listStatus').value='';renderList();" style="flex-shrink:0;">✕ Limpar</button>
     </div>
 
     <div id="testsList">
@@ -1345,7 +1347,7 @@
       <input type="date" id="rptDateTo">
     </div>
     <!-- PAINEL RELATÓRIOS SALVOS DENTRO DO MODAL -->
-    <div id="rptSavedPanel" style="display:none;padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
+    <div id="rptSavedPanel" style="padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
       <button onclick="toggleRptSaved()" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px;padding:4px 0;width:100%;">
         <span id="rptSavedArrow">▶</span> 📁 Relatórios Salvos <span id="rptSavedCount" style="font-size:11px;font-weight:400;"></span>
       </button>
@@ -1969,10 +1971,10 @@ function renderModalSavedReports() {
   const container = document.getElementById('rptSavedPanelList');
   const count = document.getElementById('rptSavedCount');
   if (!panel || !container) return;
-  if (list.length === 0) { panel.style.display = 'none'; return; }
-  panel.style.display = '';
-  count.textContent = `(${list.length})`;
-  container.innerHTML = list.map(r => `
+  count.textContent = list.length > 0 ? `(${list.length})` : '';
+  container.innerHTML = list.length === 0
+    ? `<p style="font-size:12px;color:var(--muted);padding:4px 0;">Nenhum relatório salvo ainda.</p>`
+    : list.map(r => `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:12px;">${esc(r.label)}</div>
