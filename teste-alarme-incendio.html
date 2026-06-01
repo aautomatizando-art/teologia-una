@@ -1341,10 +1341,14 @@
       </div>
       <button class="modal-close" onclick="closeReport()" style="position:absolute;top:12px;right:12px;">✕</button>
     </div>
-    <!-- inputs de filtro ocultos, usados internamente pelo JS -->
-    <div style="display:none;">
-      <input type="date" id="rptDateFrom">
-      <input type="date" id="rptDateTo">
+    <!-- FILTRO DE DATA -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
+      <span style="font-size:12px;font-weight:700;color:var(--muted);">📅 Período:</span>
+      <input type="date" id="rptDateFrom" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);flex:1;min-width:110px;">
+      <span style="font-size:12px;color:var(--muted);">até</span>
+      <input type="date" id="rptDateTo" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);flex:1;min-width:110px;">
+      <button class="btn btn-primary btn-sm" onclick="applyReportFilter()">🔍 Filtrar</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearReportFilter()">✕</button>
     </div>
     <!-- PAINEL RELATÓRIOS SALVOS DENTRO DO MODAL -->
     <div id="rptSavedPanel" style="padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);">
@@ -1895,22 +1899,27 @@ async function loadTests() {
 let tests = [];
 let rptSess = null; // session override for date-filtered reports
 
-// ── SAVED REPORTS ──────────────────────────────────────────────────────────
-const SAVED_REPORTS_KEY = 'fire_saved_reports_' + EMPRESA_ID;
+// ── SAVED REPORTS (Supabase — sincronizado entre dispositivos) ─────────────
 
-function _getSavedReports() {
-  try { return JSON.parse(localStorage.getItem(SAVED_REPORTS_KEY) || '[]'); } catch(_) { return []; }
+async function fetchSavedReports() {
+  try {
+    const { data } = await db.from('fire_saved_reports')
+      .select('*').eq('empresa_id', EMPRESA_ID).order('created_at', { ascending: false });
+    return data || [];
+  } catch(_) { return []; }
 }
 
-function saveReport() {
+async function saveReport() {
   const from  = document.getElementById('rptDateFrom').value;
   const to    = document.getElementById('rptDateTo').value;
   const label = prompt('Nome para este relatório:', _autoLabel(from, to));
   if (!label) return;
-  const list = _getSavedReports();
-  list.unshift({ id: Date.now(), label, dateFrom: from, dateTo: to, createdAt: new Date().toISOString() });
-  localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(list));
-  renderSavedReports();
+  await db.from('fire_saved_reports').insert({
+    id: Date.now(), empresa_id: EMPRESA_ID, label,
+    date_from: from || null, date_to: to || null,
+    created_at: new Date().toISOString()
+  });
+  await refreshSavedReports();
 }
 
 function _autoLabel(from, to) {
@@ -1920,65 +1929,67 @@ function _autoLabel(from, to) {
   return 'Todos os registros';
 }
 
-function deleteSavedReport(id) {
+async function deleteSavedReport(id) {
   if (!confirm('Remover este relatório salvo?')) return;
-  const list = _getSavedReports().filter(r => r.id !== id);
-  localStorage.setItem(SAVED_REPORTS_KEY, JSON.stringify(list));
-  renderSavedReports();
+  await db.from('fire_saved_reports').delete().eq('id', id).eq('empresa_id', EMPRESA_ID);
+  await refreshSavedReports();
 }
 
 async function openSavedReport(id) {
-  const rpt = _getSavedReports().find(r => r.id === id);
+  const list = await fetchSavedReports();
+  const rpt = list.find(r => String(r.id) === String(id));
   if (!rpt) return;
   closeReport();
-  document.getElementById('rptDateFrom').value = rpt.dateFrom || '';
-  document.getElementById('rptDateTo').value   = rpt.dateTo   || '';
-  if (rpt.dateFrom || rpt.dateTo) {
+  document.getElementById('rptDateFrom').value = rpt.date_from || '';
+  document.getElementById('rptDateTo').value   = rpt.date_to   || '';
+  if (rpt.date_from || rpt.date_to) {
     await applyReportFilter();
   } else {
     rptSess = null;
     buildReport(tests);
   }
+  await refreshSavedReports();
   document.getElementById('reportModal').classList.add('open');
 }
 
-function renderSavedReports() {
-  const list = _getSavedReports();
-  const sec  = document.getElementById('savedReportsSection');
+async function refreshSavedReports() {
+  const list = await fetchSavedReports();
+  _renderSavedReportsMain(list);
+  _renderSavedReportsModal(list);
+}
+
+function renderSavedReports() { refreshSavedReports(); }
+function renderModalSavedReports() { refreshSavedReports(); }
+
+function _renderSavedReportsMain(list) {
+  const sec = document.getElementById('savedReportsSection');
   const container = document.getElementById('savedReportsList');
   if (!sec || !container) return;
-  if (list.length === 0) {
-    sec.style.display = 'none';
-    container.innerHTML = '<p style="font-size:13px;color:var(--muted);">Nenhum relatório salvo ainda.</p>';
-    return;
-  }
+  if (list.length === 0) { sec.style.display = 'none'; return; }
   sec.style.display = '';
   container.innerHTML = list.map(r => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:13px;">${esc(r.label)}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Salvo em ${new Date(r.createdAt).toLocaleString('pt-BR')}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Salvo em ${new Date(r.created_at).toLocaleString('pt-BR')}</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openSavedReport(${r.id})">📊 Abrir</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--rose);" onclick="deleteSavedReport(${r.id})">🗑️ Remover</button>
     </div>`).join('');
-  renderModalSavedReports();
 }
 
-function renderModalSavedReports() {
-  const list = _getSavedReports();
-  const panel = document.getElementById('rptSavedPanel');
+function _renderSavedReportsModal(list) {
   const container = document.getElementById('rptSavedPanelList');
   const count = document.getElementById('rptSavedCount');
-  if (!panel || !container) return;
-  count.textContent = list.length > 0 ? `(${list.length})` : '';
+  if (!container) return;
+  if (count) count.textContent = list.length > 0 ? `(${list.length})` : '';
   container.innerHTML = list.length === 0
     ? `<p style="font-size:12px;color:var(--muted);padding:4px 0;">Nenhum relatório salvo ainda.</p>`
     : list.map(r => `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:12px;">${esc(r.label)}</div>
-        <div style="font-size:10px;color:var(--muted);">${new Date(r.createdAt).toLocaleString('pt-BR')}</div>
+        <div style="font-size:10px;color:var(--muted);">${new Date(r.created_at).toLocaleString('pt-BR')}</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openSavedReport(${r.id})" style="font-size:11px;padding:4px 10px;">Abrir</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--rose);font-size:11px;padding:4px 8px;" onclick="deleteSavedReport(${r.id})">🗑️</button>
@@ -2046,7 +2057,7 @@ function getArt() { return localStorage.getItem(ART_KEY) || '2620260043644'; }
   document.getElementById('artDisplayValue').textContent = getArt();
   if (!READ_ONLY) document.getElementById('artSection').style.display = '';
   if (READ_ONLY) applyReadOnlyMode();
-  renderSavedReports();
+  refreshSavedReports();
   loadSessionStart();
   loadFinalizacao();
   loadTests();
@@ -3326,13 +3337,13 @@ function _cssBar(lbls, datasets, maxOverride) {
     <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:6px 4px 0;">${legend}</div>`;
 }
 
-function openReport() {
+async function openReport() {
   rptSess = null;
   const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
   buildReport(tests.filter(t => t.date === today));
-  renderModalSavedReports();
+  await refreshSavedReports();
   document.getElementById('reportModal').classList.add('open');
 }
 
