@@ -1303,12 +1303,6 @@
               <select class="form-control" id="eLocal" onchange="autoFillBotoNum('eLocal','eBotoNum')"><option value="">Selecione o laço primeiro…</option></select>
             </div>
             <div class="form-group">
-              <label>Técnico Responsável</label>
-              <select class="form-control" id="eTecnico">
-                <option value="">Selecione…</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label>Nº Dispositivo</label>
               <input type="text" class="form-control" id="eBotoNum">
             </div>
@@ -1641,7 +1635,7 @@ const TECNICOS = {
 
 function populateTecnicoSelects() {
   const opts = TECNICOS[EMPRESA_ID] || [];
-  ['fTecnico', 'eTecnico'].forEach(id => {
+  ['fTecnico'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const blank = sel.options[0];
@@ -2659,7 +2653,6 @@ function resetForm() {
   document.getElementById('fZona').value = '';
   updateLocais('fZona', 'fLocal');
   clearLocalVal('fLocal');
-  document.getElementById('fTecnico').value = '';
   document.getElementById('fBotoNum').value = '';
   document.getElementById('fZona').value = '';
   document.getElementById('fTipo').value = '';
@@ -2717,7 +2710,6 @@ function renderList() {
           <div class="test-location">${esc(t.local)}</div>
           <div class="test-meta">
             <span>📅 ${formatDate(t.date)} às ${t.time}</span>
-            ${t.tecnico ? `<span>👤 ${esc(t.tecnico)}</span>` : ''}
             ${t.tipo    ? `<span>🔧 ${esc(t.tipo)}</span>`    : ''}
             ${t.botoNum ? `<span>🚨 ${esc(t.botoNum)}</span>` : ''}
             ${t.zona    ? `<span>📡 ${esc(t.zona)}</span>`    : ''}
@@ -2895,7 +2887,6 @@ function fillEditForm(test) {
   document.getElementById('eTime').value    = test.time    || '';
   document.getElementById('eZona').value    = test.zona    || '';
   updateLocais('eZona', 'eLocal', test.local || '');
-  document.getElementById('eTecnico').value = test.tecnico || '';
   document.getElementById('eBotoNum').value = test.botoNum || '';
   document.getElementById('eZona').value    = test.zona    || '';
   document.getElementById('eTipo').value    = test.tipo    || '';
@@ -2975,7 +2966,6 @@ async function saveEdit(e) {
     const photos = await uploadAllPhotos(editPhotosTemp, pendingEditId);
     const updated = {
       id: pendingEditId, date, time, local,
-      tecnico: document.getElementById('eTecnico').value.trim(),
       botoNum: document.getElementById('eBotoNum').value.trim(),
       zona:    document.getElementById('eZona').value.trim(),
       tipo:    document.getElementById('eTipo').value.trim(),
@@ -3318,7 +3308,6 @@ function buildReport(filtered) {
               <div style="font-weight:700;">${esc(t.local)}</div>
               <div style="font-size:12px;color:var(--muted);margin-top:2px;">
                 ${formatDate(t.date)} ${t.time}
-                ${t.tecnico ? ' · ' + esc(t.tecnico) : ''}
                 ${t.tipo    ? ' · ' + esc(t.tipo)    : ''}
                 ${t.botoNum ? ' · ' + esc(t.botoNum) : ''}
                 ${t.zona    ? ' · ' + esc(t.zona)    : ''}
