@@ -1895,11 +1895,11 @@ function getArt() { return localStorage.getItem(ART_KEY) || '2620260043644'; }
   if (voltLogo) voltLogo.style.display = 'inline-flex';
 
   const now = new Date();
-  document.getElementById('fDate').value  = now.toISOString().slice(0, 10);
+  document.getElementById('fDate').value  = localDateStr(now);
   document.getElementById('fTime').value  = now.toTimeString().slice(0, 5);
-  document.getElementById('ssDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ssDate').value = localDateStr(now);
   document.getElementById('ssTime').value = now.toTimeString().slice(0, 5);
-  document.getElementById('ftDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ftDate').value = localDateStr(now);
   document.getElementById('ftTime').value = now.toTimeString().slice(0, 5);
   populateTecnicoSelects();
   updateLocais('fZona', 'fLocal');
@@ -2207,7 +2207,7 @@ function handleProblemaPhoto(input, idx)  { _handleExtraPhoto(input.files && inp
 function removeProblemaPhoto(idx, e)      { if (e) e.stopPropagation(); _removeExtraPhoto(problemasPhotos, 'form-problemas-grid', idx, 'handleProblemaPhoto', 'removeProblemaPhoto'); _updateProblemasEmpty(); }
 
 async function loadSessionStart() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = localDateStr();
   const { data } = await db.from('test_sessions')
     .select('*').eq('empresa_id', EMPRESA_ID).eq('date', today)
     .order('created_at', { ascending: false }).limit(1);
@@ -2277,7 +2277,7 @@ async function loadSessionStart() {
 
 function editSessionStart() {
   const now = new Date();
-  document.getElementById('ssDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ssDate').value = localDateStr(now);
   document.getElementById('ssTime').value = now.toTimeString().slice(0, 5);
   document.getElementById('ssSavedLabel').style.display = 'none';
   document.getElementById('ssResponsavel').focus();
@@ -2361,7 +2361,7 @@ async function saveProblemas() {
       }
       if (url) data.push({ url, obs });
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateStr();
     const row = { empresa_id: EMPRESA_ID, date: today, problemas_data: data.length ? JSON.stringify(data) : null };
     if (problemasRecordId) {
       await db.from('test_sessions').update({ problemas_data: row.problemas_data }).eq('id', problemasRecordId);
@@ -2550,7 +2550,7 @@ function removeFtExtraPhoto(idx, e) {
 }
 
 async function loadFinalizacao() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const { data } = await db.from('test_finalizacoes')
     .select('*').eq('empresa_id', EMPRESA_ID).eq('date', today)
     .order('created_at', { ascending: false }).limit(1);
@@ -2615,7 +2615,7 @@ async function loadFinalizacao() {
 async function saveFinalizacao() {
   if (READ_ONLY) return;
   const now  = new Date();
-  const date = now.toISOString().slice(0, 10);
+  const date = localDateStr(now);
   const time = now.toTimeString().slice(0, 5);
   document.getElementById('ftDate').value = date;
   document.getElementById('ftTime').value = time;
@@ -2681,7 +2681,7 @@ async function saveFinalizacao() {
 
 function editFinalizacao() {
   const now = new Date();
-  document.getElementById('ftDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('ftDate').value = localDateStr(now);
   document.getElementById('ftTime').value = now.toTimeString().slice(0, 5);
   document.getElementById('ftSavedLabel').style.display = 'none';
   document.getElementById('ftStatusCentral').focus();
@@ -2761,7 +2761,7 @@ function resetForm() {
   if (feg) feg.innerHTML = '';
 
   const now = new Date();
-  document.getElementById('fDate').value = now.toISOString().slice(0, 10);
+  document.getElementById('fDate').value = localDateStr(now);
   document.getElementById('fTime').value = now.toTimeString().slice(0, 5);
 }
 
@@ -3132,7 +3132,7 @@ async function clearAll() {
 function openReport() {
   if (tests.length === 0) return;
   rptSess = null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   document.getElementById('rptDateFrom').value = today;
   document.getElementById('rptDateTo').value   = today;
   buildReport(tests.filter(t => t.date === today));
@@ -3658,6 +3658,14 @@ function formatDate(d) {
   if (!d) return '';
   const [y,m,day] = d.split('-');
   return `${day}/${m}/${y}`;
+}
+
+function localDateStr(d) {
+  const dt = d || new Date();
+  const y  = dt.getFullYear();
+  const m  = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function esc(str) {
