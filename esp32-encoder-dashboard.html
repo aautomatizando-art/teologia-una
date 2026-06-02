@@ -619,18 +619,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
     <div id="osTabOrdens" style="overflow-x:auto;">
       <table class="ltbl">
-        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data In&#237;cio</th><th>Produ&#231;&#227;o</th><th>Parada</th><th>Metros</th><th>Status</th></tr></thead>
-        <tbody id="osBody"><tr><td colspan="7" class="os-empty">Carregando...</td></tr></tbody>
+        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data In&#237;cio</th><th>Produ&#231;&#227;o</th><th>Parada</th><th>Metros</th><th>Status</th><th></th></tr></thead>
+        <tbody id="osBody"><tr><td colspan="8" class="os-empty">Carregando...</td></tr></tbody>
       </table>
     </div>
     <div id="osTabRelatorios" style="display:none;overflow-x:auto;">
       <table class="ltbl">
-        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data Gera&#231;&#227;o</th><th>Produ&#231;&#227;o</th><th>Efici&#234;ncia</th><th>Metros</th><th>Disponib.</th></tr></thead>
-        <tbody id="relSavedBody"><tr><td colspan="7" class="os-empty">Carregando...</td></tr></tbody>
+        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data Gera&#231;&#227;o</th><th>Produ&#231;&#227;o</th><th>Efici&#234;ncia</th><th>Metros</th><th>Disponib.</th><th></th></tr></thead>
+        <tbody id="relSavedBody"><tr><td colspan="8" class="os-empty">Carregando...</td></tr></tbody>
       </table>
     </div>
     <div class="mdl-acts" style="margin-top:16px;">
       <button class="btn btn-ghost" onclick="closeM('mOS')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETALHE OS / RELATÓRIO SALVO -->
+<div class="moverlay" id="mOSDetail">
+  <div class="mdl rel-mdl" style="border-color:rgba(53,200,255,.25);">
+    <div class="mdl-icon" id="detailIcon" style="background:rgba(53,200,255,.08);">&#128203;</div>
+    <h2 id="detailTitle">Detalhes</h2>
+    <div id="detailContent"></div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeM('mOSDetail')">Fechar</button>
     </div>
   </div>
 </div>
@@ -1208,6 +1220,8 @@ async function saveRelatorio(){
 
 /* ══ OS SALVAS ══ */
 let currentOSTab='ordens';
+let osOrdens=[], osRelatorios=[];
+
 async function openOSSalvas(){
   document.getElementById('mOS').classList.add('show');
   switchOSTab('ordens');
@@ -1221,15 +1235,17 @@ function switchOSTab(tab){
   if(tab==='ordens') loadOSSalvas(); else loadRelatoriosSalvos();
 }
 function loadCurrentOSTab(){ if(currentOSTab==='ordens') loadOSSalvas(); else loadRelatoriosSalvos(); }
+
 async function loadOSSalvas(){
   const tbody=document.getElementById('osBody');
-  tbody.innerHTML='<tr><td colspan="7" class="os-empty">Carregando...</td></tr>';
-  if(!sb){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
+  tbody.innerHTML='<tr><td colspan="8" class="os-empty">Carregando...</td></tr>';
+  if(!sb){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
   try{
     const {data,error}=await sb.from('ordens').select('*, cliches(nome)').order('data_inicio',{ascending:false}).limit(60);
     if(error) throw error;
-    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Nenhuma ordem encontrada.</td></tr>'; return; }
-    tbody.innerHTML=data.map(o=>`
+    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Nenhuma ordem encontrada.</td></tr>'; return; }
+    osOrdens=data;
+    tbody.innerHTML=data.map((o,i)=>`
       <tr>
         <td style="color:var(--sky);font-weight:700">${o.numero}</td>
         <td>${o.cliches?.nome||`Clich&#234; ${o.cliche_id}`}</td>
@@ -1238,20 +1254,23 @@ async function loadOSSalvas(){
         <td style="color:var(--danger)">${hms(o.tempo_parada_s||0)}</td>
         <td>${(+(o.posicao_total_m||0)).toFixed(3)} m</td>
         <td style="color:${o.status==='fechada'?'var(--muted)':'var(--ok)'}">${o.status==='fechada'?'&#10003; Fechada':'&#9679; Aberta'}</td>
+        <td><button class="btn btn-ghost" style="padding:3px 9px;font-size:10px;" onclick="openOrdemSalva(${i})">&#128065; Abrir</button></td>
       </tr>`).join('');
   }catch(e){
-    tbody.innerHTML=`<tr><td colspan="7" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
   }
 }
+
 async function loadRelatoriosSalvos(){
   const tbody=document.getElementById('relSavedBody');
-  tbody.innerHTML='<tr><td colspan="7" class="os-empty">Carregando...</td></tr>';
-  if(!sb){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
+  tbody.innerHTML='<tr><td colspan="8" class="os-empty">Carregando...</td></tr>';
+  if(!sb){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
   try{
     const {data,error}=await sb.from('relatorios').select('*').order('data_geracao',{ascending:false}).limit(60);
     if(error) throw error;
-    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Nenhum relat&#243;rio salvo.</td></tr>'; return; }
-    tbody.innerHTML=data.map(r=>`
+    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Nenhum relat&#243;rio salvo.</td></tr>'; return; }
+    osRelatorios=data;
+    tbody.innerHTML=data.map((r,i)=>`
       <tr>
         <td style="color:var(--sky);font-weight:700">${r.numero_op||'&#8212;'}</td>
         <td>Clich&#234; ${r.cliche_id||'&#8212;'}</td>
@@ -1260,10 +1279,103 @@ async function loadRelatoriosSalvos(){
         <td style="color:${(+(r.eficiencia_pct||0))>=70?'var(--ok)':'var(--warn)'}">${(+(r.eficiencia_pct||0)).toFixed(1)}%</td>
         <td>${(+(r.posicao_total_m||0)).toFixed(3)} m</td>
         <td style="color:var(--sky)">${(+(r.disponibilidade_pct||0)).toFixed(1)}%</td>
+        <td><button class="btn btn-ghost" style="padding:3px 9px;font-size:10px;" onclick="openRelatorioSalvo(${i})">&#128065; Abrir</button></td>
       </tr>`).join('');
   }catch(e){
-    tbody.innerHTML=`<tr><td colspan="7" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="8" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
   }
+}
+
+async function openOrdemSalva(i){
+  const o=osOrdens[i]; if(!o) return;
+  document.getElementById('detailIcon').textContent='&#128203;';
+  document.getElementById('detailTitle').textContent=`Ordem: ${o.numero}`;
+  document.getElementById('detailContent').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">Carregando paradas...</div>';
+  document.getElementById('mOSDetail').classList.add('show');
+  let paradasHtml='';
+  if(sb){
+    try{
+      const {data}=await sb.from('paradas').select('*').eq('ordem_id',o.id).order('inicio',{ascending:true});
+      if(data&&data.length>0){
+        paradasHtml=`<div class="rel-section" style="margin-top:14px;">
+          <h5>Paradas Registradas (${data.length})</h5>
+          <table class="rtbl">
+            <thead><tr><th>Tipo</th><th>In&#237;cio</th><th>Dura&#231;&#227;o</th></tr></thead>
+            <tbody>${data.map(p=>`<tr>
+              <td style="color:${typeColor(p.tipo)};font-weight:700">${p.tipo}</td>
+              <td>${new Date(p.inicio).toLocaleTimeString('pt-BR')}</td>
+              <td>${hms(p.duracao_s||0)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      }
+    }catch(_){}
+  }
+  document.getElementById('detailContent').innerHTML=`
+    <div class="rel-section">
+      <h5>Ordem de Produ&#231;&#227;o</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">N&#186; OP</div><div class="rel-item-val">${o.numero}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Clich&#234;</div><div class="rel-item-val">${o.cliches?.nome||`Clich&#234; ${o.cliche_id}`}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data In&#237;cio</div><div class="rel-item-val" style="font-size:12px">${new Date(o.data_inicio).toLocaleString('pt-BR')}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data Fim</div><div class="rel-item-val" style="font-size:12px">${o.data_fim?new Date(o.data_fim).toLocaleString('pt-BR'):'&#8212;'}</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Tempos &amp; Produ&#231;&#227;o</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Produ&#231;&#227;o</div><div class="rel-item-val" style="color:var(--ok)">${hms(o.tempo_producao_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Parada</div><div class="rel-item-val" style="color:var(--danger)">${hms(o.tempo_parada_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Metros Prod.</div><div class="rel-item-val">${(+(o.posicao_total_m||0)).toFixed(3)} m</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Status</div><div class="rel-item-val" style="color:${o.status==='fechada'?'var(--muted)':'var(--ok)'}">${o.status==='fechada'?'&#10003; Fechada':'&#9679; Aberta'}</div></div>
+      </div>
+    </div>
+    ${paradasHtml}`;
+}
+
+function openRelatorioSalvo(i){
+  const r=osRelatorios[i]; if(!r) return;
+  const pp=+(r.eficiencia_pct||0), disp=+(r.disponibilidade_pct||0);
+  const paradas=r.paradas||[], dados=r.dados||{};
+  const summary={};
+  paradas.forEach(p=>{ if(!summary[p.tipo]) summary[p.tipo]={count:0,total_s:0}; summary[p.tipo].count++; summary[p.tipo].total_s+=(p.duracao_s||0); });
+  const stopRows=Object.entries(summary).map(([tipo,s])=>`
+    <tr><td style="color:${typeColor(tipo)}">${tipo}</td><td style="text-align:center">${s.count}</td><td>${hms(s.total_s)}</td></tr>`).join('');
+  document.getElementById('detailIcon').textContent='&#128196;';
+  document.getElementById('detailTitle').textContent=`Relat&#243;rio: ${r.numero_op||'&#8212;'}`;
+  document.getElementById('detailContent').innerHTML=`
+    <div class="rel-section">
+      <h5>Ordem de Produ&#231;&#227;o</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">N&#186; OP</div><div class="rel-item-val">${r.numero_op||'&#8212;'}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Clich&#234;</div><div class="rel-item-val">Clich&#234; ${r.cliche_id||'&#8212;'}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data Gera&#231;&#227;o</div><div class="rel-item-val" style="font-size:12px">${new Date(r.data_geracao).toLocaleString('pt-BR')}</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Tempos &amp; Efici&#234;ncia</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Produ&#231;&#227;o</div><div class="rel-item-val" style="color:var(--ok)">${hms(r.tempo_producao_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Parada</div><div class="rel-item-val" style="color:var(--danger)">${hms(r.tempo_parada_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Efici&#234;ncia (8h)</div><div class="rel-item-val" style="color:var(--ok)">${pp.toFixed(1)}%</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Disponibilidade</div><div class="rel-item-val" style="color:var(--sky)">${disp.toFixed(1)}%</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Produ&#231;&#227;o &amp; Vida &#218;til</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Metros Produzidos</div><div class="rel-item-val">${(+(r.posicao_total_m||0)).toFixed(3)} m</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Vida &#218;til Consumida</div><div class="rel-item-val" style="color:${vuCol(dados.vida_util_pct||0)}">${(+(dados.vida_util_pct||0)).toFixed(1)}%</div></div>
+      </div>
+    </div>
+    ${stopRows?`<div class="rel-section" style="margin-top:14px;">
+      <h5>Paradas por Tipo</h5>
+      <table class="rtbl">
+        <thead><tr><th>Tipo</th><th style="text-align:center">Qtd</th><th>Tempo Total</th></tr></thead>
+        <tbody>${stopRows}</tbody>
+      </table>
+    </div>`:''}`;
+  document.getElementById('mOSDetail').classList.add('show');
 }
 
 /* ══ LOG ══ */
