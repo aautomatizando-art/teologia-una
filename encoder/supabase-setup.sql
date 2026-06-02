@@ -58,6 +58,27 @@ CREATE INDEX IF NOT EXISTS idx_ordens_cliche     ON ordens(cliche_id);
 CREATE INDEX IF NOT EXISTS idx_paradas_ordem     ON paradas(ordem_id);
 CREATE INDEX IF NOT EXISTS idx_paradas_tipo      ON paradas(tipo);
 
+-- 4. RELATÓRIOS
+CREATE TABLE IF NOT EXISTS relatorios (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ordem_id            UUID REFERENCES ordens(id) ON DELETE SET NULL,
+  numero_op           TEXT,
+  cliche_id           INT,
+  data_geracao        TIMESTAMPTZ DEFAULT NOW(),
+  tempo_producao_s    INT DEFAULT 0,
+  tempo_parada_s      INT DEFAULT 0,
+  posicao_total_m     NUMERIC DEFAULT 0,
+  eficiencia_pct      NUMERIC DEFAULT 0,
+  disponibilidade_pct NUMERIC DEFAULT 0,
+  paradas             JSONB,
+  dados               JSONB
+);
+
+ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_relatorios" ON relatorios FOR ALL USING (true) WITH CHECK (true);
+CREATE INDEX IF NOT EXISTS idx_relatorios_ordem ON relatorios(ordem_id);
+CREATE INDEX IF NOT EXISTS idx_relatorios_data  ON relatorios(data_geracao);
+
 -- ─── VIEW ÚTIL ─────────────────────────────────────────
 CREATE OR REPLACE VIEW resumo_ordens AS
 SELECT
