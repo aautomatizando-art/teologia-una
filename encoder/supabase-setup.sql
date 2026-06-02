@@ -5,12 +5,24 @@
 
 -- 1. CLICHÊS (vida útil individual por modelo)
 CREATE TABLE IF NOT EXISTS cliches (
-  id            INT PRIMARY KEY,          -- 1 a 10
+  id            INT PRIMARY KEY,
   nome          TEXT NOT NULL,
   vida_util_m   NUMERIC NOT NULL DEFAULT 1000,
   consumido_m   NUMERIC NOT NULL DEFAULT 0,
+  fabricante    TEXT DEFAULT '',
+  modelo        TEXT DEFAULT '',
+  medidas       TEXT DEFAULT '',
+  data_compra   DATE,
+  qtd_estoque   INT DEFAULT 0,
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Se a tabela já existir, adicione as colunas novas:
+ALTER TABLE cliches ADD COLUMN IF NOT EXISTS fabricante    TEXT DEFAULT '';
+ALTER TABLE cliches ADD COLUMN IF NOT EXISTS modelo        TEXT DEFAULT '';
+ALTER TABLE cliches ADD COLUMN IF NOT EXISTS medidas       TEXT DEFAULT '';
+ALTER TABLE cliches ADD COLUMN IF NOT EXISTS data_compra   DATE;
+ALTER TABLE cliches ADD COLUMN IF NOT EXISTS qtd_estoque   INT DEFAULT 0;
 
 INSERT INTO cliches (id, nome, vida_util_m, consumido_m) VALUES
   (1,'Clichê 1',1000,0),(2,'Clichê 2',1000,0),(3,'Clichê 3',1000,0),

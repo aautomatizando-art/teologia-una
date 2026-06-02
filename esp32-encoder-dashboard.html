@@ -250,6 +250,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .fw-mdl pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:13px;overflow:auto;max-height:360px;font-family:'Fira Code',monospace;font-size:10px;line-height:1.7;color:#ccc;margin-bottom:16px;}
 
+/* CLICHÊ MANAGEMENT */
+.cliche-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:13px;margin-bottom:20px;}
+.cliche-card{background:var(--bg3);border:1px solid var(--border);border-left:3px solid transparent;border-radius:var(--radius);padding:15px;display:flex;flex-direction:column;gap:9px;transition:border-color .25s;}
+.cliche-card.vu-ok{border-left-color:var(--ok);}
+.cliche-card.vu-warn{border-left-color:var(--warn);}
+.cliche-card.vu-crit{border-left-color:var(--danger);}
+.cliche-name{font-family:'Archivo Black',sans-serif;font-size:14px;line-height:1.2;}
+.cliche-meta{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);}
+.cliche-meta b{color:var(--text);font-weight:600;}
+.cliche-bar-w{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:3px 0;}
+.cliche-bar-fill{height:100%;border-radius:3px;transition:width .5s,background .4s;}
+.cliche-pct{font-family:'Archivo Black',sans-serif;font-size:20px;line-height:1;}
+.cliche-footer{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:2px;}
+.st-ok-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:var(--ok);cursor:default;}
+.st-warn-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:var(--warn);cursor:pointer;transition:var(--tr);}
+.st-warn-btn:hover{background:rgba(245,158,11,.2);}
+.st-crit-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:var(--danger);cursor:pointer;animation:bl 1.5s infinite;transition:background var(--tr);}
+.st-crit-btn:hover{background:rgba(239,68,68,.2);}
+.btn-edit-sm{background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:var(--radius-sm);font-size:10px;cursor:pointer;transition:var(--tr);flex-shrink:0;}
+.btn-edit-sm:hover{border-color:var(--gold);color:var(--gold);}
+.cliche-chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px;}
+.cliche-chart-wrap h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:12px;}
+/* Edit form */
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.edit-grid{grid-template-columns:1fr;}}
+.edit-inp{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:8px 11px;outline:none;width:100%;transition:var(--tr);}
+.edit-inp:focus{border-color:var(--gold);}
+.edit-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;display:block;}
+/* Pedido toast */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;font-size:12px;z-index:999;animation:fu .3s ease;display:none;}
+.toast.show{display:block;}
+
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 @keyframes fi{from{opacity:0;}to{opacity:1;}}
 .slbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
@@ -259,6 +291,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 </style>
 </head>
 <body>
+<div class="toast" id="toast"></div>
 
 <!-- HEADER -->
 <header class="hdr">
@@ -330,7 +363,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
     <div class="ifield">
       <span class="ilbl">&#9208; Tempo de Parada</span>
-      <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
+        <button class="btn btn-gold" style="padding:4px 10px;font-size:10px;height:26px;" onclick="openCliches()">&#128200; Clich&#234;s</button>
+      </div>
     </div>
   </div>
 </div>
@@ -662,6 +698,52 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   </div>
 </div>
 
+<!-- CLICHÊ MANAGEMENT MODAL -->
+<div class="moverlay" id="mCliches">
+  <div class="mdl" style="max-width:1160px;width:100%;max-height:92vh;overflow-y:auto;border-color:rgba(255,209,102,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:9px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mdl-icon" style="background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.2);width:44px;height:44px;font-size:22px;margin-bottom:0;">&#128200;</div>
+        <div><h2 style="margin-bottom:2px;">Gest&#227;o de Clich&#234;s</h2><div style="font-size:11px;color:var(--muted);">Vida &#250;til &middot; Estoque &middot; Dados do fabricante</div></div>
+      </div>
+      <button class="btn btn-ghost" style="padding:5px 11px;font-size:11px;" onclick="openCliches()">&#8635; Atualizar</button>
+    </div>
+    <div class="cliche-chart-wrap">
+      <h4>&#128202; Consumo da Vida &#218;til por Clich&#234; (%)</h4>
+      <div style="position:relative;height:260px;"><canvas id="chartCliches"></canvas></div>
+    </div>
+    <div class="cliche-grid" id="clicheGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando...</div>
+    </div>
+    <div class="mdl-acts">
+      <button class="btn btn-ghost" onclick="closeM('mCliches')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLICHÊ EDIT MODAL -->
+<div class="moverlay" id="mClicheEdit">
+  <div class="mdl" style="max-width:520px;border-color:rgba(255,209,102,.3);">
+    <div class="mdl-icon" style="background:rgba(255,209,102,.08);">&#9999;</div>
+    <h2 id="editClicheTitle">Editar Clich&#234;</h2>
+    <input type="hidden" id="editClicheId" value="1">
+    <div class="edit-grid" style="margin-bottom:12px;">
+      <div><label class="edit-lbl">Nome do Clich&#234;</label><input class="edit-inp" id="editNome" placeholder="Clich&#234; 1"></div>
+      <div><label class="edit-lbl">Modelo</label><input class="edit-inp" id="editModelo" placeholder="ex: CL-360-A"></div>
+      <div><label class="edit-lbl">Fabricante</label><input class="edit-inp" id="editFabricante" placeholder="ex: Flexo Ind."></div>
+      <div><label class="edit-lbl">Medidas</label><input class="edit-inp" id="editMedidas" placeholder="ex: 300x200mm"></div>
+      <div><label class="edit-lbl">Data de Compra</label><input class="edit-inp" id="editDataCompra" type="date"></div>
+      <div><label class="edit-lbl">Qtd em Estoque</label><input class="edit-inp" id="editEstoque" type="number" min="0" value="0"></div>
+      <div><label class="edit-lbl">Vida &#218;til (m)</label><input class="edit-inp" id="editVidaUtil" type="number" min="1" step="0.001" value="1000"></div>
+      <div><label class="edit-lbl">Consumido (m)</label><input class="edit-inp" id="editConsumido" type="number" min="0" step="0.001" value="0" title="Consumo acumulado hist&#243;rico"></div>
+    </div>
+    <div class="mdl-acts">
+      <button class="btn btn-sky" onclick="saveClicheEdit()">&#10003; Salvar</button>
+      <button class="btn btn-ghost" onclick="closeM('mClicheEdit')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- FIRMWARE MODAL -->
 <div class="moverlay" id="mFw">
   <div class="mdl fw-mdl" style="max-height:90vh;overflow-y:auto;">
@@ -705,7 +787,7 @@ let curSpd=0, curDir=0, lastRdTs=null, connState='off';
 /* ══ PRODUCTION STATE ══ */
 let opNum='', opActive=false, opId=null;
 let clicheN=1;
-let cliches = Array.from({length:10},(_,i)=>({id:i+1,vidaUtilM:1000,consumidoM:0}));
+let cliches = Array.from({length:10},(_,i)=>({id:i+1,nome:`Clichê ${i+1}`,vidaUtilM:1000,consumidoM:0,fabricante:'',data_compra:'',qtd_estoque:0,modelo:'',medidas:''}));
 let prodSec=0, stopSec=0, isProd=false;
 let stopType='', stopEvId=null, stopStartTs=null;
 let alertFired=false, alertDism=false, idleTimer=null;
@@ -885,7 +967,18 @@ async function onClicheChange(){
 async function loadCliche(id){
   if(!sb) return;
   try{ const {data}=await sb.from('cliches').select('*').eq('id',id).single();
-    if(data){ cliches[id-1].vidaUtilM=parseFloat(data.vida_util_m)||1000; cliches[id-1].consumidoM=parseFloat(data.consumido_m)||0; document.getElementById('vuInp').value=cliches[id-1].vidaUtilM; }
+    if(data){
+      const c=cliches[id-1];
+      c.vidaUtilM=parseFloat(data.vida_util_m)||1000;
+      c.consumidoM=parseFloat(data.consumido_m)||0;
+      c.nome=data.nome||`Clichê ${id}`;
+      c.fabricante=data.fabricante||'';
+      c.data_compra=data.data_compra||'';
+      c.qtd_estoque=parseInt(data.qtd_estoque)||0;
+      c.modelo=data.modelo||'';
+      c.medidas=data.medidas||'';
+      document.getElementById('vuInp').value=c.vidaUtilM;
+    }
   }catch(_){}
 }
 function applyVU(){
@@ -1216,6 +1309,172 @@ async function saveRelatorio(){
     document.getElementById('relSaveErr').classList.add('show');
     btn.textContent='&#128190; Salvar no Supabase'; btn.disabled=false;
   }
+}
+
+/* ══ CLICHÊ MANAGEMENT ══ */
+let chartCliches = null;
+
+async function openCliches(){
+  document.getElementById('mCliches').classList.add('show');
+  document.getElementById('clicheGrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando...</div>';
+  await loadAllCliches();
+  renderClicheGrid();
+  updateClicheChart();
+}
+
+async function loadAllCliches(){
+  if(!sb) return;
+  try{
+    const {data}=await sb.from('cliches').select('*').order('id',{ascending:true});
+    if(data) data.forEach(d=>{
+      const c=cliches[d.id-1]; if(!c) return;
+      c.vidaUtilM=parseFloat(d.vida_util_m)||1000;
+      c.consumidoM=parseFloat(d.consumido_m)||0;
+      c.nome=d.nome||`Clichê ${d.id}`;
+      c.fabricante=d.fabricante||'';
+      c.data_compra=d.data_compra||'';
+      c.qtd_estoque=parseInt(d.qtd_estoque)||0;
+      c.modelo=d.modelo||'';
+      c.medidas=d.medidas||'';
+    });
+  }catch(_){}
+}
+
+function renderClicheGrid(){
+  const div=document.getElementById('clicheGrid');
+  div.innerHTML=cliches.map(c=>{
+    const sesM=(clicheN===c.id&&opActive)?p2m(Math.abs(totalPulses)):0;
+    const tot=c.consumidoM+sesM;
+    const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
+    const rem=Math.max(c.vidaUtilM-tot,0);
+    const col=pct>=80?'var(--danger)':pct>=60?'var(--warn)':'var(--ok)';
+    const cls=pct>=80?'vu-crit':pct>=60?'vu-warn':'vu-ok';
+    let statusBtn;
+    if(pct>=80) statusBtn=`<button class="st-crit-btn" onclick="pedidoCompra(${c.id})">&#128308; Compra Urgente</button>`;
+    else if(pct>=60) statusBtn=`<button class="st-warn-btn" onclick="pedidoCompra(${c.id})">&#9888; Fazer Pedido</button>`;
+    else statusBtn=`<span class="st-ok-btn">&#10003; Estoque Controlado</span>`;
+    return `<div class="cliche-card ${cls}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+        <div>
+          <div class="cliche-name">${c.nome||`Clichê ${c.id}`}</div>
+          ${c.modelo?`<div style="font-size:10px;color:var(--muted);margin-top:1px;">${c.modelo}</div>`:''}
+        </div>
+        <button class="btn-edit-sm" onclick="openClicheEdit(${c.id})">&#9998; Editar</button>
+      </div>
+      <div class="cliche-meta">
+        ${c.fabricante?`<span>Fabricante: <b>${c.fabricante}</b></span>`:''}
+        ${c.medidas?`<span>Medidas: <b>${c.medidas}</b></span>`:''}
+        ${c.data_compra?`<span>Compra: <b>${new Date(c.data_compra+'T12:00').toLocaleDateString('pt-BR')}</b></span>`:''}
+        <span>Estoque: <b style="color:${c.qtd_estoque>0?'var(--ok)':'var(--danger)'}">${c.qtd_estoque} unid.</b></span>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
+          <span class="cliche-pct" style="color:${col}">${pct.toFixed(1)}%</span>
+          <span style="font-size:10px;color:var(--muted)">consumido</span>
+        </div>
+        <div class="cliche-bar-w"><div class="cliche-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
+          <span>${tot.toFixed(1)} m usados</span>
+          <span>${rem.toFixed(1)} m restam &middot; ${c.vidaUtilM.toFixed(0)} m total</span>
+        </div>
+      </div>
+      <div class="cliche-footer">${statusBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateClicheChart(){
+  const labels=cliches.map(c=>c.nome||`Clichê ${c.id}`);
+  const values=cliches.map(c=>{
+    const sesM=(clicheN===c.id&&opActive)?p2m(Math.abs(totalPulses)):0;
+    const tot=c.consumidoM+sesM;
+    return c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
+  });
+  const colors=values.map(v=>v>=80?'#ef4444':v>=60?'#f59e0b':'#4ade80');
+  const ctx=document.getElementById('chartCliches').getContext('2d');
+  if(!chartCliches){
+    chartCliches=new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[{label:'% Consumido',data:values,backgroundColor:colors,borderRadius:4,barThickness:18}]},
+      options:{
+        indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.x.toFixed(1)}%`},backgroundColor:'#161616',borderColor:'#2e2e2e',borderWidth:1,titleColor:'#f2f2f2',bodyColor:'#888'}},
+        scales:{
+          x:{min:0,max:100,grid:{color:'#2e2e2e'},ticks:{color:'#888',callback:v=>v+'%'},border:{color:'#2e2e2e'}},
+          y:{grid:{display:false},ticks:{color:'#f2f2f2',font:{size:11}},border:{color:'#2e2e2e'}}
+        }
+      }
+    });
+  } else {
+    chartCliches.data.labels=labels;
+    chartCliches.data.datasets[0].data=values;
+    chartCliches.data.datasets[0].backgroundColor=colors;
+    chartCliches.update('none');
+  }
+}
+
+function openClicheEdit(id){
+  const c=cliches[id-1];
+  document.getElementById('editClicheId').value=id;
+  document.getElementById('editClicheTitle').textContent=`Editar: ${c.nome||`Clichê ${id}`}`;
+  document.getElementById('editNome').value=c.nome||`Clichê ${id}`;
+  document.getElementById('editFabricante').value=c.fabricante||'';
+  document.getElementById('editModelo').value=c.modelo||'';
+  document.getElementById('editMedidas').value=c.medidas||'';
+  document.getElementById('editDataCompra').value=c.data_compra||'';
+  document.getElementById('editEstoque').value=c.qtd_estoque||0;
+  document.getElementById('editVidaUtil').value=c.vidaUtilM||1000;
+  document.getElementById('editConsumido').value=c.consumidoM||0;
+  document.getElementById('mClicheEdit').classList.add('show');
+}
+
+async function saveClicheEdit(){
+  const id=parseInt(document.getElementById('editClicheId').value);
+  const c=cliches[id-1]; if(!c) return;
+  c.nome=document.getElementById('editNome').value.trim()||`Clichê ${id}`;
+  c.fabricante=document.getElementById('editFabricante').value.trim();
+  c.modelo=document.getElementById('editModelo').value.trim();
+  c.medidas=document.getElementById('editMedidas').value.trim();
+  c.data_compra=document.getElementById('editDataCompra').value;
+  c.qtd_estoque=parseInt(document.getElementById('editEstoque').value)||0;
+  c.vidaUtilM=parseFloat(document.getElementById('editVidaUtil').value)||1000;
+  c.consumidoM=parseFloat(document.getElementById('editConsumido').value)||0;
+  const sel=document.getElementById('clicheSelect');
+  if(sel.options[id-1]) sel.options[id-1].text=c.nome;
+  if(sb){
+    try{
+      await sb.from('cliches').upsert({
+        id,nome:c.nome,vida_util_m:c.vidaUtilM,consumido_m:c.consumidoM,
+        fabricante:c.fabricante,modelo:c.modelo,medidas:c.medidas,
+        data_compra:c.data_compra||null,qtd_estoque:c.qtd_estoque
+      });
+    }catch(e){showToast('Erro ao salvar: '+e.message,'danger'); return;}
+  }
+  closeM('mClicheEdit');
+  renderClicheGrid(); updateClicheChart();
+  if(clicheN===id) updateVU();
+  log('i',`Clichê ${id} atualizado`);
+  showToast(`✓ ${c.nome} salvo`,'ok');
+}
+
+function pedidoCompra(id){
+  const c=cliches[id-1];
+  const sesM=(clicheN===id&&opActive)?p2m(Math.abs(totalPulses)):0;
+  const tot=c.consumidoM+sesM;
+  const pctStr=(c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0).toFixed(1);
+  const urgente=parseFloat(pctStr)>=80;
+  const msg=`${urgente?'🔴 COMPRA URGENTE':'⚠️ FAZER PEDIDO'}\n\nClichê: ${c.nome}\nModelo: ${c.modelo||'—'}\nFabricante: ${c.fabricante||'—'}\nMedidas: ${c.medidas||'—'}\nEstoque atual: ${c.qtd_estoque} unid.\nVida útil consumida: ${pctStr}%\n\nFavor providenciar reposição.`;
+  navigator.clipboard.writeText(msg).catch(()=>{});
+  log('i',`Pedido de compra registrado: ${c.nome} (${pctStr}% consumido)`);
+  showToast(`${urgente?'🔴':'⚠'} Pedido copiado para área de transferência`,'warn');
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  const cols={ok:'var(--ok)',warn:'var(--warn)',danger:'var(--danger)'};
+  t.innerHTML=`<span style="color:${cols[type]||cols.ok}">${msg}</span>`;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
 
 /* ══ OS SALVAS ══ */
