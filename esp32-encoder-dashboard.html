@@ -19,7 +19,6 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
 
-/* HEADER */
 .hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
 .hdr-in{max-width:1440px;margin:0 auto;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
 .hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(11px,1.5vw,14px);}
@@ -27,7 +26,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
   padding:2px 8px;background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.2);border-radius:4px;color:var(--sky);}
 
-/* INFO STRIP */
 .strip{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px clamp(16px,4vw,44px);}
 .strip-in{max-width:1440px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .ifield{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
@@ -42,7 +40,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .iselect:focus{border-color:var(--sky);}
 .timer{font-family:'Archivo Black',sans-serif;font-size:20px;letter-spacing:.04em;}
 
-/* CHIPS & BUTTONS */
 .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
 .chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
 .chip-warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
@@ -67,11 +64,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .btn-danger:hover{background:rgba(239,68,68,.18);}
 .btn-gold{background:rgba(255,166,0,.08);border-color:rgba(255,166,0,.28);color:var(--gold);}
 .btn-gold:hover{background:rgba(255,166,0,.16);}
+.btn-green{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.35);color:var(--ok);}
+.btn-green:hover{background:rgba(74,222,128,.2);}
 
-/* BODY */
 .body{max-width:1440px;margin:0 auto;padding:24px clamp(16px,4vw,44px);}
 
-/* BANNERS */
 .banner{display:none;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:var(--radius);margin-bottom:18px;animation:fu .3s ease;}
 .banner.show{display:flex;}
 .banner-stop{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);}
@@ -86,7 +83,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   background:var(--bg3);border:1px solid var(--border);color:var(--text);transition:var(--tr);}
 .sbtn:hover,.sbtn.sel{border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);}
 
-/* CONFIG PANEL */
 .cfg-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:22px;}
 .cfg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;cursor:pointer;user-select:none;}
 .cfg-head h3{font-family:'Archivo Black',sans-serif;font-size:13px;display:flex;align-items:center;gap:9px;}
@@ -99,7 +95,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .fhint{font-size:10px;color:var(--muted);}
 .cfg-hr{grid-column:1/-1;border:0;border-top:1px solid var(--border);}
 
-/* KPI CARDS */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px;}
 .kcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:border-color var(--tr);}
 .klbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
@@ -112,11 +107,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .dir-rev{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.28);color:var(--orange);}
 .dir-stop{background:rgba(136,136,136,.1);border:1px solid rgba(136,136,136,.28);color:var(--muted);}
 
-/* TWO-COL */
+/* DIGITAL I/O */
+.dio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.din-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
+.din-card.st-ok{border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.03);}
+.din-card.st-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.03);}
+.din-card.st-fail{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.03);}
+.dout-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
+.dout-card.dout-on{border-color:rgba(53,200,255,.45);background:rgba(53,200,255,.03);}
+.din-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
+.din-val{font-family:'Archivo Black',sans-serif;font-size:17px;line-height:1.2;margin-bottom:3px;}
+.din-sub{font-size:10px;color:var(--muted);}
+.dout-toggle{width:100%;margin-top:9px;padding:7px 10px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;cursor:pointer;transition:var(--tr);border:1px solid;font-family:'Archivo',sans-serif;}
+.dout-off{background:var(--bg3);border-color:var(--border);color:var(--muted);}
+.dout-off:hover{border-color:var(--sky);color:var(--sky);}
+.dout-on-btn{background:rgba(53,200,255,.12);border-color:rgba(53,200,255,.4);color:var(--sky);}
+.dout-on-btn:hover{background:rgba(53,200,255,.22);}
+
+/* TWOCOL */
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
 @media(max-width:860px){.twocol{grid-template-columns:1fr;}}
 
-/* VIDA ÚTIL */
 .vu-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
 .vu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
 .vu-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
@@ -140,7 +151,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:6px 9px;outline:none;width:110px;transition:var(--tr);}
 .vu-inp:focus{border-color:var(--sky);}
 
-/* EFFICIENCY */
 .eff-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
 .eff-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px;}
 .eff-inner{display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
@@ -156,7 +166,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .eff-sep{border:0;border-top:1px solid var(--border);}
 .eff-time{font-family:'Fira Code',monospace;font-size:12px;}
 
-/* LOG */
+/* STOP HISTORY */
+.hist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:20px;}
+.hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.hist-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+.htbl{width:100%;border-collapse:collapse;}
+.htbl th{text-align:left;padding:6px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+.htbl td{padding:6px 10px;border-bottom:1px solid rgba(46,46,46,.35);font-family:'Fira Code',monospace;font-size:11px;}
+.htbl tr:last-child td{border-bottom:none;}
+.htbl-sum{background:rgba(46,46,46,.25);}
+.htbl-sum td{font-weight:700;border-top:1px solid var(--border);}
+.hist-empty{text-align:center;padding:18px 10px;color:var(--muted);font-size:12px;font-style:italic;}
+
 .log-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:24px;}
 .log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .log-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
@@ -167,7 +188,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .ltbl tr:hover td{background:rgba(255,255,255,.015);}
 .lt-r{color:var(--sky);}.lt-a{color:var(--danger);}.lt-s{color:var(--warn);}.lt-i{color:var(--muted);}
 
-/* MODAL */
+/* MODALS */
 .moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:200;align-items:center;justify-content:center;padding:20px;}
 .moverlay.show{display:flex;animation:fi .2s ease;}
 .mdl{background:var(--bg2);border:1px solid rgba(239,68,68,.35);border-radius:20px;
@@ -179,8 +200,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .mdl-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;}
 .mdl-row span:first-child{color:var(--muted);}
 .mdl-row span:last-child{font-family:'Fira Code',monospace;}
-.mdl-acts{display:flex;gap:8px;justify-content:flex-end;}
-.sv-list{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.mdl-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.sv-list{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
 .sv-item{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);}
 .sv-left{display:flex;align-items:center;gap:9px;}
 .sv-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Archivo Black',sans-serif;}
@@ -189,11 +210,40 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .btn-wa{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;
   background:#25D366;color:#fff;font-size:11px;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:var(--tr);}
 .btn-wa:hover{filter:brightness(1.1);}
+
+/* Liberar Produção in supervisor modal */
+.liberar-section{border-top:1px solid var(--border);padding-top:14px;margin-top:4px;}
+.liberar-section h5{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:9px;}
+.pass-box{display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:8px;}
+.pass-box.show{display:block;}
+.pass-inp{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Fira Code',monospace;font-size:14px;padding:8px 12px;outline:none;width:100%;margin-bottom:8px;letter-spacing:.15em;transition:var(--tr);}
+.pass-inp:focus{border-color:var(--sky);}
+.pass-err{color:var(--danger);font-size:11px;margin-top:4px;display:none;}
+.pass-err.show{display:block;}
+
+/* RELATÓRIO MODAL */
+.rel-mdl{max-width:600px;max-height:88vh;overflow-y:auto;border-color:rgba(74,222,128,.3);}
+.rel-section{margin-bottom:16px;}
+.rel-section h5{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.rel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;}
+@media(max-width:500px){.rel-grid{grid-template-columns:1fr;}}
+.rel-item{background:var(--bg3);border-radius:var(--radius-sm);padding:9px 12px;}
+.rel-item-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px;}
+.rel-item-val{font-family:'Archivo Black',sans-serif;font-size:15px;}
+.rtbl{width:100%;border-collapse:collapse;}
+.rtbl th{text-align:left;padding:5px 9px;font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
+.rtbl td{padding:5px 9px;border-bottom:1px solid rgba(46,46,46,.3);font-family:'Fira Code',monospace;font-size:11px;}
+.rtbl tr:last-child td{border-bottom:none;}
+.rel-save-ok{color:var(--ok);font-size:11px;font-weight:700;display:none;}
+.rel-save-ok.show{display:inline;}
+.rel-save-err{color:var(--danger);font-size:11px;display:none;}
+.rel-save-err.show{display:block;margin-top:8px;}
+
 .fw-mdl{max-width:680px;border-color:rgba(53,200,255,.25);}
 .fw-mdl pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:13px;overflow:auto;max-height:360px;font-family:'Fira Code',monospace;font-size:10px;line-height:1.7;color:#ccc;margin-bottom:16px;}
 
-/* MISC */
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 @keyframes fi{from{opacity:0;}to{opacity:1;}}
 .slbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
@@ -216,6 +266,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <button class="btn btn-ghost" onclick="toggleConfig()">&#9881; Config</button>
       <button class="btn btn-gold" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
       <button class="btn btn-ghost" onclick="openFw()">&#60;/&#62; FW</button>
+      <button class="btn btn-green" onclick="openRelatorio()">&#128196; Relat&#243;rio</button>
       <button class="btn btn-danger" onclick="resetCounter()">&#8635; Zerar</button>
     </div>
   </div>
@@ -237,7 +288,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ilbl">N&#186; Ordem de Produ&#231;&#227;o</span>
       <div style="display:flex;gap:5px;align-items:center;">
         <input class="iinput" id="opInput" placeholder="ex: OP-2024-001" maxlength="30">
-        <button class="btn btn-ok" id="opBtn" onclick="toggleOP()" style="padding:5px 10px;font-size:11px;">&#9654; Iniciar</button>
+        <button class="btn btn-ok" id="opBtn" onclick="startOP()" style="padding:5px 10px;font-size:11px;">&#9654; Iniciar</button>
+        <button class="btn btn-danger" id="finBtn" onclick="closeOP()" style="padding:5px 10px;font-size:11px;display:none;">&#9632; Finalizar OP</button>
       </div>
     </div>
     <div class="idiv"></div>
@@ -318,14 +370,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span style="color:var(--muted);">&#8963;</span>
     </div>
     <div class="cfg-body">
-      <div class="fgrp"><label>IP do ESP32</label><input class="fctl" id="cfgIp" value="192.168.1.100"><span class="fhint">ws://IP/ws &middot; http://IP/data</span></div>
-      <div class="fgrp"><label>Porta</label><input class="fctl" id="cfgPort" value="80"></div>
+      <div class="fgrp"><label>IP do ESP32</label><input class="fctl" id="cfgIp" value="192.168.1.100"><span class="fhint">Endere&#231;o IP na rede local</span></div>
+      <div class="fgrp"><label>Porta HTTP</label><input class="fctl" id="cfgPort" value="80"><span class="fhint">Endpoint /data</span></div>
+      <div class="fgrp"><label>Porta WebSocket</label><input class="fctl" id="cfgWsPort" value="81"><span class="fhint">ws://IP:porta/ws</span></div>
       <div class="fgrp"><label>Di&#226;metro da Polia (mm)</label><input class="fctl" id="cfgDiam" value="100"><span class="fhint">&#960; &times; d &#247; PPR = m/pulso</span></div>
       <div class="fgrp"><label>PPR (pulsos/rev)</label><input class="fctl" id="cfgPpr" value="360"></div>
       <div class="fgrp"><label>Timeout Alerta (s)</label><input class="fctl" id="cfgTimeout" value="60"></div>
+      <div class="fgrp"><label>Senha Admin</label><input class="fctl" id="cfgAdminPass" type="password" value="1234"><span class="fhint">Liberar Produ&#231;&#227;o</span></div>
       <hr class="cfg-hr">
-      <div class="fgrp"><label>Supabase URL</label><input class="fctl" id="cfgSbUrl" placeholder="https://xxx.supabase.co"><span class="fhint">Painel Supabase &rarr; Settings &rarr; API</span></div>
-      <div class="fgrp"><label>Supabase Anon Key</label><input class="fctl" id="cfgSbKey" placeholder="eyJhbGci..."><span class="fhint">Chave p&#250;blica anon (segura no browser)</span></div>
+      <div class="fgrp"><label>Supabase URL</label><input class="fctl" id="cfgSbUrl" placeholder="https://xxx.supabase.co"><span class="fhint">Settings &rarr; API</span></div>
+      <div class="fgrp"><label>Supabase Anon Key</label><input class="fctl" id="cfgSbKey" placeholder="eyJhbGci..."></div>
       <div class="fgrp" style="align-self:end;">
         <button class="btn btn-sky" style="height:40px;" onclick="applyConfig()">&#10003; Aplicar e Conectar</button>
       </div>
@@ -367,10 +421,46 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
   </div>
 
+  <!-- DIGITAL I/O -->
+  <div class="slbl">Entradas &amp; Sa&#237;das Digitais</div>
+  <div class="dio-grid">
+    <div class="din-card" id="dinCard1">
+      <div class="din-lbl">DIN 1 &mdash; Produzindo</div>
+      <div class="din-val" id="dinVal1" style="color:var(--muted)">Inativo</div>
+      <div class="din-sub" id="dinSub1">GPIO 34 &middot; 0</div>
+      <div class="kglow" style="background:var(--ok)"></div>
+    </div>
+    <div class="din-card" id="dinCard2">
+      <div class="din-lbl">DIN 2 &mdash; Setup</div>
+      <div class="din-val" id="dinVal2" style="color:var(--muted)">Inativo</div>
+      <div class="din-sub" id="dinSub2">GPIO 35 &middot; 0</div>
+      <div class="kglow" style="background:var(--warn)"></div>
+    </div>
+    <div class="din-card" id="dinCard3">
+      <div class="din-lbl">DIN 3 &mdash; Falha</div>
+      <div class="din-val" id="dinVal3" style="color:var(--muted)">Ok</div>
+      <div class="din-sub" id="dinSub3">GPIO 36 &middot; 0</div>
+      <div class="kglow" style="background:var(--danger)"></div>
+    </div>
+    <div class="dout-card" id="doutCard1">
+      <div class="din-lbl">DOUT 1 &mdash; Supervisor</div>
+      <div class="din-val" id="doutVal1" style="color:var(--muted)">Desligada</div>
+      <div class="din-sub">GPIO 25</div>
+      <button class="dout-toggle dout-off" id="doutBtn1" onclick="toggleDout(1)">&#9654; Acionar</button>
+      <div class="kglow" style="background:var(--sky)"></div>
+    </div>
+    <div class="dout-card" id="doutCard2">
+      <div class="din-lbl">DOUT 2 &mdash; Sa&#237;da Geral</div>
+      <div class="din-val" id="doutVal2" style="color:var(--muted)">Desligada</div>
+      <div class="din-sub">GPIO 26</div>
+      <button class="dout-toggle dout-off" id="doutBtn2" onclick="toggleDout(2)">&#9654; Acionar</button>
+      <div class="kglow" style="background:var(--sky)"></div>
+    </div>
+  </div>
+
   <!-- VIDA ÚTIL + EFFICIENCY -->
   <div class="slbl">Vida &#218;til &amp; Efici&#234;ncia</div>
   <div class="twocol">
-
     <div class="vu-card">
       <div class="vu-head">
         <h4>Consumo da Vida &#218;til</h4>
@@ -441,7 +531,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
         </div>
       </div>
     </div>
+  </div>
 
+  <!-- STOP HISTORY -->
+  <div class="slbl">Hist&#243;rico de Paradas</div>
+  <div class="hist-card">
+    <div class="hist-head">
+      <h4>Paradas registradas nesta sess&#227;o</h4>
+      <button class="btn btn-ghost" style="padding:3px 9px;font-size:10px;" onclick="clearStopHistory()">Limpar</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="htbl">
+        <thead><tr><th>Tipo</th><th>In&#237;cio</th><th>Dura&#231;&#227;o</th></tr></thead>
+        <tbody id="histBody"><tr><td colspan="3" class="hist-empty">Nenhuma parada registrada</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- LOG -->
@@ -476,16 +580,44 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="mdl-row"><span>IP ESP32</span><span id="mIp">--</span></div>
     </div>
     <div class="sv-list" id="svList"></div>
-    <div class="mdl-acts"><button class="btn btn-ghost" onclick="closeM('mSuper')">Fechar</button></div>
+    <div class="liberar-section">
+      <h5>&#128275; Liberar Produ&#231;&#227;o</h5>
+      <button class="btn btn-ok" style="width:100%;justify-content:center;" onclick="showPassBox()">Inserir senha de administrador</button>
+      <div class="pass-box" id="passBox">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">Digite a senha para desativar DOUT1 e liberar a m&#225;quina:</div>
+        <input class="pass-inp" id="passInp" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;" maxlength="32" onkeydown="if(event.key==='Enter') confirmPass()">
+        <div style="display:flex;gap:7px;">
+          <button class="btn btn-sky" style="flex:1;justify-content:center;" onclick="confirmPass()">&#10003; Confirmar</button>
+          <button class="btn btn-ghost" onclick="hidePassBox()">Cancelar</button>
+        </div>
+        <div class="pass-err" id="passErr">Senha incorreta. Tente novamente.</div>
+      </div>
+    </div>
+    <div class="mdl-acts" style="margin-top:14px;"><button class="btn btn-ghost" onclick="closeM('mSuper')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- RELATÓRIO MODAL -->
+<div class="moverlay" id="mRel">
+  <div class="mdl rel-mdl">
+    <div class="mdl-icon" style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);">&#128196;</div>
+    <h2>Relat&#243;rio de Produ&#231;&#227;o</h2>
+    <div id="relContent"></div>
+    <div class="rel-save-err" id="relSaveErr"></div>
+    <div class="mdl-acts">
+      <span class="rel-save-ok" id="relSaveOk">&#10003; Salvo no Supabase!</span>
+      <button class="btn btn-sky" id="relSaveBtn" onclick="saveRelatorio()">&#128190; Salvar no Supabase</button>
+      <button class="btn btn-ghost" onclick="closeM('mRel')">Fechar</button>
+    </div>
   </div>
 </div>
 
 <!-- FIRMWARE MODAL -->
 <div class="moverlay" id="mFw">
   <div class="mdl fw-mdl" style="max-height:90vh;overflow-y:auto;">
-    <div class="mdl-icon" style="background:rgba(53,200,255,.08);border-color:rgba(53,200,255,.2);">&#60;/&#62;</div>
+    <div class="mdl-icon" style="background:rgba(53,200,255,.08);">&#60;/&#62;</div>
     <h2>Firmware ESP32 &middot; Encoder PNP 360ppr</h2>
-    <p style="margin-bottom:12px;">Canal A &rarr; GPIO 18 &middot; Canal B &rarr; GPIO 19 &middot; 5V / GND</p>
+    <p style="margin-bottom:12px;">Encoder A&rarr;GPIO 18 &middot; B&rarr;GPIO 19 &middot; DIN1&rarr;34 &middot; DIN2&rarr;35 &middot; DIN3&rarr;36 &middot; DOUT1&rarr;25 &middot; DOUT2&rarr;26</p>
     <pre id="fwCode"></pre>
     <div class="mdl-acts">
       <button class="btn btn-sky" onclick="copyFw()">&#128203; Copiar</button>
@@ -496,12 +628,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 <script>
 /* ══ CONFIG ══ */
-let cfg = { ip:'192.168.1.100', port:80, diam:100, ppr:360, timeout:60, sbUrl:'', sbKey:'' };
+let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:100, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234' };
 try {
   const s = JSON.parse(localStorage.getItem('enc_cfg')||'{}');
   Object.assign(cfg, s);
-  const map = { cfgIp:'ip', cfgPort:'port', cfgDiam:'diam', cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey' };
-  Object.entries(map).forEach(([id,k]) => { const el=document.getElementById(id); if(el&&cfg[k]) el.value=cfg[k]; });
+  const map = {
+    cfgIp:'ip', cfgPort:'port', cfgWsPort:'wsPort', cfgDiam:'diam',
+    cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey', cfgAdminPass:'adminPass'
+  };
+  Object.entries(map).forEach(([id,k]) => { const el=document.getElementById(id); if(el&&cfg[k]!==undefined) el.value=cfg[k]; });
 } catch(_) {}
 
 /* ══ SUPABASE ══ */
@@ -525,16 +660,27 @@ let prodSec=0, stopSec=0, isProd=false;
 let stopType='', stopEvId=null, stopStartTs=null;
 let alertFired=false, alertDism=false, idleTimer=null;
 
+/* ══ NEW STATE ══ */
+let stopHistory = [];
+let din = [0, 0, 0];
+let dout = [0, 0];
+let relatorioData = null;
+
 const SUPERVISORS = [
-  {name:'Carlos Silva',  role:'Supervisor Turno A',       phone:'5511999990001',avatar:'CS',color:'#35c8ff'},
-  {name:'Fernanda Lima', role:'Engenheira de Manuten&#231;&#227;o',phone:'5511999990002',avatar:'FL',color:'#4ade80'},
-  {name:'Roberto Souza', role:'Gerente de Produ&#231;&#227;o',     phone:'5511999990003',avatar:'RS',color:'#ffd166'},
+  {name:'Carlos Silva',  role:'Supervisor Turno A',          phone:'5511999990001',avatar:'CS',color:'#35c8ff'},
+  {name:'Fernanda Lima', role:'Engenheira de Manutenção',phone:'5511999990002',avatar:'FL',color:'#4ade80'},
+  {name:'Roberto Souza', role:'Gerente de Produção',     phone:'5511999990003',avatar:'RS',color:'#ffd166'},
 ];
 
 /* ══ HELPERS ══ */
 function p2m(p){ return (p/cfg.ppr)*(Math.PI*cfg.diam/1000); }
-function hms(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+function hms(s){ s=Math.max(0,Math.round(s)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
 function vuCol(p){ return p>=90?'#ef4444':p>=70?'#f59e0b':'#4ade80'; }
+function typeColor(tipo){
+  const map={'Manutenção':'#ef4444','Setup':'#f59e0b','Falta de Material':'#ffd166','Refeição':'#35c8ff','Reunião':'#35c8ff','Falta Mão de Obra':'#ff6b35'};
+  return map[tipo]||'var(--muted)';
+}
+function tsNow(){ return new Date().toLocaleTimeString('pt-BR'); }
 
 /* ══ TICK (1s) ══ */
 setInterval(()=>{
@@ -549,6 +695,7 @@ setInterval(()=>{
     if(isProd) prodSec++; else if(stopStartTs) stopSec++;
     tickTimers(); tickEff();
   }
+  if(!isProd && stopStartTs && stopType) renderStopHistory();
 },1000);
 
 function tickClock(){
@@ -576,16 +723,24 @@ function onResume(){
   document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel'));
   if(stopStartTs){
     const dur=Math.round((Date.now()-stopStartTs.getTime())/1000);
-    closeStopEv(dur); stopStartTs=null;
+    if(stopType){
+      stopHistory.push({tipo:stopType, inicio:stopStartTs, fim:new Date(), duracao_s:dur});
+      renderStopHistory();
+    }
+    closeStopEv(dur);
+    stopStartTs=null;
   }
+  stopType='';
   if(alertFired&&!alertDism) dismissAlert();
   log('r','Encoder retomou'); resetIdle();
 }
+
 function selectStop(tipo){
   stopType=tipo;
   document.getElementById('stopSel').value=tipo;
   document.querySelectorAll('.sbtn').forEach(b=>{ b.classList.toggle('sel', b.textContent.includes(tipo.split(' ')[0])); });
   createStopEv(tipo); log('s',`Parada: ${tipo}`);
+  renderStopHistory();
 }
 function onStopSelChange(){ const v=document.getElementById('stopSel').value; if(v) selectStop(v); }
 
@@ -598,33 +753,76 @@ async function closeStopEv(dur){
   try { await sb.from('paradas').update({fim:new Date().toISOString(),duracao_s:dur}).eq('id',stopEvId); stopEvId=null; } catch(_){}
 }
 
+/* ══ STOP HISTORY RENDER ══ */
+function renderStopHistory(){
+  const tbody=document.getElementById('histBody');
+  const rows=[...stopHistory];
+  let liveRow=null;
+  if(!isProd && stopStartTs && stopType){
+    const dur=Math.round((Date.now()-stopStartTs.getTime())/1000);
+    liveRow={tipo:stopType,inicio:stopStartTs,fim:null,duracao_s:dur,live:true};
+  }
+  if(rows.length===0 && !liveRow){
+    tbody.innerHTML='<tr><td colspan="3" class="hist-empty">Nenhuma parada registrada</td></tr>';
+    return;
+  }
+  const all = liveRow ? [...rows, liveRow] : rows;
+  const dataRows = all.map(r=>`
+    <tr>
+      <td style="color:${typeColor(r.tipo)};font-weight:700;">${r.tipo}</td>
+      <td>${r.inicio.toLocaleTimeString('pt-BR')}</td>
+      <td>${r.live?`<em style="color:var(--warn)">Em andamento &mdash; ${hms(r.duracao_s)}</em>`:hms(r.duracao_s)}</td>
+    </tr>`).join('');
+  const summary={};
+  rows.forEach(r=>{
+    if(!summary[r.tipo]) summary[r.tipo]={count:0,total_s:0};
+    summary[r.tipo].count++; summary[r.tipo].total_s+=r.duracao_s;
+  });
+  if(liveRow){ if(!summary[liveRow.tipo]) summary[liveRow.tipo]={count:0,total_s:0}; summary[liveRow.tipo].total_s+=liveRow.duracao_s; }
+  const sumRows = Object.entries(summary).map(([tipo,s])=>`
+    <tr class="htbl-sum">
+      <td style="color:${typeColor(tipo)}">&#931; ${tipo}</td>
+      <td style="color:var(--muted)">${s.count} ocorr&#234;ncia${s.count!==1?'s':''}</td>
+      <td style="color:var(--text)">${hms(s.total_s)}</td>
+    </tr>`).join('');
+  tbody.innerHTML = dataRows + sumRows;
+}
+function clearStopHistory(){ stopHistory=[]; renderStopHistory(); }
+
 /* ══ OP ══ */
-function toggleOP(){ opActive ? closeOP() : startOP(); }
 async function startOP(){
+  if(opActive) return;
   const num=document.getElementById('opInput').value.trim();
   if(!num){ document.getElementById('opInput').focus(); return; }
-  opNum=num; opActive=true; prodSec=0; stopSec=0;
-  const btn=document.getElementById('opBtn');
-  btn.textContent='&#9632; Encerrar'; btn.className='btn btn-danger'; btn.style='padding:5px 10px;font-size:11px;';
+  opNum=num; opActive=true; prodSec=0; stopSec=0; stopHistory=[];
+  document.getElementById('opBtn').style.display='none';
+  document.getElementById('finBtn').style.display='';
   document.getElementById('opInput').disabled=true;
   document.getElementById('clicheSelect').disabled=true;
-  log('i',`OP ${opNum} iniciada &middot; Clich&#234; ${clicheN}`);
+  renderStopHistory();
+  log('i',`OP ${opNum} iniciada &middot; Clichê ${clicheN}`);
   if(sb){ try{ const {data}=await sb.from('ordens').insert({numero:opNum,cliche_id:clicheN,data_inicio:new Date().toISOString()}).select().single(); if(data) opId=data.id; }catch(_){} }
 }
 async function closeOP(){
   if(!opActive) return;
+  if(!isProd && stopStartTs){
+    const dur=Math.round((Date.now()-stopStartTs.getTime())/1000);
+    if(stopType){ stopHistory.push({tipo:stopType,inicio:stopStartTs,fim:new Date(),duracao_s:dur}); }
+    await closeStopEv(dur); stopStartTs=null; stopType='';
+  }
   opActive=false;
   const posM=p2m(Math.abs(totalPulses));
   cliches[clicheN-1].consumidoM += posM;
   if(sb){
-    try{ await sb.from('cliches').upsert({id:clicheN,nome:`Clich&#234; ${clicheN}`,vida_util_m:cliches[clicheN-1].vidaUtilM,consumido_m:cliches[clicheN-1].consumidoM}); }catch(_){}
+    try{ await sb.from('cliches').upsert({id:clicheN,nome:`Clichê ${clicheN}`,vida_util_m:cliches[clicheN-1].vidaUtilM,consumido_m:cliches[clicheN-1].consumidoM}); }catch(_){}
     if(opId){ try{ await sb.from('ordens').update({data_fim:new Date().toISOString(),tempo_producao_s:prodSec,tempo_parada_s:stopSec,posicao_total_m:posM,status:'fechada'}).eq('id',opId); }catch(_){} }
   }
-  log('i',`OP ${opNum} encerrada &middot; Prod ${hms(prodSec)} &middot; Parada ${hms(stopSec)}`);
-  const btn=document.getElementById('opBtn');
-  btn.textContent='&#9654; Iniciar'; btn.className='btn btn-ok'; btn.style='padding:5px 10px;font-size:11px;';
+  log('i',`OP ${opNum} finalizada &middot; Prod ${hms(prodSec)} &middot; Parada ${hms(stopSec)}`);
+  document.getElementById('opBtn').style.display='';
+  document.getElementById('finBtn').style.display='none';
   document.getElementById('opInput').disabled=false;
   document.getElementById('clicheSelect').disabled=false;
+  renderStopHistory();
   opId=null;
 }
 
@@ -632,7 +830,7 @@ async function closeOP(){
 async function onClicheChange(){
   if(opActive) return;
   clicheN=parseInt(document.getElementById('clicheSelect').value);
-  await loadCliche(clicheN); updateVU(); log('i',`Clich&#234; ${clicheN} selecionado`);
+  await loadCliche(clicheN); updateVU(); log('i',`Clichê ${clicheN} selecionado`);
 }
 async function loadCliche(id){
   if(!sb) return;
@@ -642,8 +840,8 @@ async function loadCliche(id){
 }
 function applyVU(){
   const v=parseFloat(document.getElementById('vuInp').value);
-  if(v>0){ cliches[clicheN-1].vidaUtilM=v; updateVU(); log('i',`Vida &#250;til Clich&#234; ${clicheN}: ${v.toFixed(3)} m`);
-    if(sb) sb.from('cliches').upsert({id:clicheN,nome:`Clich&#234; ${clicheN}`,vida_util_m:v,consumido_m:cliches[clicheN-1].consumidoM}).then(()=>{}).catch(()=>{});
+  if(v>0){ cliches[clicheN-1].vidaUtilM=v; updateVU(); log('i',`Vida útil Clichê ${clicheN}: ${v.toFixed(3)} m`);
+    if(sb) sb.from('cliches').upsert({id:clicheN,nome:`Clichê ${clicheN}`,vida_util_m:v,consumido_m:cliches[clicheN-1].consumidoM}).then(()=>{}).catch(()=>{});
   }
 }
 document.getElementById('vuInp').addEventListener('keydown',e=>{if(e.key==='Enter') applyVU();});
@@ -659,7 +857,7 @@ function updateVU(){
   const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
   const rem=Math.max(c.vidaUtilM-tot,0);
   const col=vuCol(pct);
-  document.getElementById('vuBadge').textContent=`Clich&#234; ${clicheN}`;
+  document.getElementById('vuBadge').textContent=`Clichê ${clicheN}`;
   document.getElementById('vuDpct').textContent=pct.toFixed(1)+'%'; document.getElementById('vuDpct').style.color=col;
   document.getElementById('vuBar').style.width=pct+'%'; document.getElementById('vuBar').style.background=col;
   document.getElementById('vuConsumed').textContent=tot.toFixed(3)+' m';
@@ -671,9 +869,9 @@ function updateVU(){
 }
 
 /* ══ EFFICIENCY CHART ══ */
-const JORNADA=28800; // 8h
+const JORNADA=28800;
 const ctxEff=document.getElementById('chartEff').getContext('2d');
-const chartEff=new Chart(ctxEff,{type:'doughnut',data:{labels:['Produ&#231;&#227;o','Parada','Dispon&#237;vel'],datasets:[{data:[0,0,100],backgroundColor:['#4ade80','#ef4444','#262626'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'71%',animation:{duration:350},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
+const chartEff=new Chart(ctxEff,{type:'doughnut',data:{labels:['Produção','Parada','Disponível'],datasets:[{data:[0,0,100],backgroundColor:['#4ade80','#ef4444','#262626'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'71%',animation:{duration:350},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
 
 function tickEff(){
   const pp=Math.min((prodSec/JORNADA)*100,100);
@@ -692,12 +890,60 @@ function tickEff(){
   chartEff.update('none');
 }
 
+/* ══ DIGITAL I/O ══ */
+function sendWsCmd(obj){
+  if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+function toggleDout(pin){
+  const idx=pin-1;
+  dout[idx]=dout[idx]?0:1;
+  sendWsCmd({cmd:'setout',pin,val:dout[idx]});
+  updateDIO();
+  log('i',`Saída ${pin} ${dout[idx]?'ativada':'desativada'}`);
+}
+function setDout(pin,val){
+  const idx=pin-1;
+  dout[idx]=val;
+  sendWsCmd({cmd:'setout',pin,val});
+  updateDIO();
+}
+function updateDIO(){
+  // DIN cards
+  const dinCfg=[
+    {label:'Produzindo',cls:'st-ok',onColor:'var(--ok)',offLabel:'Inativo',gpio:34},
+    {label:'Setup',cls:'st-warn',onColor:'var(--warn)',offLabel:'Inativo',gpio:35},
+    {label:'Falha',cls:'st-fail',onColor:'var(--danger)',offLabel:'Ok',gpio:36},
+  ];
+  for(let i=0;i<3;i++){
+    const c=document.getElementById(`dinCard${i+1}`);
+    const v=document.getElementById(`dinVal${i+1}`);
+    const s=document.getElementById(`dinSub${i+1}`);
+    const on=din[i];
+    c.className=`din-card${on?' '+dinCfg[i].cls:''}`;
+    v.textContent=on?dinCfg[i].label:dinCfg[i].offLabel;
+    v.style.color=on?dinCfg[i].onColor:'var(--muted)';
+    s.textContent=`GPIO ${dinCfg[i].gpio} · ${on?1:0}`;
+  }
+  // DOUT cards
+  for(let i=0;i<2;i++){
+    const on=dout[i];
+    const card=document.getElementById(`doutCard${i+1}`);
+    const val=document.getElementById(`doutVal${i+1}`);
+    const btn=document.getElementById(`doutBtn${i+1}`);
+    card.className=`dout-card${on?' dout-on':''}`;
+    val.textContent=on?'Ligada':'Desligada';
+    val.style.color=on?'var(--sky)':'var(--muted)';
+    btn.className=`dout-toggle ${on?'dout-on-btn':'dout-off'}`;
+    btn.innerHTML=on?'&#9726; Desligar':'&#9654; Acionar';
+  }
+}
+
 /* ══ WEBSOCKET ══ */
 function connect(){
   if(ws){ ws.close(); ws=null; }
   setConn('warn','Conectando...');
   try{
-    ws=new WebSocket(`ws://${cfg.ip}:${cfg.port}/ws`);
+    ws=new WebSocket(`ws://${cfg.ip}:${cfg.wsPort}/ws`);
     ws.onopen=()=>{ setConn('ok','Online'); log('i','WebSocket conectado'); };
     ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
     ws.onerror=()=>setConn('fail','Erro WS');
@@ -713,7 +959,12 @@ function handleData(d){
   curDir=d.direction||(delta>0?1:delta<0?-1:0);
   if(dt>0) curSpd=p2m(Math.abs(delta))/dt;
   lastSPulses=d.pulses||totalPulses; lastSTime=now; lastRdTs=now;
-  updateUI(); resetIdle();
+  din[0]=(d.din1||0)?1:0;
+  din[1]=(d.din2||0)?1:0;
+  din[2]=(d.din3||0)?1:0;
+  if(d.dout1!==undefined) dout[0]=d.dout1?1:0;
+  if(d.dout2!==undefined) dout[1]=d.dout2?1:0;
+  updateUI(); updateDIO(); resetIdle();
 }
 
 /* ══ UI ══ */
@@ -729,10 +980,10 @@ function updateUI(){
   document.getElementById('valFreq').textContent=freq.toFixed(2)+' Hz';
   const db=document.getElementById('dirBadge');
   if(curSpd<0.001){ db.className='dir-badge dir-stop'; db.innerHTML='&#8212; Parado'; document.getElementById('valDirSub').textContent='Sem movimento'; }
-  else if(curDir>=0){ db.className='dir-badge dir-fwd'; db.innerHTML='&#8594; Avan&#231;o'; document.getElementById('valDirSub').textContent='Sentido hor&#225;rio'; }
-  else{ db.className='dir-badge dir-rev'; db.innerHTML='&#8592; Retorno'; document.getElementById('valDirSub').textContent='Anti-hor&#225;rio'; }
+  else if(curDir>=0){ db.className='dir-badge dir-fwd'; db.innerHTML='&#8594; Avanço'; document.getElementById('valDirSub').textContent='Sentido horário'; }
+  else{ db.className='dir-badge dir-rev'; db.innerHTML='&#8592; Retorno'; document.getElementById('valDirSub').textContent='Anti-horário'; }
   document.getElementById('valSt').innerHTML='&#9679; Online'; document.getElementById('valSt').style.color='var(--ok)';
-  document.getElementById('valLast').textContent='&#218;ltima: '+new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('valLast').textContent='Última: '+new Date().toLocaleTimeString('pt-BR');
   updateVU();
 }
 
@@ -746,27 +997,28 @@ function fireAlert(){
   if(alertDism) return;
   alertFired=true;
   const ts=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
-  document.getElementById('alertSub').textContent=`&#218;ltima: ${ts} &middot; Pos: ${p2m(Math.abs(totalPulses)).toFixed(3)} m`;
+  document.getElementById('alertSub').textContent=`Última: ${ts} · Pos: ${p2m(Math.abs(totalPulses)).toFixed(3)} m`;
   document.getElementById('alertBanner').classList.add('show');
   log('a',`ALERTA: sem leitura por ${cfg.timeout}s`);
   document.getElementById('valSt').innerHTML='&#9888; Inativo'; document.getElementById('valSt').style.color='var(--danger)';
+  setDout(1,1);
+  openSupervisor();
 }
 function dismissAlert(){ alertDism=true; alertFired=false; document.getElementById('alertBanner').classList.remove('show'); setTimeout(()=>{ alertDism=false; },10000); }
 
 /* ══ DEMO ══ */
-let demoPhase=0;
 function toggleDemo(){
   demoMode=!demoMode;
   const btn=document.getElementById('demoBtn');
   if(demoMode){
     btn.textContent='&#9209; Parar Demo'; btn.className='btn btn-danger';
     setConn('ok','Demo Online'); log('i','Demo iniciado');
-    let tick=0;
+    let tick=0, phase=0;
     demoIv=setInterval(()=>{
-      tick++; demoPhase=Math.floor(tick/30)%5;
+      tick++; phase=Math.floor(tick/30)%5;
       let d=0;
-      switch(demoPhase){ case 0:d=Math.round(8+Math.random()*4);curDir=1;break; case 1:d=Math.round(20+Math.random()*6);curDir=1;break; case 2:d=Math.round(10+Math.random()*3);curDir=1;break; case 3:d=0;curDir=0;break; case 4:d=Math.round(5+Math.random()*3);curDir=-1;break; }
-      if(d>0||demoPhase===3){ demoPAcc+=d*curDir; handleData({pulses:demoPAcc,direction:curDir}); }
+      switch(phase){ case 0:d=Math.round(8+Math.random()*4);curDir=1;break; case 1:d=Math.round(20+Math.random()*6);curDir=1;break; case 2:d=Math.round(10+Math.random()*3);curDir=1;break; case 3:d=0;curDir=0;break; case 4:d=Math.round(5+Math.random()*3);curDir=-1;break; }
+      if(d>0||phase===3){ demoPAcc+=d*curDir; handleData({pulses:demoPAcc,direction:curDir,din1:0,din2:0,din3:0}); }
     },500);
   } else {
     btn.textContent='&#9654; Demo'; btn.className='btn btn-gold';
@@ -782,10 +1034,10 @@ function openSupervisor(){
   document.getElementById('mIdle').textContent=idleStr;
   document.getElementById('mLast').textContent=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
   document.getElementById('mPos').textContent=p2m(Math.abs(totalPulses)).toFixed(3)+' m';
-  document.getElementById('mOP').textContent=opNum||'&#8212;';
-  document.getElementById('mCl').textContent='Clich&#234; '+clicheN;
+  document.getElementById('mOP').textContent=opNum||'—';
+  document.getElementById('mCl').textContent='Clichê '+clicheN;
   document.getElementById('mIp').textContent=cfg.ip;
-  const msg=encodeURIComponent(`&#9888; *ALERTA ENCODER*\n\nEncoder parado h&#225; ${idleStr}.\nOP: ${opNum||'&#8212;'} | Clich&#234;: ${clicheN}\nPosi&#231;&#227;o: ${p2m(Math.abs(totalPulses)).toFixed(3)} m\nESP32: ${cfg.ip}\n\nA&#231;&#227;o necess&#225;ria.`);
+  const msg=encodeURIComponent(`⚠️ *ALERTA ENCODER*\n\nEncoder parado há ${idleStr}.\nOP: ${opNum||'—'} | Clichê: ${clicheN}\nPosição: ${p2m(Math.abs(totalPulses)).toFixed(3)} m\nESP32: ${cfg.ip}\n\nAção necessária.`);
   document.getElementById('svList').innerHTML=SUPERVISORS.map(s=>`
     <div class="sv-item">
       <div class="sv-left">
@@ -797,8 +1049,123 @@ function openSupervisor(){
         WhatsApp
       </a>
     </div>`).join('');
+  hidePassBox();
   document.getElementById('mSuper').classList.add('show');
   log('a','Supervisor notificado');
+}
+function showPassBox(){
+  document.getElementById('passBox').classList.add('show');
+  document.getElementById('passInp').value='';
+  document.getElementById('passErr').classList.remove('show');
+  document.getElementById('passInp').focus();
+}
+function hidePassBox(){
+  document.getElementById('passBox').classList.remove('show');
+  document.getElementById('passErr').classList.remove('show');
+}
+function confirmPass(){
+  const val=document.getElementById('passInp').value;
+  if(val===cfg.adminPass){
+    setDout(1,0);
+    dismissAlert();
+    closeM('mSuper');
+    log('i','Produção liberada pelo administrador');
+    hidePassBox();
+  } else {
+    document.getElementById('passErr').classList.add('show');
+    document.getElementById('passInp').value='';
+    document.getElementById('passInp').focus();
+    setTimeout(()=>document.getElementById('passErr').classList.remove('show'),3000);
+  }
+}
+
+/* ══ RELATÓRIO ══ */
+function openRelatorio(){
+  const posM=p2m(Math.abs(totalPulses));
+  const pp=Math.min((prodSec/JORNADA)*100,100);
+  const sp=Math.min((stopSec/JORNADA)*100,100);
+  const tot=prodSec+stopSec;
+  const disp=tot>0?((prodSec/tot)*100).toFixed(1)+'%':'—';
+  const c=cliches[clicheN-1];
+  const sesM=posM;
+  const vuTot=c.consumidoM+sesM;
+  const vuPct=c.vidaUtilM>0?Math.min((vuTot/c.vidaUtilM)*100,100):0;
+  const summary={};
+  stopHistory.forEach(r=>{
+    if(!summary[r.tipo]) summary[r.tipo]={count:0,total_s:0};
+    summary[r.tipo].count++; summary[r.tipo].total_s+=r.duracao_s;
+  });
+  const stopRows=Object.entries(summary).map(([tipo,s])=>`
+    <tr>
+      <td style="color:${typeColor(tipo)}">${tipo}</td>
+      <td style="text-align:center">${s.count}</td>
+      <td>${hms(s.total_s)}</td>
+    </tr>`).join('');
+  document.getElementById('relContent').innerHTML=`
+    <div class="rel-section">
+      <h5>Ordem de Produção</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Nº OP</div><div class="rel-item-val">${opNum||'—'}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Clichê</div><div class="rel-item-val">Clichê ${clicheN}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data / Hora</div><div class="rel-item-val" style="font-size:12px">${new Date().toLocaleString('pt-BR')}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Status</div><div class="rel-item-val" style="font-size:13px;color:${opActive?'var(--ok)':'var(--muted)'}">${opActive?'Em andamento':'Finalizada'}</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Tempos &amp; Eficiência</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Produção</div><div class="rel-item-val" style="color:var(--ok)">${hms(prodSec)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Parada</div><div class="rel-item-val" style="color:var(--danger)">${hms(stopSec)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Eficiência (8h)</div><div class="rel-item-val" style="color:var(--ok)">${pp.toFixed(1)}%</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Disponibilidade</div><div class="rel-item-val" style="color:var(--sky)">${disp}</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Produção &amp; Vida Útil</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Metros Produzidos</div><div class="rel-item-val">${posM.toFixed(3)} m</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Vida Útil Consumida</div><div class="rel-item-val" style="color:${vuCol(vuPct)}">${vuPct.toFixed(1)}%</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Consumido Total</div><div class="rel-item-val" style="font-size:13px">${vuTot.toFixed(3)} m</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Vida Útil Total</div><div class="rel-item-val" style="font-size:13px">${c.vidaUtilM.toFixed(0)} m</div></div>
+      </div>
+    </div>
+    ${stopRows?`<div class="rel-section" style="margin-top:14px;">
+      <h5>Paradas por Tipo</h5>
+      <table class="rtbl">
+        <thead><tr><th>Tipo</th><th style="text-align:center">Qtd</th><th>Tempo Total</th></tr></thead>
+        <tbody>${stopRows}</tbody>
+      </table>
+    </div>`:''}`;
+  relatorioData={
+    ordem_id:opId||null, numero_op:opNum||'Sem OP', cliche_id:clicheN,
+    tempo_producao_s:prodSec, tempo_parada_s:stopSec,
+    posicao_total_m:parseFloat(posM.toFixed(3)),
+    eficiencia_pct:parseFloat(pp.toFixed(1)),
+    disponibilidade_pct:parseFloat(tot>0?((prodSec/tot)*100).toFixed(1):0),
+    paradas:stopHistory.map(r=>({tipo:r.tipo,inicio:r.inicio.toISOString(),fim:r.fim?r.fim.toISOString():null,duracao_s:r.duracao_s})),
+    dados:{vida_util_pct:parseFloat(vuPct.toFixed(1)),vida_util_target:c.vidaUtilM,consumido_total:parseFloat(vuTot.toFixed(3))}
+  };
+  document.getElementById('relSaveOk').classList.remove('show');
+  document.getElementById('relSaveErr').classList.remove('show');
+  document.getElementById('relSaveBtn').disabled=false;
+  document.getElementById('mRel').classList.add('show');
+}
+async function saveRelatorio(){
+  if(!sb){ document.getElementById('relSaveErr').textContent='Configure Supabase primeiro (Config → Supabase URL + Key).'; document.getElementById('relSaveErr').classList.add('show'); return; }
+  if(!relatorioData) return;
+  const btn=document.getElementById('relSaveBtn');
+  btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    const {error}=await sb.from('relatorios').insert(relatorioData);
+    if(error) throw error;
+    document.getElementById('relSaveOk').classList.add('show');
+    btn.textContent='&#10003; Salvo';
+    log('i',`Relatório salvo · OP ${relatorioData.numero_op}`);
+  } catch(e){
+    document.getElementById('relSaveErr').textContent='Erro ao salvar: '+e.message;
+    document.getElementById('relSaveErr').classList.add('show');
+    btn.textContent='&#128190; Salvar no Supabase'; btn.disabled=false;
+  }
 }
 
 /* ══ LOG ══ */
@@ -808,7 +1175,7 @@ function log(type,detail){
   const cls={a:'lt-a',r:'lt-r',s:'lt-s',i:'lt-i'}[type]||'lt-i';
   const lbl={a:'&#9888; Alerta',r:'&#9679; Leitura',s:'&#9208; Parada',i:'&#9675; Info'}[type]||'&#9675; Info';
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'&#8212;'}</td><td>Clich&#234; ${clicheN}</td><td>${p2m(Math.abs(totalPulses)).toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
+  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'—'}</td><td>Clichê ${clicheN}</td><td>${p2m(Math.abs(totalPulses)).toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
   tbody.prepend(tr);
   if(tbody.rows.length>60) tbody.deleteRow(tbody.rows.length-1);
 }
@@ -824,14 +1191,16 @@ function toggleConfig(){ const p=document.getElementById('cfgPanel'); p.style.di
 function applyConfig(){
   cfg.ip=document.getElementById('cfgIp').value.trim();
   cfg.port=parseInt(document.getElementById('cfgPort').value)||80;
+  cfg.wsPort=parseInt(document.getElementById('cfgWsPort').value)||81;
   cfg.diam=parseFloat(document.getElementById('cfgDiam').value)||100;
   cfg.ppr=parseInt(document.getElementById('cfgPpr').value)||360;
   cfg.timeout=parseInt(document.getElementById('cfgTimeout').value)||60;
+  cfg.adminPass=document.getElementById('cfgAdminPass').value||'1234';
   cfg.sbUrl=document.getElementById('cfgSbUrl').value.trim();
   cfg.sbKey=document.getElementById('cfgSbKey').value.trim();
   localStorage.setItem('enc_cfg',JSON.stringify(cfg));
   document.getElementById('cfgPanel').style.display='none';
-  initSb(); log('i',`Config: IP=${cfg.ip} &#216;=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
+  initSb(); log('i',`Config: IP=${cfg.ip} Ø=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
 }
 function resetCounter(){
   totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0;
@@ -841,9 +1210,11 @@ function closeM(id){ document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('show'); }));
 
 /* ══ FIRMWARE ══ */
-const FW=`// ESP32 – Encoder Incremental PNP 360ppr
-// Canal A → GPIO 18  |  Canal B → GPIO 19  |  5V / GND
-// WebSocket: ws://<IP>/ws  |  HTTP: http://<IP>/data
+const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitais
+// Encoder A → GPIO 18  |  Canal B → GPIO 19  |  5V / GND
+// DIN1 (Produzindo) → GPIO 34  |  DIN2 (Setup) → GPIO 35  |  DIN3 (Falha) → GPIO 36
+// DOUT1 (Supervisor) → GPIO 25  |  DOUT2 (Geral) → GPIO 26
+// HTTP: http://<IP>/data  |  WebSocket: ws://<IP>:81/ws
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -853,14 +1224,22 @@ const FW=`// ESP32 – Encoder Incremental PNP 360ppr
 
 const char* SSID     = "SUA_REDE";
 const char* PASSWORD = "SUA_SENHA";
+
 #define PIN_A  18
 #define PIN_B  19
+#define DIN1   34   // input-only, sem pull-up interno
+#define DIN2   35
+#define DIN3   36
+#define DOUT1  25
+#define DOUT2  26
 
 volatile long pulseCount = 0;
 volatile int  direction  = 1;
+bool dout1State = false;
+bool dout2State = false;
 
 WebServer        server(80);
-WebSocketsServer wsServer(80);
+WebSocketsServer wsServer(81);
 
 void IRAM_ATTR onEncoderA() {
   bool a = digitalRead(PIN_A);
@@ -869,42 +1248,73 @@ void IRAM_ATTR onEncoderA() {
   pulseCount += direction;
 }
 
+void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+  if (type == WStype_TEXT) {
+    StaticJsonDocument<128> cmd;
+    if (deserializeJson(cmd, payload, length) == DeserializationError::Ok) {
+      const char* c = cmd["cmd"];
+      if (c && strcmp(c, "setout") == 0) {
+        int pin = cmd["pin"] | 0;
+        int val = cmd["val"] | 0;
+        if (pin == 1) { dout1State = val; digitalWrite(DOUT1, val ? HIGH : LOW); }
+        if (pin == 2) { dout2State = val; digitalWrite(DOUT2, val ? HIGH : LOW); }
+      }
+    }
+  }
+}
+
+String buildJson() {
+  StaticJsonDocument<256> doc;
+  doc["pulses"]    = pulseCount;
+  doc["direction"] = direction;
+  doc["din1"]      = digitalRead(DIN1);
+  doc["din2"]      = digitalRead(DIN2);
+  doc["din3"]      = digitalRead(DIN3);
+  doc["dout1"]     = dout1State ? 1 : 0;
+  doc["dout2"]     = dout2State ? 1 : 0;
+  doc["timestamp"] = millis();
+  String out; serializeJson(doc, out);
+  return out;
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(PIN_A, INPUT_PULLUP);
   pinMode(PIN_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
+  pinMode(DIN1, INPUT);
+  pinMode(DIN2, INPUT);
+  pinMode(DIN3, INPUT);
+  pinMode(DOUT1, OUTPUT); digitalWrite(DOUT1, LOW);
+  pinMode(DOUT2, OUTPUT); digitalWrite(DOUT2, LOW);
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
   Serial.println("\\nIP: " + WiFi.localIP().toString());
   server.on("/data", HTTP_GET, []() {
-    StaticJsonDocument<128> doc;
-    doc["pulses"] = pulseCount; doc["direction"] = direction; doc["timestamp"] = millis();
-    String out; serializeJson(doc, out);
     server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "application/json", out);
+    server.send(200, "application/json", buildJson());
   });
-  server.begin(); wsServer.begin();
-  wsServer.onEvent([](uint8_t, WStype_t, uint8_t*, size_t) {});
+  server.begin();
+  wsServer.begin();
+  wsServer.onEvent(onWsEvent);
+  Serial.println("HTTP :80  WS :81");
 }
 
 unsigned long lastBcast = 0;
 void loop() {
-  server.handleClient(); wsServer.loop();
+  server.handleClient();
+  wsServer.loop();
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
-    StaticJsonDocument<128> doc;
-    doc["pulses"] = pulseCount; doc["direction"] = direction; doc["timestamp"] = millis();
-    String msg; serializeJson(doc, msg);
-    wsServer.broadcastTXT(msg);
+    wsServer.broadcastTXT(buildJson());
   }
 }`;
 function openFw(){ document.getElementById('fwCode').textContent=FW; document.getElementById('mFw').classList.add('show'); }
 function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document.querySelector('#mFw .btn-sky'); b.textContent='&#10003; Copiado!'; setTimeout(()=>{ b.textContent='&#128203; Copiar'; },2000); }); }
 
 /* ══ INIT ══ */
-tickClock(); updateVU(); tickEff();
-log('i','Dashboard iniciado &middot; aguardando conex&#227;o');
+tickClock(); updateVU(); tickEff(); updateDIO();
+log('i','Dashboard iniciado · aguardando conexão');
 resetIdle();
 </script>
 </body>
