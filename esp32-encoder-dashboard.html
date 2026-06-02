@@ -3,847 +3,847 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Encoder Incremental · ESP32</title>
+<title>Dashboard Encoder · ESP32 · Produção</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
-  :root {
-    --bg:#0e0e0e; --bg2:#161616; --bg3:#1e1e1e; --bg4:#262626;
-    --border:#2e2e2e; --text:#f2f2f2; --muted:#888;
-    --sky:#35c8ff; --ok:#4ade80; --fail:#ff3577;
-    --gold:#ffd166; --orange:#ff6b35; --accent:#35c8ff;
-    --warn:#f59e0b; --danger:#ef4444;
-    --radius:12px; --radius-sm:8px; --transition:.2s ease;
-  }
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
+:root{
+  --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#262626;
+  --border:#2e2e2e;--text:#f2f2f2;--muted:#888;
+  --sky:#35c8ff;--ok:#4ade80;--gold:#ffd166;--orange:#ff6b35;
+  --warn:#f59e0b;--danger:#ef4444;
+  --radius:12px;--radius-sm:8px;--tr:.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
 
-  /* ── HEADER ── */
-  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,48px);position:sticky;top:0;z-index:100;}
-  .header-inner{max-width:1400px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
-  .header-left{display:flex;align-items:center;gap:14px;}
-  .header-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.8vw,15px);white-space:nowrap;}
-  .header-title span{color:var(--sky);}
-  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
-  .chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
-  .chip-warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
-  .chip-fail{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
-  .chip-off{color:var(--muted);border-color:var(--border);background:var(--bg3);}
-  .dot{width:7px;height:7px;border-radius:50%;}
-  .dot-ok{background:var(--ok);box-shadow:0 0 6px var(--ok);}
-  .dot-warn{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:blink 1s infinite;}
-  .dot-fail{background:var(--danger);box-shadow:0 0 6px var(--danger);animation:blink .5s infinite;}
-  .dot-off{background:var(--muted);}
-  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+/* HEADER */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
+.hdr-in{max-width:1440px;margin:0 auto;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(11px,1.5vw,14px);}
+.hdr-title span{color:var(--sky);}
+.tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
+  padding:2px 8px;background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.2);border-radius:4px;color:var(--sky);}
 
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);
-    font-family:'Archivo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);border:1px solid;}
-  .btn-ghost{background:transparent;border-color:var(--border);color:var(--muted);}
-  .btn-ghost:hover{border-color:var(--sky);color:var(--sky);}
-  .btn-primary{background:var(--sky);border-color:var(--sky);color:#000;font-weight:700;}
-  .btn-primary:hover{filter:brightness(1.1);}
-  .btn-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--danger);}
-  .btn-danger:hover{background:rgba(239,68,68,.2);}
-  .btn-demo{background:rgba(255,166,0,.1);border-color:rgba(255,166,0,.3);color:var(--gold);}
-  .btn-demo:hover{background:rgba(255,166,0,.2);}
+/* INFO STRIP */
+.strip{background:var(--bg3);border-bottom:1px solid var(--border);padding:8px clamp(16px,4vw,44px);}
+.strip-in{max-width:1440px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ifield{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+.ilbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+.ival{font-family:'Fira Code',monospace;font-size:13px;font-weight:500;}
+.idiv{width:1px;height:32px;background:var(--border);flex-shrink:0;}
+.iinput{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:5px 9px;outline:none;width:140px;transition:var(--tr);}
+.iinput:focus{border-color:var(--sky);}
+.iselect{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-size:12px;padding:5px 9px;outline:none;cursor:pointer;transition:var(--tr);}
+.iselect:focus{border-color:var(--sky);}
+.timer{font-family:'Archivo Black',sans-serif;font-size:20px;letter-spacing:.04em;}
 
-  /* ── BODY ── */
-  .body{max-width:1400px;margin:0 auto;padding:32px clamp(16px,4vw,48px);}
+/* CHIPS & BUTTONS */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
+.chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
+.chip-warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
+.chip-fail{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
+.chip-off{color:var(--muted);border-color:var(--border);background:var(--bg3);}
+.dot{width:6px;height:6px;border-radius:50%;}
+.dot-ok{background:var(--ok);box-shadow:0 0 5px var(--ok);}
+.dot-warn{background:var(--warn);box-shadow:0 0 5px var(--warn);animation:bl 1s infinite;}
+.dot-fail{background:var(--danger);box-shadow:0 0 5px var(--danger);animation:bl .5s infinite;}
+.dot-off{background:var(--muted);}
+@keyframes bl{0%,100%{opacity:1;}50%{opacity:.25;}}
 
-  /* ── ALERT BANNER ── */
-  .alert-banner{display:none;align-items:center;gap:14px;padding:16px 22px;
-    background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);
-    border-radius:var(--radius);margin-bottom:24px;animation:fadeUp .4s ease;}
-  .alert-banner.show{display:flex;}
-  .alert-icon{font-size:28px;flex-shrink:0;}
-  .alert-text{flex:1;}
-  .alert-text strong{color:var(--danger);font-family:'Archivo Black',sans-serif;font-size:16px;display:block;}
-  .alert-text small{color:var(--muted);font-size:13px;}
-  .alert-actions{display:flex;gap:10px;flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);
+  font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr);border:1px solid;}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--sky);color:var(--sky);}
+.btn-sky{background:var(--sky);border-color:var(--sky);color:#000;font-weight:700;}
+.btn-sky:hover{filter:brightness(1.1);}
+.btn-ok{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.35);color:var(--ok);}
+.btn-ok:hover{background:rgba(74,222,128,.18);}
+.btn-danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:var(--danger);}
+.btn-danger:hover{background:rgba(239,68,68,.18);}
+.btn-gold{background:rgba(255,166,0,.08);border-color:rgba(255,166,0,.28);color:var(--gold);}
+.btn-gold:hover{background:rgba(255,166,0,.16);}
 
-  /* ── KPI CARDS ── */
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
-  .kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;position:relative;overflow:hidden;transition:border-color var(--transition);}
-  .kpi-card.active{border-color:rgba(53,200,255,.3);}
-  .kpi-card.warn-card{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.04);}
-  .kpi-card.danger-card{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.04);}
-  .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:10px;}
-  .kpi-value{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,4vw,40px);line-height:1;margin-bottom:6px;}
-  .kpi-unit{font-family:'Archivo',sans-serif;font-size:14px;font-weight:600;color:var(--muted);margin-left:4px;}
-  .kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;}
-  .kpi-glow{position:absolute;bottom:-30px;right:-30px;width:120px;height:120px;border-radius:50%;opacity:.07;pointer-events:none;}
-  .kpi-card:nth-child(1) .kpi-glow{background:var(--sky);}
-  .kpi-card:nth-child(2) .kpi-glow{background:var(--ok);}
-  .kpi-card:nth-child(3) .kpi-glow{background:var(--gold);}
-  .kpi-card:nth-child(4) .kpi-glow{background:var(--orange);}
-  .kpi-card:nth-child(5) .kpi-glow{background:var(--fail);}
+/* BODY */
+.body{max-width:1440px;margin:0 auto;padding:24px clamp(16px,4vw,44px);}
 
-  /* ── DIRECTION INDICATOR ── */
-  .direction-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;}
-  .dir-fwd{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:var(--ok);}
-  .dir-rev{background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.3);color:var(--orange);}
-  .dir-stop{background:rgba(136,136,136,.12);border:1px solid rgba(136,136,136,.3);color:var(--muted);}
+/* BANNERS */
+.banner{display:none;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:var(--radius);margin-bottom:18px;animation:fu .3s ease;}
+.banner.show{display:flex;}
+.banner-stop{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);}
+.banner-alert{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);}
+.bico{font-size:22px;flex-shrink:0;margin-top:2px;}
+.btxt{flex:1;}
+.btxt strong{display:block;font-family:'Archivo Black',sans-serif;font-size:14px;}
+.btxt small{color:var(--muted);font-size:12px;}
+.bact{display:flex;gap:7px;flex-shrink:0;flex-wrap:wrap;align-items:flex-start;}
+.stop-btns{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+.sbtn{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);transition:var(--tr);}
+.sbtn:hover,.sbtn.sel{border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.1);}
 
-  /* ── GAUGE ── */
-  .gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0;}
-  canvas.gauge{display:block;}
+/* CONFIG PANEL */
+.cfg-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:22px;}
+.cfg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;cursor:pointer;user-select:none;}
+.cfg-head h3{font-family:'Archivo Black',sans-serif;font-size:13px;display:flex;align-items:center;gap:9px;}
+.cfg-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;}
+.fgrp{display:flex;flex-direction:column;gap:5px;}
+.fgrp label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.fctl{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Fira Code',monospace;font-size:13px;padding:9px 12px;outline:none;width:100%;transition:var(--tr);}
+.fctl:focus{border-color:var(--sky);box-shadow:0 0 0 2px rgba(53,200,255,.09);}
+.fhint{font-size:10px;color:var(--muted);}
+.cfg-hr{grid-column:1/-1;border:0;border-top:1px solid var(--border);}
 
-  /* ── CHARTS GRID ── */
-  .charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;}
-  @media(max-width:900px){.charts-grid{grid-template-columns:1fr;}}
-  .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
-  .chart-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .chart-card-head h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
-  .chart-wrap{position:relative;height:220px;}
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px;}
+.kcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:border-color var(--tr);}
+.klbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
+.kval{font-family:'Archivo Black',sans-serif;font-size:clamp(24px,3vw,34px);line-height:1;margin-bottom:4px;}
+.kunit{font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;color:var(--muted);margin-left:2px;}
+.ksub{font-size:11px;color:var(--muted);}
+.kglow{position:absolute;bottom:-28px;right:-28px;width:90px;height:90px;border-radius:50%;opacity:.07;pointer-events:none;}
+.dir-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.dir-fwd{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.28);color:var(--ok);}
+.dir-rev{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.28);color:var(--orange);}
+.dir-stop{background:rgba(136,136,136,.1);border:1px solid rgba(136,136,136,.28);color:var(--muted);}
 
-  /* ── CONFIG PANEL ── */
-  .config-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px;}
-  .config-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;cursor:pointer;user-select:none;}
-  .config-panel-head h3{font-family:'Archivo Black',sans-serif;font-size:14px;display:flex;align-items:center;gap:10px;}
-  .config-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
-  .form-group{display:flex;flex-direction:column;gap:6px;}
-  .form-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
-  .form-control{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
-    color:var(--text);font-family:'Fira Code',monospace;font-size:14px;padding:10px 14px;outline:none;width:100%;transition:var(--transition);}
-  .form-control:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(53,200,255,.1);}
-  .form-hint{font-size:11px;color:var(--muted);}
+/* TWO-COL */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+@media(max-width:860px){.twocol{grid-template-columns:1fr;}}
 
-  /* ── LOG TABLE ── */
-  .log-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;}
-  .log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .log-head h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
-  .log-table{width:100%;border-collapse:collapse;font-size:13px;}
-  .log-table th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);}
-  .log-table td{padding:8px 12px;border-bottom:1px solid rgba(46,46,46,.5);font-family:'Fira Code',monospace;font-size:12px;}
-  .log-table tr:last-child td{border-bottom:none;}
-  .log-table tr:hover td{background:rgba(255,255,255,.02);}
-  .log-type-reading{color:var(--sky);}
-  .log-type-alert{color:var(--danger);}
-  .log-type-info{color:var(--muted);}
+/* VIDA ÚTIL */
+.vu-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.vu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.vu-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+.vu-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;
+  background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.25);color:var(--sky);}
+.vu-inner{display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
+.vu-donut{position:relative;width:148px;height:148px;flex-shrink:0;}
+.vu-donut-ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.vu-dpct{font-family:'Archivo Black',sans-serif;font-size:26px;line-height:1;}
+.vu-dlbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.vu-right{flex:1;min-width:150px;}
+.vu-bar-w{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:12px;}
+.vu-bar{height:100%;border-radius:3px;transition:width .5s,background .4s;}
+.vu-rows{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.vu-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(46,46,46,.4);}
+.vu-row:last-child{border-bottom:none;}
+.vu-row b{color:var(--text);font-weight:600;}
+.vu-irow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.vu-ilbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap;}
+.vu-inp{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:6px 9px;outline:none;width:110px;transition:var(--tr);}
+.vu-inp:focus{border-color:var(--sky);}
 
-  /* ── SUPERVISOR MODAL ── */
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:24px;}
-  .modal-overlay.show{display:flex;animation:fadeIn .2s ease;}
-  .modal{background:var(--bg2);border:1px solid rgba(239,68,68,.4);border-radius:20px;
-    max-width:480px;width:100%;padding:clamp(24px,5vw,40px);box-shadow:0 32px 80px rgba(0,0,0,.7);animation:fadeUp .3s ease;}
-  .modal-icon{width:60px;height:60px;background:rgba(239,68,68,.15);border-radius:16px;
-    display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:20px;}
-  .modal h2{font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:8px;}
-  .modal p{color:var(--muted);font-size:14px;margin-bottom:24px;line-height:1.6;}
-  .modal-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:24px;}
-  .modal-info-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
-  .modal-info-row span:first-child{color:var(--muted);}
-  .modal-info-row span:last-child{font-family:'Fira Code',monospace;font-weight:500;}
-  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
-  .supervisor-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
-  .supervisor-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
-    background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);}
-  .supervisor-item-left{display:flex;align-items:center;gap:10px;}
-  .supervisor-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;font-family:'Archivo Black',sans-serif;}
-  .supervisor-info strong{display:block;font-size:13px;}
-  .supervisor-info small{font-size:11px;color:var(--muted);}
-  .btn-call{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;
-    background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:var(--transition);border:none;cursor:pointer;}
-  .btn-call:hover{filter:brightness(1.1);transform:translateY(-1px);}
+/* EFFICIENCY */
+.eff-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.eff-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px;}
+.eff-inner{display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
+.eff-donut{position:relative;width:164px;height:164px;flex-shrink:0;}
+.eff-donut-ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.eff-dpct{font-family:'Archivo Black',sans-serif;font-size:24px;line-height:1;color:var(--ok);}
+.eff-dsub{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.eff-right{flex:1;min-width:150px;display:flex;flex-direction:column;gap:9px;}
+.eff-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+.eff-row-left{display:flex;align-items:center;gap:7px;}
+.eff-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.eff-pct{font-family:'Archivo Black',sans-serif;font-size:14px;}
+.eff-sep{border:0;border-top:1px solid var(--border);}
+.eff-time{font-family:'Fira Code',monospace;font-size:12px;}
 
-  /* ── FIRMWARE MODAL ── */
-  .fw-modal{max-width:740px;}
-  .fw-modal pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;overflow:auto;max-height:400px;font-family:'Fira Code',monospace;font-size:11px;line-height:1.7;color:#ccc;margin-bottom:20px;}
-  .fw-modal .kw{color:#c792ea;} .fw-modal .fn{color:#82aaff;} .fw-modal .str{color:#c3e88d;} .fw-modal .cmt{color:#546e7a;font-style:italic;} .fw-modal .num{color:#f78c6c;}
+/* LOG */
+.log-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+.log-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.log-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+.ltbl{width:100%;border-collapse:collapse;}
+.ltbl th{text-align:left;padding:6px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+.ltbl td{padding:6px 10px;border-bottom:1px solid rgba(46,46,46,.35);font-family:'Fira Code',monospace;font-size:11px;}
+.ltbl tr:last-child td{border-bottom:none;}
+.ltbl tr:hover td{background:rgba(255,255,255,.015);}
+.lt-r{color:var(--sky);}.lt-a{color:var(--danger);}.lt-s{color:var(--warn);}.lt-i{color:var(--muted);}
 
-  /* ── MISC ── */
-  @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-  .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
-    color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
-  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
-  .pulse-ring{animation:pulseRing 2s ease-in-out infinite;}
-  @keyframes pulseRing{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.05);opacity:.7;}}
-  .footer{text-align:center;padding:32px 0 48px;font-size:12px;color:var(--muted);}
-  .tag-esp{display:inline-flex;align-items:center;gap:5px;font-family:'Fira Code',monospace;font-size:11px;
-    padding:2px 8px;background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.2);border-radius:4px;color:var(--sky);}
+/* MODAL */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.moverlay.show{display:flex;animation:fi .2s ease;}
+.mdl{background:var(--bg2);border:1px solid rgba(239,68,68,.35);border-radius:20px;
+  max-width:460px;width:100%;padding:clamp(22px,5vw,38px);box-shadow:0 28px 70px rgba(0,0,0,.7);animation:fu .3s ease;}
+.mdl-icon{width:52px;height:52px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;}
+.mdl h2{font-family:'Archivo Black',sans-serif;font-size:17px;margin-bottom:7px;}
+.mdl p{color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.6;}
+.mdl-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:18px;}
+.mdl-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;}
+.mdl-row span:first-child{color:var(--muted);}
+.mdl-row span:last-child{font-family:'Fira Code',monospace;}
+.mdl-acts{display:flex;gap:8px;justify-content:flex-end;}
+.sv-list{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.sv-item{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.sv-left{display:flex;align-items:center;gap:9px;}
+.sv-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Archivo Black',sans-serif;}
+.sv-info strong{display:block;font-size:12px;}
+.sv-info small{font-size:10px;color:var(--muted);}
+.btn-wa{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;
+  background:#25D366;color:#fff;font-size:11px;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:var(--tr);}
+.btn-wa:hover{filter:brightness(1.1);}
+.fw-mdl{max-width:680px;border-color:rgba(53,200,255,.25);}
+.fw-mdl pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:13px;overflow:auto;max-height:360px;font-family:'Fira Code',monospace;font-size:10px;line-height:1.7;color:#ccc;margin-bottom:16px;}
 
-  /* ── VIDA ÚTIL ── */
-  .vu-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;
-    margin-bottom:24px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;}
-  @media(max-width:700px){.vu-card{grid-template-columns:1fr;}}
-  .vu-left{display:flex;flex-direction:column;gap:16px;}
-  .vu-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
-  .vu-pct-row{display:flex;align-items:baseline;gap:8px;}
-  .vu-pct{font-family:'Archivo Black',sans-serif;font-size:52px;line-height:1;transition:color .4s;}
-  .vu-pct-sym{font-size:24px;font-weight:700;color:var(--muted);}
-  .vu-detail{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
-  .vu-detail span{display:flex;justify-content:space-between;gap:24px;}
-  .vu-detail b{color:var(--text);font-weight:600;}
-  .vu-bar-wrap{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;}
-  .vu-bar{height:100%;border-radius:4px;transition:width .6s ease, background .4s;}
-  .vu-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .vu-input-row label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap;}
-  .vu-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
-    color:var(--text);font-family:'Fira Code',monospace;font-size:14px;padding:8px 12px;outline:none;width:140px;transition:var(--transition);}
-  .vu-input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(53,200,255,.1);}
-  .vu-right{display:flex;flex-direction:column;align-items:center;gap:8px;}
-  .vu-donut-wrap{position:relative;width:180px;height:180px;flex-shrink:0;}
-  .vu-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
-  .vu-donut-pct{font-family:'Archivo Black',sans-serif;font-size:30px;line-height:1;transition:color .4s;}
-  .vu-donut-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
-  .vu-legend{display:flex;gap:16px;font-size:11px;color:var(--muted);}
-  .vu-legend span{display:flex;align-items:center;gap:5px;}
-  .vu-legend-dot{width:8px;height:8px;border-radius:50%;}
+/* MISC */
+@keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fi{from{opacity:0;}to{opacity:1;}}
+.slbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:13px;display:flex;align-items:center;gap:9px;}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border);}
+.footer{text-align:center;padding:24px 0 40px;font-size:11px;color:var(--muted);}
 </style>
 </head>
 <body>
 
-<!-- ═══════════ HEADER ═══════════ -->
-<header class="header">
-  <div class="header-inner">
-    <div class="header-left">
-      <span class="tag-esp">&#9654; ESP32 DevKit</span>
-      <span class="header-title">Dashboard <span>Encoder Incremental</span> · PNP 360ppr</span>
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-in">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="tag">&#9654; ESP32</span>
+      <span class="hdr-title">Dashboard <span>Encoder</span> &middot; PNP 360ppr</span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
       <span id="connChip" class="chip chip-off"><span class="dot dot-off" id="connDot"></span><span id="connLabel">Desconectado</span></span>
-      <button class="btn btn-ghost" onclick="toggleConfig()">&#9881; Configurar</button>
-      <button class="btn btn-demo" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
-      <button class="btn btn-ghost" onclick="openFirmware()">&#60;/&#62; Firmware</button>
-      <button class="btn btn-danger" id="resetBtn" onclick="resetCounter()">&#8635; Zerar</button>
+      <button class="btn btn-ghost" onclick="toggleConfig()">&#9881; Config</button>
+      <button class="btn btn-gold" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
+      <button class="btn btn-ghost" onclick="openFw()">&#60;/&#62; FW</button>
+      <button class="btn btn-danger" onclick="resetCounter()">&#8635; Zerar</button>
     </div>
   </div>
 </header>
 
-<!-- ═══════════ BODY ═══════════ -->
+<!-- INFO STRIP -->
+<div class="strip">
+  <div class="strip-in">
+    <div class="ifield">
+      <span class="ilbl">Data</span>
+      <span class="ival" id="clockDate">--/--/----</span>
+    </div>
+    <div class="ifield">
+      <span class="ilbl">Hora</span>
+      <span class="ival" id="clockTime">--:--:--</span>
+    </div>
+    <div class="idiv"></div>
+    <div class="ifield">
+      <span class="ilbl">N&#186; Ordem de Produ&#231;&#227;o</span>
+      <div style="display:flex;gap:5px;align-items:center;">
+        <input class="iinput" id="opInput" placeholder="ex: OP-2024-001" maxlength="30">
+        <button class="btn btn-ok" id="opBtn" onclick="toggleOP()" style="padding:5px 10px;font-size:11px;">&#9654; Iniciar</button>
+      </div>
+    </div>
+    <div class="idiv"></div>
+    <div class="ifield">
+      <span class="ilbl">Clich&#234;</span>
+      <select class="iselect" id="clicheSelect" onchange="onClicheChange()">
+        <option value="1">Clich&#234; 1</option><option value="2">Clich&#234; 2</option>
+        <option value="3">Clich&#234; 3</option><option value="4">Clich&#234; 4</option>
+        <option value="5">Clich&#234; 5</option><option value="6">Clich&#234; 6</option>
+        <option value="7">Clich&#234; 7</option><option value="8">Clich&#234; 8</option>
+        <option value="9">Clich&#234; 9</option><option value="10">Clich&#234; 10</option>
+      </select>
+    </div>
+    <div class="idiv"></div>
+    <div class="ifield">
+      <span class="ilbl">Tipo de Parada</span>
+      <select class="iselect" id="stopSel" onchange="onStopSelChange()">
+        <option value="">&#8212; Sem parada &#8212;</option>
+        <option value="Manuten&#231;&#227;o">Manuten&#231;&#227;o</option>
+        <option value="Setup">Setup</option>
+        <option value="Falta de Material">Falta de Material</option>
+        <option value="Refei&#231;&#227;o">Refei&#231;&#227;o</option>
+        <option value="Reuni&#227;o">Reuni&#227;o</option>
+        <option value="Falta M&#227;o de Obra">Falta M&#227;o de Obra</option>
+      </select>
+    </div>
+    <div class="idiv"></div>
+    <div class="ifield">
+      <span class="ilbl">&#9201; Tempo de Produ&#231;&#227;o</span>
+      <span class="timer" id="prodTimer" style="color:var(--muted)">00:00:00</span>
+    </div>
+    <div class="ifield">
+      <span class="ilbl">&#9208; Tempo de Parada</span>
+      <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
 <main class="body">
 
-  <!-- ALERT BANNER -->
-  <div class="alert-banner" id="alertBanner">
-    <div class="alert-icon">&#9888;</div>
-    <div class="alert-text">
-      <strong>ALERTA: Encoder parado há mais de 1 minuto!</strong>
-      <small id="alertSubtext">Última leitura registrada às --:--:-- · Posição: -- m</small>
+  <!-- STOP BANNER -->
+  <div class="banner banner-stop" id="stopBanner">
+    <div class="bico">&#9208;</div>
+    <div class="btxt">
+      <strong style="color:var(--warn)">Encoder parado &#8212; Selecione o tipo de parada</strong>
+      <div class="stop-btns">
+        <button class="sbtn" onclick="selectStop('Manuten&#231;&#227;o')">&#128295; Manuten&#231;&#227;o</button>
+        <button class="sbtn" onclick="selectStop('Setup')">&#9881; Setup</button>
+        <button class="sbtn" onclick="selectStop('Falta de Material')">&#128230; Falta de Material</button>
+        <button class="sbtn" onclick="selectStop('Refei&#231;&#227;o')">&#127374; Refei&#231;&#227;o</button>
+        <button class="sbtn" onclick="selectStop('Reuni&#227;o')">&#128172; Reuni&#227;o</button>
+        <button class="sbtn" onclick="selectStop('Falta M&#227;o de Obra')">&#128119; Falta M&#227;o de Obra</button>
+      </div>
     </div>
-    <div class="alert-actions">
-      <button class="btn btn-danger" onclick="openSupervisorModal()">&#128222; Chamar Supervisor</button>
-      <button class="btn btn-ghost" onclick="dismissAlert()">Dispensar</button>
+    <div class="bact">
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="document.getElementById('stopBanner').classList.remove('show')">Ignorar</button>
+    </div>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div class="banner banner-alert" id="alertBanner">
+    <div class="bico">&#9888;</div>
+    <div class="btxt">
+      <strong style="color:var(--danger)">ALERTA: Encoder parado h&#225; mais de 1 minuto!</strong>
+      <small id="alertSub">&#218;ltima leitura: -- &middot; Posi&#231;&#227;o: -- m</small>
+    </div>
+    <div class="bact">
+      <button class="btn btn-danger" style="padding:5px 10px;font-size:11px;" onclick="openSupervisor()">&#128222; Supervisor</button>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="dismissAlert()">Dispensar</button>
     </div>
   </div>
 
   <!-- CONFIG PANEL -->
-  <div class="config-panel" id="configPanel" style="display:none;">
-    <div class="config-panel-head" onclick="toggleConfig()">
-      <h3>&#9881; Configuração da Conexão &amp; Encoder</h3>
-      <span style="color:var(--muted);font-size:18px;">&#8963;</span>
+  <div class="cfg-panel" id="cfgPanel" style="display:none;">
+    <div class="cfg-head" onclick="toggleConfig()">
+      <h3>&#9881; Configura&#231;&#245;es &#8212; ESP32 &amp; Encoder &amp; Supabase</h3>
+      <span style="color:var(--muted);">&#8963;</span>
     </div>
-    <div class="config-body">
-      <div class="form-group">
-        <label>IP do ESP32</label>
-        <input class="form-control" id="cfgIp" value="192.168.1.100" placeholder="ex: 192.168.1.100">
-        <span class="form-hint">WebSocket: ws://IP/ws · HTTP: http://IP/data</span>
-      </div>
-      <div class="form-group">
-        <label>Porta WebSocket</label>
-        <input class="form-control" id="cfgPort" value="80" placeholder="80">
-      </div>
-      <div class="form-group">
-        <label>Diâmetro da Roda / Polia (mm)</label>
-        <input class="form-control" id="cfgDiameter" value="100" placeholder="100">
-        <span class="form-hint">Circunferência = π × d → metros por pulso</span>
-      </div>
-      <div class="form-group">
-        <label>Pulsos por Revolução</label>
-        <input class="form-control" id="cfgPpr" value="360" placeholder="360">
-      </div>
-      <div class="form-group">
-        <label>Timeout de Alerta (s)</label>
-        <input class="form-control" id="cfgTimeout" value="60" placeholder="60">
-        <span class="form-hint">Dispara alerta se sem leitura por este tempo</span>
-      </div>
-      <div class="form-group" style="align-self:end;">
-        <button class="btn btn-primary" style="height:42px;" onclick="applyConfig()">&#10003; Aplicar e Conectar</button>
+    <div class="cfg-body">
+      <div class="fgrp"><label>IP do ESP32</label><input class="fctl" id="cfgIp" value="192.168.1.100"><span class="fhint">ws://IP/ws &middot; http://IP/data</span></div>
+      <div class="fgrp"><label>Porta</label><input class="fctl" id="cfgPort" value="80"></div>
+      <div class="fgrp"><label>Di&#226;metro da Polia (mm)</label><input class="fctl" id="cfgDiam" value="100"><span class="fhint">&#960; &times; d &#247; PPR = m/pulso</span></div>
+      <div class="fgrp"><label>PPR (pulsos/rev)</label><input class="fctl" id="cfgPpr" value="360"></div>
+      <div class="fgrp"><label>Timeout Alerta (s)</label><input class="fctl" id="cfgTimeout" value="60"></div>
+      <hr class="cfg-hr">
+      <div class="fgrp"><label>Supabase URL</label><input class="fctl" id="cfgSbUrl" placeholder="https://xxx.supabase.co"><span class="fhint">Painel Supabase &rarr; Settings &rarr; API</span></div>
+      <div class="fgrp"><label>Supabase Anon Key</label><input class="fctl" id="cfgSbKey" placeholder="eyJhbGci..."><span class="fhint">Chave p&#250;blica anon (segura no browser)</span></div>
+      <div class="fgrp" style="align-self:end;">
+        <button class="btn btn-sky" style="height:40px;" onclick="applyConfig()">&#10003; Aplicar e Conectar</button>
       </div>
     </div>
   </div>
 
-  <!-- KPI CARDS -->
-  <div class="section-label">Leituras em Tempo Real</div>
-  <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi-card" id="kpiPos">
-      <div class="kpi-label">Posição Total</div>
-      <div class="kpi-value c-sky" id="valPos">0.000<span class="kpi-unit">m</span></div>
-      <div class="kpi-sub" id="valPulses">0 pulsos acumulados</div>
-      <div class="kpi-glow"></div>
+  <!-- KPIs -->
+  <div class="slbl">Leituras em Tempo Real</div>
+  <div class="kpi-grid">
+    <div class="kcard">
+      <div class="klbl">Posi&#231;&#227;o Total</div>
+      <div class="kval" id="valPos" style="color:var(--sky)">0.000<span class="kunit">m</span></div>
+      <div class="ksub" id="valPulses">0 pulsos</div>
+      <div class="kglow" style="background:var(--sky)"></div>
     </div>
-    <div class="kpi-card" id="kpiSpeed">
-      <div class="kpi-label">Velocidade</div>
-      <div class="kpi-value" id="valSpeed" style="color:var(--ok)">0.000<span class="kpi-unit">m/s</span></div>
-      <div class="kpi-sub" id="valSpeedMin">0.00 m/min</div>
-      <div class="kpi-glow"></div>
+    <div class="kcard">
+      <div class="klbl">Velocidade</div>
+      <div class="kval" id="valSpd" style="color:var(--ok)">0.000<span class="kunit">m/s</span></div>
+      <div class="ksub" id="valSpdMin">0.00 m/min</div>
+      <div class="kglow" style="background:var(--ok)"></div>
     </div>
-    <div class="kpi-card" id="kpiRpm">
-      <div class="kpi-label">Rotação</div>
-      <div class="kpi-value" id="valRpm" style="color:var(--gold)">0<span class="kpi-unit">RPM</span></div>
-      <div class="kpi-sub" id="valFreq">0.00 Hz</div>
-      <div class="kpi-glow"></div>
+    <div class="kcard">
+      <div class="klbl">Rota&#231;&#227;o</div>
+      <div class="kval" id="valRpm" style="color:var(--gold)">0<span class="kunit">RPM</span></div>
+      <div class="ksub" id="valFreq">0.00 Hz</div>
+      <div class="kglow" style="background:var(--gold)"></div>
     </div>
-    <div class="kpi-card" id="kpiDir">
-      <div class="kpi-label">Direção</div>
-      <div class="kpi-value" id="valDir" style="font-size:28px;display:flex;align-items:center;gap:10px;">
-        <span id="dirBadge" class="direction-badge dir-stop">&#8212; Parado</span>
-      </div>
-      <div class="kpi-sub" id="valDirSub">Aguardando movimento</div>
-      <div class="kpi-glow"></div>
+    <div class="kcard">
+      <div class="klbl">Dire&#231;&#227;o</div>
+      <div id="valDir"><span id="dirBadge" class="dir-badge dir-stop">&#8212; Parado</span></div>
+      <div class="ksub" id="valDirSub">Aguardando</div>
+      <div class="kglow" style="background:var(--orange)"></div>
     </div>
-    <div class="kpi-card" id="kpiStatus">
-      <div class="kpi-label">Status do Sinal</div>
-      <div class="kpi-value" id="valStatus" style="font-size:22px;color:var(--muted)">&#9679; Offline</div>
-      <div class="kpi-sub" id="valLastSeen">Última leitura: --</div>
-      <div class="kpi-glow"></div>
+    <div class="kcard">
+      <div class="klbl">Status</div>
+      <div class="kval" id="valSt" style="font-size:16px;color:var(--muted)">&#9679; Offline</div>
+      <div class="ksub" id="valLast">&#218;ltima leitura: --</div>
+      <div class="kglow" style="background:var(--danger)"></div>
     </div>
   </div>
 
-  <!-- VIDA ÚTIL -->
-  <div class="section-label">Vida Útil do Equipamento</div>
-  <div class="vu-card" id="vuCard">
-    <div class="vu-left">
-      <div class="vu-title">Consumo da Vida Útil — Posição Total vs Meta</div>
-      <div class="vu-pct-row">
-        <span class="vu-pct" id="vuPct" style="color:var(--ok)">0</span>
-        <span class="vu-pct-sym">%</span>
+  <!-- VIDA ÚTIL + EFFICIENCY -->
+  <div class="slbl">Vida &#218;til &amp; Efici&#234;ncia</div>
+  <div class="twocol">
+
+    <div class="vu-card">
+      <div class="vu-head">
+        <h4>Consumo da Vida &#218;til</h4>
+        <span class="vu-badge" id="vuBadge">Clich&#234; 1</span>
       </div>
-      <div class="vu-bar-wrap"><div class="vu-bar" id="vuBar" style="width:0%;background:var(--ok);"></div></div>
-      <div class="vu-detail">
-        <span>Posição atual <b id="vuCurrent">0.000 m</b></span>
-        <span>Vida útil configurada <b id="vuTarget">1000.000 m</b></span>
-        <span>Restante <b id="vuRemaining">1000.000 m</b></span>
-      </div>
-      <div class="vu-input-row">
-        <label>Vida Útil (m)</label>
-        <input class="vu-input" id="vuInput" type="number" min="1" step="0.001" value="1000" placeholder="ex: 5000">
-        <button class="btn btn-primary" style="padding:8px 14px;font-size:12px;" onclick="applyVidaUtil()">&#10003; Aplicar</button>
-      </div>
-    </div>
-    <div class="vu-right">
-      <div class="vu-donut-wrap">
-        <canvas id="chartVU"></canvas>
-        <div class="vu-donut-center">
-          <span class="vu-donut-pct" id="vuDonutPct" style="color:var(--ok)">0%</span>
-          <span class="vu-donut-lbl">consumido</span>
+      <div class="vu-inner">
+        <div class="vu-donut">
+          <canvas id="chartVU"></canvas>
+          <div class="vu-donut-ctr">
+            <span class="vu-dpct" id="vuDpct" style="color:var(--ok)">0%</span>
+            <span class="vu-dlbl">usado</span>
+          </div>
+        </div>
+        <div class="vu-right">
+          <div class="vu-bar-w"><div class="vu-bar" id="vuBar" style="width:0%;background:var(--ok)"></div></div>
+          <div class="vu-rows">
+            <div class="vu-row"><span>Consumido</span><b id="vuConsumed">0.000 m</b></div>
+            <div class="vu-row"><span>Vida &#250;til</span><b id="vuTarget">1000.000 m</b></div>
+            <div class="vu-row"><span>Restante</span><b id="vuRem">1000.000 m</b></div>
+          </div>
+          <div class="vu-irow">
+            <span class="vu-ilbl">Vida &#250;til (m)</span>
+            <input class="vu-inp" id="vuInp" type="number" min="1" step="0.001" value="1000">
+            <button class="btn btn-sky" style="padding:5px 10px;font-size:11px;" onclick="applyVU()">&#10003;</button>
+          </div>
         </div>
       </div>
-      <div class="vu-legend">
-        <span><span class="vu-legend-dot" style="background:var(--ok)"></span>0–70%</span>
-        <span><span class="vu-legend-dot" style="background:var(--warn)"></span>70–90%</span>
-        <span><span class="vu-legend-dot" style="background:var(--danger)"></span>&gt;90%</span>
+    </div>
+
+    <div class="eff-card">
+      <div class="eff-head">Efici&#234;ncia &#8212; Meta 8 horas de produ&#231;&#227;o</div>
+      <div class="eff-inner">
+        <div class="eff-donut">
+          <canvas id="chartEff"></canvas>
+          <div class="eff-donut-ctr">
+            <span class="eff-dpct" id="effPct">0%</span>
+            <span class="eff-dsub">produ&#231;&#227;o</span>
+          </div>
+        </div>
+        <div class="eff-right">
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--ok)"></span><span>Produ&#231;&#227;o</span></div>
+            <span class="eff-pct" id="effProdPct" style="color:var(--ok)">0%</span>
+          </div>
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--danger)"></span><span>Parada</span></div>
+            <span class="eff-pct" id="effStopPct" style="color:var(--danger)">0%</span>
+          </div>
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--bg4)"></span><span>Dispon&#237;vel</span></div>
+            <span class="eff-pct" id="effAvPct" style="color:var(--muted)">100%</span>
+          </div>
+          <hr class="eff-sep">
+          <div class="eff-row">
+            <span style="font-size:11px;color:var(--muted);">Disponibilidade</span>
+            <span class="eff-pct" id="effDisp" style="color:var(--sky)">&#8212;</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:1px;">Prod &#247; (Prod + Parada)</div>
+          <hr class="eff-sep">
+          <div class="eff-row">
+            <span style="font-size:11px;color:var(--muted);">Tempo produ&#231;&#227;o</span>
+            <span class="eff-time" id="effProdT" style="color:var(--ok)">00:00:00</span>
+          </div>
+          <div class="eff-row">
+            <span style="font-size:11px;color:var(--muted);">Tempo parada</span>
+            <span class="eff-time" id="effStopT" style="color:var(--danger)">00:00:00</span>
+          </div>
+        </div>
       </div>
     </div>
+
   </div>
 
-  <!-- CHARTS -->
-  <div class="section-label">Histórico</div>
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-card-head">
-        <h4>Velocidade (m/s) — Últimos 60s</h4>
-        <span id="avgSpeed" style="font-size:12px;color:var(--muted);">média: 0.000 m/s</span>
-      </div>
-      <div class="chart-wrap"><canvas id="chartSpeed"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-card-head">
-        <h4>Posição (m) — Acumulada</h4>
-      </div>
-      <div class="chart-wrap"><canvas id="chartPos"></canvas></div>
-    </div>
-  </div>
-
-  <!-- EVENT LOG -->
-  <div class="section-label">Log de Eventos</div>
+  <!-- LOG -->
+  <div class="slbl">Log de Eventos</div>
   <div class="log-card">
     <div class="log-head">
-      <h4>Últimos eventos registrados</h4>
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="clearLog()">Limpar</button>
+      <h4>Eventos registrados</h4>
+      <button class="btn btn-ghost" style="padding:3px 9px;font-size:10px;" onclick="document.getElementById('logBody').innerHTML=''">Limpar</button>
     </div>
     <div style="overflow-x:auto;">
-      <table class="log-table">
-        <thead><tr><th>Hora</th><th>Tipo</th><th>Posição (m)</th><th>Velocidade (m/s)</th><th>Pulsos</th><th>Detalhes</th></tr></thead>
+      <table class="ltbl">
+        <thead><tr><th>Hora</th><th>Tipo</th><th>OP</th><th>Clich&#234;</th><th>Pos (m)</th><th>Vel (m/s)</th><th>Detalhes</th></tr></thead>
         <tbody id="logBody"></tbody>
       </table>
     </div>
   </div>
 
 </main>
+<div class="footer">ESP32 Encoder Dashboard &middot; PNP 360ppr &middot; <span class="tag">WebSocket + Supabase</span></div>
 
-<div class="footer">ESP32 Encoder Dashboard · Encoder PNP Incremental 360ppr · <span class="tag-esp">WebSocket</span></div>
-
-<!-- ═══════════ SUPERVISOR MODAL ═══════════ -->
-<div class="modal-overlay" id="supervisorModal">
-  <div class="modal">
-    <div class="modal-icon">&#9888;</div>
+<!-- SUPERVISOR MODAL -->
+<div class="moverlay" id="mSuper">
+  <div class="mdl">
+    <div class="mdl-icon" style="background:rgba(239,68,68,.1);">&#9888;</div>
     <h2>Chamar Supervisor</h2>
-    <p>O encoder está parado há mais de <strong id="modalIdleTime">--</strong>. Selecione o supervisor responsável para notificar.</p>
-    <div class="modal-info" id="modalInfo">
-      <div class="modal-info-row"><span>Última leitura</span><span id="mLastRead">--</span></div>
-      <div class="modal-info-row"><span>Posição na parada</span><span id="mLastPos">-- m</span></div>
-      <div class="modal-info-row"><span>Velocidade na parada</span><span id="mLastSpeed">-- m/s</span></div>
-      <div class="modal-info-row"><span>IP do ESP32</span><span id="mEspIp">--</span></div>
+    <p>Encoder parado h&#225; <strong id="mIdle">--</strong>. Selecione o respons&#225;vel.</p>
+    <div class="mdl-info">
+      <div class="mdl-row"><span>&#218;ltima leitura</span><span id="mLast">--</span></div>
+      <div class="mdl-row"><span>Posi&#231;&#227;o</span><span id="mPos">-- m</span></div>
+      <div class="mdl-row"><span>OP Ativa</span><span id="mOP">--</span></div>
+      <div class="mdl-row"><span>Clich&#234;</span><span id="mCl">--</span></div>
+      <div class="mdl-row"><span>IP ESP32</span><span id="mIp">--</span></div>
     </div>
-    <div class="supervisor-list" id="supervisorList"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('supervisorModal')">Fechar</button>
-    </div>
+    <div class="sv-list" id="svList"></div>
+    <div class="mdl-acts"><button class="btn btn-ghost" onclick="closeM('mSuper')">Fechar</button></div>
   </div>
 </div>
 
-<!-- ═══════════ FIRMWARE MODAL ═══════════ -->
-<div class="modal-overlay" id="firmwareModal">
-  <div class="modal fw-modal" style="max-height:90vh;overflow-y:auto;">
-    <div class="modal-icon" style="background:rgba(53,200,255,.1);">&#60;/&#62;</div>
-    <h2>Firmware ESP32 — Encoder PNP 360ppr</h2>
-    <p style="margin-bottom:16px;">Código Arduino pronto para upload. Conecte o canal A do encoder ao GPIO 18 e o canal B ao GPIO 19. Alimentação 5 V / GND.</p>
-    <pre id="firmwareCode"></pre>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="copyFirmware()">&#128203; Copiar Código</button>
-      <button class="btn btn-ghost" onclick="closeModal('firmwareModal')">Fechar</button>
+<!-- FIRMWARE MODAL -->
+<div class="moverlay" id="mFw">
+  <div class="mdl fw-mdl" style="max-height:90vh;overflow-y:auto;">
+    <div class="mdl-icon" style="background:rgba(53,200,255,.08);border-color:rgba(53,200,255,.2);">&#60;/&#62;</div>
+    <h2>Firmware ESP32 &middot; Encoder PNP 360ppr</h2>
+    <p style="margin-bottom:12px;">Canal A &rarr; GPIO 18 &middot; Canal B &rarr; GPIO 19 &middot; 5V / GND</p>
+    <pre id="fwCode"></pre>
+    <div class="mdl-acts">
+      <button class="btn btn-sky" onclick="copyFw()">&#128203; Copiar</button>
+      <button class="btn btn-ghost" onclick="closeM('mFw')">Fechar</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════
-   CONFIG
-═══════════════════════════════════════════ */
-let cfg = {
-  ip: '192.168.1.100',
-  port: 80,
-  diameterMm: 100,
-  ppr: 360,
-  timeoutSec: 60,
-};
+/* ══ CONFIG ══ */
+let cfg = { ip:'192.168.1.100', port:80, diam:100, ppr:360, timeout:60, sbUrl:'', sbKey:'' };
+try {
+  const s = JSON.parse(localStorage.getItem('enc_cfg')||'{}');
+  Object.assign(cfg, s);
+  const map = { cfgIp:'ip', cfgPort:'port', cfgDiam:'diam', cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey' };
+  Object.entries(map).forEach(([id,k]) => { const el=document.getElementById(id); if(el&&cfg[k]) el.value=cfg[k]; });
+} catch(_) {}
 
-const supervisors = [
-  { name: 'Carlos Silva',  role: 'Supervisor Turno A', phone: '5511999990001', avatar: 'CS', color: '#35c8ff' },
-  { name: 'Fernanda Lima', role: 'Engenheira de Manutenção', phone: '5511999990002', avatar: 'FL', color: '#4ade80' },
-  { name: 'Roberto Souza', role: 'Gerente de Produção', phone: '5511999990003', avatar: 'RS', color: '#ffd166' },
+/* ══ SUPABASE ══ */
+let sb = null;
+function initSb() {
+  if (!cfg.sbUrl || !cfg.sbKey) return;
+  try { sb = supabase.createClient(cfg.sbUrl, cfg.sbKey); } catch(_) {}
+}
+initSb();
+
+/* ══ ENCODER STATE ══ */
+let ws=null, demoMode=false, demoIv=null;
+let totalPulses=0, demoPAcc=0, lastSPulses=0, lastSTime=Date.now();
+let curSpd=0, curDir=0, lastRdTs=null, connState='off';
+
+/* ══ PRODUCTION STATE ══ */
+let opNum='', opActive=false, opId=null;
+let clicheN=1;
+let cliches = Array.from({length:10},(_,i)=>({id:i+1,vidaUtilM:1000,consumidoM:0}));
+let prodSec=0, stopSec=0, isProd=false;
+let stopType='', stopEvId=null, stopStartTs=null;
+let alertFired=false, alertDism=false, idleTimer=null;
+
+const SUPERVISORS = [
+  {name:'Carlos Silva',  role:'Supervisor Turno A',       phone:'5511999990001',avatar:'CS',color:'#35c8ff'},
+  {name:'Fernanda Lima', role:'Engenheira de Manuten&#231;&#227;o',phone:'5511999990002',avatar:'FL',color:'#4ade80'},
+  {name:'Roberto Souza', role:'Gerente de Produ&#231;&#227;o',     phone:'5511999990003',avatar:'RS',color:'#ffd166'},
 ];
 
-/* ═══════════════════════════════════════════
-   STATE
-═══════════════════════════════════════════ */
-let ws = null;
-let demoMode = false;
-let demoInterval = null;
-let totalPulses = 0;
-let lastPulses = 0;
-let lastPulseTime = null;
-let lastSamplePulses = 0;
-let lastSampleTime = Date.now();
-let currentSpeed = 0;
-let currentDir = 0; // 1=fwd, -1=rev, 0=stop
-let alertFired = false;
-let alertDismissed = false;
-let idleTimer = null;
-let lastReadingTs = null;
-let connState = 'off'; // off | ok | warn | fail
+/* ══ HELPERS ══ */
+function p2m(p){ return (p/cfg.ppr)*(Math.PI*cfg.diam/1000); }
+function hms(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+function vuCol(p){ return p>=90?'#ef4444':p>=70?'#f59e0b':'#4ade80'; }
 
-const speedHistory = [];
-const posHistory = [];
-const timeLabels = [];
-const MAX_HIST = 60;
+/* ══ TICK (1s) ══ */
+setInterval(()=>{
+  tickClock();
+  const noData = !lastRdTs || (Date.now()-lastRdTs)>3000;
+  const nowProd = !noData && curSpd>0.001;
+  if(nowProd !== isProd){
+    isProd = nowProd;
+    if(!isProd) onStop(); else onResume();
+  }
+  if(opActive){
+    if(isProd) prodSec++; else if(stopStartTs) stopSec++;
+    tickTimers(); tickEff();
+  }
+},1000);
 
-/* ═══════════════════════════════════════════
-   CALCULATIONS
-═══════════════════════════════════════════ */
-function pulsesToMeters(p) {
-  const circ = (Math.PI * cfg.diameterMm) / 1000; // meters
-  return (p / cfg.ppr) * circ;
+function tickClock(){
+  const n=new Date();
+  document.getElementById('clockDate').textContent=n.toLocaleDateString('pt-BR');
+  document.getElementById('clockTime').textContent=n.toLocaleTimeString('pt-BR');
+}
+function tickTimers(){
+  const pt=document.getElementById('prodTimer');
+  pt.textContent=hms(prodSec); pt.style.color=isProd?'var(--ok)':'var(--danger)';
+  const st=document.getElementById('stopTimer');
+  st.textContent=hms(stopSec); st.style.color=stopSec>0&&!isProd?'var(--danger)':'var(--muted)';
 }
 
-function metersToDisplay(m) {
-  return m.toFixed(3);
+/* ══ STOP / RESUME ══ */
+function onStop(){
+  if(!opActive) return;
+  stopStartTs=new Date();
+  document.getElementById('stopBanner').classList.add('show');
+  log('s','Encoder parado');
+}
+function onResume(){
+  document.getElementById('stopBanner').classList.remove('show');
+  document.getElementById('stopSel').value='';
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel'));
+  if(stopStartTs){
+    const dur=Math.round((Date.now()-stopStartTs.getTime())/1000);
+    closeStopEv(dur); stopStartTs=null;
+  }
+  if(alertFired&&!alertDism) dismissAlert();
+  log('r','Encoder retomou'); resetIdle();
+}
+function selectStop(tipo){
+  stopType=tipo;
+  document.getElementById('stopSel').value=tipo;
+  document.querySelectorAll('.sbtn').forEach(b=>{ b.classList.toggle('sel', b.textContent.includes(tipo.split(' ')[0])); });
+  createStopEv(tipo); log('s',`Parada: ${tipo}`);
+}
+function onStopSelChange(){ const v=document.getElementById('stopSel').value; if(v) selectStop(v); }
+
+async function createStopEv(tipo){
+  if(!sb||!opId) return;
+  try { const {data}=await sb.from('paradas').insert({ordem_id:opId,tipo,inicio:new Date().toISOString()}).select().single(); if(data) stopEvId=data.id; } catch(_){}
+}
+async function closeStopEv(dur){
+  if(!sb||!stopEvId){ stopEvId=null; return; }
+  try { await sb.from('paradas').update({fim:new Date().toISOString(),duracao_s:dur}).eq('id',stopEvId); stopEvId=null; } catch(_){}
 }
 
-/* ═══════════════════════════════════════════
-   WEBSOCKET
-═══════════════════════════════════════════ */
-function connect() {
-  if (ws) { ws.close(); ws = null; }
-  setConn('warn', 'Conectando...');
-  try {
-    ws = new WebSocket(`ws://${cfg.ip}:${cfg.port}/ws`);
-    ws.onopen = () => {
-      setConn('ok', 'Online');
-      addLog('info', 'WebSocket conectado ao ESP32');
-    };
-    ws.onmessage = (e) => {
-      try {
-        const d = JSON.parse(e.data);
-        handleData(d);
-      } catch(_) {}
-    };
-    ws.onerror = () => setConn('fail', 'Erro WS');
-    ws.onclose = () => {
-      setConn('off', 'Desconectado');
-      addLog('info', 'WebSocket desconectado');
-    };
-  } catch(err) {
-    setConn('fail', 'Falha');
-    addLog('alert', 'Falha ao conectar: ' + err.message);
+/* ══ OP ══ */
+function toggleOP(){ opActive ? closeOP() : startOP(); }
+async function startOP(){
+  const num=document.getElementById('opInput').value.trim();
+  if(!num){ document.getElementById('opInput').focus(); return; }
+  opNum=num; opActive=true; prodSec=0; stopSec=0;
+  const btn=document.getElementById('opBtn');
+  btn.textContent='&#9632; Encerrar'; btn.className='btn btn-danger'; btn.style='padding:5px 10px;font-size:11px;';
+  document.getElementById('opInput').disabled=true;
+  document.getElementById('clicheSelect').disabled=true;
+  log('i',`OP ${opNum} iniciada &middot; Clich&#234; ${clicheN}`);
+  if(sb){ try{ const {data}=await sb.from('ordens').insert({numero:opNum,cliche_id:clicheN,data_inicio:new Date().toISOString()}).select().single(); if(data) opId=data.id; }catch(_){} }
+}
+async function closeOP(){
+  if(!opActive) return;
+  opActive=false;
+  const posM=p2m(Math.abs(totalPulses));
+  cliches[clicheN-1].consumidoM += posM;
+  if(sb){
+    try{ await sb.from('cliches').upsert({id:clicheN,nome:`Clich&#234; ${clicheN}`,vida_util_m:cliches[clicheN-1].vidaUtilM,consumido_m:cliches[clicheN-1].consumidoM}); }catch(_){}
+    if(opId){ try{ await sb.from('ordens').update({data_fim:new Date().toISOString(),tempo_producao_s:prodSec,tempo_parada_s:stopSec,posicao_total_m:posM,status:'fechada'}).eq('id',opId); }catch(_){} }
   }
+  log('i',`OP ${opNum} encerrada &middot; Prod ${hms(prodSec)} &middot; Parada ${hms(stopSec)}`);
+  const btn=document.getElementById('opBtn');
+  btn.textContent='&#9654; Iniciar'; btn.className='btn btn-ok'; btn.style='padding:5px 10px;font-size:11px;';
+  document.getElementById('opInput').disabled=false;
+  document.getElementById('clicheSelect').disabled=false;
+  opId=null;
 }
 
-/* ═══════════════════════════════════════════
-   DATA HANDLER
-   Expects JSON: { pulses, direction, timestamp }
-   direction: 1=forward, -1=reverse
-═══════════════════════════════════════════ */
-function handleData(d) {
-  const now = Date.now();
-  const dt = (now - lastSampleTime) / 1000; // seconds
-  const deltaPulses = (d.pulses || 0) - lastSamplePulses;
-
-  totalPulses = d.pulses || totalPulses;
-  currentDir = d.direction || (deltaPulses > 0 ? 1 : deltaPulses < 0 ? -1 : 0);
-
-  if (dt > 0) {
-    currentSpeed = pulsesToMeters(Math.abs(deltaPulses)) / dt;
-  }
-
-  lastSamplePulses = d.pulses || totalPulses;
-  lastSampleTime = now;
-  lastReadingTs = now;
-
-  updateUI();
-  pushHistory(currentSpeed, pulsesToMeters(totalPulses));
-  resetIdleTimer();
-
-  if (alertFired && !alertDismissed && currentSpeed > 0) {
-    dismissAlert();
+/* ══ CLICHÊ ══ */
+async function onClicheChange(){
+  if(opActive) return;
+  clicheN=parseInt(document.getElementById('clicheSelect').value);
+  await loadCliche(clicheN); updateVU(); log('i',`Clich&#234; ${clicheN} selecionado`);
+}
+async function loadCliche(id){
+  if(!sb) return;
+  try{ const {data}=await sb.from('cliches').select('*').eq('id',id).single();
+    if(data){ cliches[id-1].vidaUtilM=parseFloat(data.vida_util_m)||1000; cliches[id-1].consumidoM=parseFloat(data.consumido_m)||0; document.getElementById('vuInp').value=cliches[id-1].vidaUtilM; }
+  }catch(_){}
+}
+function applyVU(){
+  const v=parseFloat(document.getElementById('vuInp').value);
+  if(v>0){ cliches[clicheN-1].vidaUtilM=v; updateVU(); log('i',`Vida &#250;til Clich&#234; ${clicheN}: ${v.toFixed(3)} m`);
+    if(sb) sb.from('cliches').upsert({id:clicheN,nome:`Clich&#234; ${clicheN}`,vida_util_m:v,consumido_m:cliches[clicheN-1].consumidoM}).then(()=>{}).catch(()=>{});
   }
 }
+document.getElementById('vuInp').addEventListener('keydown',e=>{if(e.key==='Enter') applyVU();});
 
-/* ═══════════════════════════════════════════
-   UI UPDATE
-═══════════════════════════════════════════ */
-function updateUI() {
-  const posM = pulsesToMeters(Math.abs(totalPulses));
-  const speedMs = currentSpeed;
-  const rpm = (speedMs / ((Math.PI * cfg.diameterMm / 1000))) * 60;
-  const freq = (speedMs / (Math.PI * cfg.diameterMm / 1000));
+/* ══ VIDA ÚTIL CHART ══ */
+const ctxVU=document.getElementById('chartVU').getContext('2d');
+const chartVU=new Chart(ctxVU,{type:'doughnut',data:{datasets:[{data:[0,100],backgroundColor:['#4ade80','#1e1e1e'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'73%',animation:{duration:450},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
 
-  document.getElementById('valPos').innerHTML = metersToDisplay(posM) + '<span class="kpi-unit">m</span>';
-  document.getElementById('valPulses').textContent = totalPulses.toLocaleString('pt-BR') + ' pulsos acumulados';
-
-  document.getElementById('valSpeed').innerHTML = speedMs.toFixed(3) + '<span class="kpi-unit">m/s</span>';
-  document.getElementById('valSpeedMin').textContent = (speedMs * 60).toFixed(2) + ' m/min';
-
-  document.getElementById('valRpm').innerHTML = rpm.toFixed(1) + '<span class="kpi-unit">RPM</span>';
-  document.getElementById('valFreq').textContent = freq.toFixed(2) + ' Hz';
-
-  const dirBadge = document.getElementById('dirBadge');
-  if (speedMs < 0.001) {
-    dirBadge.className = 'direction-badge dir-stop';
-    dirBadge.innerHTML = '&#8212; Parado';
-    document.getElementById('valDirSub').textContent = 'Sem movimento detectado';
-  } else if (currentDir >= 0) {
-    dirBadge.className = 'direction-badge dir-fwd';
-    dirBadge.innerHTML = '&#8594; Avanço';
-    document.getElementById('valDirSub').textContent = 'Sentido horário';
-  } else {
-    dirBadge.className = 'direction-badge dir-rev';
-    dirBadge.innerHTML = '&#8592; Retorno';
-    document.getElementById('valDirSub').textContent = 'Sentido anti-horário';
-  }
-
-  document.getElementById('valStatus').innerHTML = '&#9679; Online';
-  document.getElementById('valStatus').style.color = 'var(--ok)';
-  const ts = new Date().toLocaleTimeString('pt-BR');
-  document.getElementById('valLastSeen').textContent = 'Última leitura: ' + ts;
-
-  document.getElementById('avgSpeed').textContent =
-    'média: ' + (speedHistory.reduce((a,b)=>a+b,0)/Math.max(speedHistory.length,1)).toFixed(3) + ' m/s';
-
-  updateVidaUtil();
-}
-
-/* ═══════════════════════════════════════════
-   CHART
-═══════════════════════════════════════════ */
-const ctxSpeed = document.getElementById('chartSpeed').getContext('2d');
-const ctxPos   = document.getElementById('chartPos').getContext('2d');
-
-const chartSpeed = new Chart(ctxSpeed, {
-  type: 'line',
-  data: {
-    labels: timeLabels,
-    datasets: [{
-      label: 'm/s',
-      data: speedHistory,
-      borderColor: '#4ade80',
-      backgroundColor: 'rgba(74,222,128,.08)',
-      borderWidth: 2,
-      pointRadius: 0,
-      tension: 0.4,
-      fill: true,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    animation: { duration: 200 },
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { color: '#666', maxTicksLimit: 8, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
-      y: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' }, min: 0 }
-    }
-  }
-});
-
-const chartPos = new Chart(ctxPos, {
-  type: 'line',
-  data: {
-    labels: timeLabels,
-    datasets: [{
-      label: 'm',
-      data: posHistory,
-      borderColor: '#35c8ff',
-      backgroundColor: 'rgba(53,200,255,.08)',
-      borderWidth: 2,
-      pointRadius: 0,
-      tension: 0.3,
-      fill: true,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    animation: { duration: 200 },
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { color: '#666', maxTicksLimit: 6, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
-      y: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' }, min: 0 }
-    }
-  }
-});
-
-function pushHistory(speed, pos) {
-  const t = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  if (timeLabels.length >= MAX_HIST) {
-    timeLabels.shift(); speedHistory.shift(); posHistory.shift();
-  }
-  timeLabels.push(t);
-  speedHistory.push(parseFloat(speed.toFixed(4)));
-  posHistory.push(parseFloat(pos.toFixed(4)));
-  chartSpeed.update('none');
-  chartPos.update('none');
-}
-
-/* ═══════════════════════════════════════════
-   VIDA ÚTIL
-═══════════════════════════════════════════ */
-let vidaUtilM = 1000;
-
-const ctxVU = document.getElementById('chartVU').getContext('2d');
-const chartVU = new Chart(ctxVU, {
-  type: 'doughnut',
-  data: {
-    datasets: [{
-      data: [0, 100],
-      backgroundColor: ['#4ade80', '#1e1e1e'],
-      borderWidth: 0,
-      hoverOffset: 0,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: true,
-    cutout: '74%',
-    animation: { duration: 500 },
-    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-    events: [],
-  }
-});
-
-function vuColor(pct) {
-  if (pct >= 90) return '#ef4444';
-  if (pct >= 70) return '#f59e0b';
-  return '#4ade80';
-}
-
-function updateVidaUtil() {
-  const posM = pulsesToMeters(Math.abs(totalPulses));
-  const pct  = vidaUtilM > 0 ? Math.min((posM / vidaUtilM) * 100, 100) : 0;
-  const remaining = Math.max(vidaUtilM - posM, 0);
-  const color = vuColor(pct);
-  const pctRound = pct.toFixed(1);
-
-  document.getElementById('vuPct').textContent = pctRound;
-  document.getElementById('vuPct').style.color = color;
-  document.getElementById('vuBar').style.width = pct + '%';
-  document.getElementById('vuBar').style.background = color;
-  document.getElementById('vuCurrent').textContent = posM.toFixed(3) + ' m';
-  document.getElementById('vuTarget').textContent = vidaUtilM.toFixed(3) + ' m';
-  document.getElementById('vuRemaining').textContent = remaining.toFixed(3) + ' m';
-  document.getElementById('vuDonutPct').textContent = pctRound + '%';
-  document.getElementById('vuDonutPct').style.color = color;
-
-  chartVU.data.datasets[0].data = [pct, Math.max(100 - pct, 0)];
-  chartVU.data.datasets[0].backgroundColor = [color, '#1e1e1e'];
+function updateVU(){
+  const c=cliches[clicheN-1];
+  const sesM=p2m(Math.abs(totalPulses));
+  const tot=c.consumidoM+sesM;
+  const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
+  const rem=Math.max(c.vidaUtilM-tot,0);
+  const col=vuCol(pct);
+  document.getElementById('vuBadge').textContent=`Clich&#234; ${clicheN}`;
+  document.getElementById('vuDpct').textContent=pct.toFixed(1)+'%'; document.getElementById('vuDpct').style.color=col;
+  document.getElementById('vuBar').style.width=pct+'%'; document.getElementById('vuBar').style.background=col;
+  document.getElementById('vuConsumed').textContent=tot.toFixed(3)+' m';
+  document.getElementById('vuTarget').textContent=c.vidaUtilM.toFixed(3)+' m';
+  document.getElementById('vuRem').textContent=rem.toFixed(3)+' m';
+  chartVU.data.datasets[0].data=[pct,Math.max(100-pct,0)];
+  chartVU.data.datasets[0].backgroundColor=[col,'#1e1e1e'];
   chartVU.update('none');
 }
 
-function applyVidaUtil() {
-  const v = parseFloat(document.getElementById('vuInput').value);
-  if (v > 0) {
-    vidaUtilM = v;
-    updateVidaUtil();
-    addLog('info', `Vida útil configurada para ${vidaUtilM.toFixed(3)} m`);
-  }
+/* ══ EFFICIENCY CHART ══ */
+const JORNADA=28800; // 8h
+const ctxEff=document.getElementById('chartEff').getContext('2d');
+const chartEff=new Chart(ctxEff,{type:'doughnut',data:{labels:['Produ&#231;&#227;o','Parada','Dispon&#237;vel'],datasets:[{data:[0,0,100],backgroundColor:['#4ade80','#ef4444','#262626'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'71%',animation:{duration:350},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
+
+function tickEff(){
+  const pp=Math.min((prodSec/JORNADA)*100,100);
+  const sp=Math.min((stopSec/JORNADA)*100,100);
+  const ap=Math.max(100-pp-sp,0);
+  const tot=prodSec+stopSec;
+  const disp=tot>0?((prodSec/tot)*100).toFixed(1)+'%':'&#8212;';
+  document.getElementById('effPct').textContent=pp.toFixed(1)+'%';
+  document.getElementById('effProdPct').textContent=pp.toFixed(1)+'%';
+  document.getElementById('effStopPct').textContent=sp.toFixed(1)+'%';
+  document.getElementById('effAvPct').textContent=ap.toFixed(1)+'%';
+  document.getElementById('effDisp').innerHTML=disp;
+  document.getElementById('effProdT').textContent=hms(prodSec);
+  document.getElementById('effStopT').textContent=hms(stopSec);
+  chartEff.data.datasets[0].data=[pp,sp,ap];
+  chartEff.update('none');
 }
 
-document.getElementById('vuInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyVidaUtil(); });
-
-/* ═══════════════════════════════════════════
-   IDLE / ALERT
-═══════════════════════════════════════════ */
-function resetIdleTimer() {
-  if (idleTimer) clearTimeout(idleTimer);
-  alertFired = false;
-  document.getElementById('alertBanner').classList.remove('show');
-  idleTimer = setTimeout(fireAlert, cfg.timeoutSec * 1000);
+/* ══ WEBSOCKET ══ */
+function connect(){
+  if(ws){ ws.close(); ws=null; }
+  setConn('warn','Conectando...');
+  try{
+    ws=new WebSocket(`ws://${cfg.ip}:${cfg.port}/ws`);
+    ws.onopen=()=>{ setConn('ok','Online'); log('i','WebSocket conectado'); };
+    ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
+    ws.onerror=()=>setConn('fail','Erro WS');
+    ws.onclose=()=>{ setConn('off','Desconectado'); log('i','WebSocket desconectado'); };
+  }catch(err){ setConn('fail','Falha'); log('a','Falha: '+err.message); }
 }
 
-function fireAlert() {
-  if (alertDismissed) return;
-  alertFired = true;
-  const lastTs = lastReadingTs ? new Date(lastReadingTs).toLocaleTimeString('pt-BR') : '--';
-  const lastPos = metersToDisplay(pulsesToMeters(Math.abs(totalPulses)));
-  document.getElementById('alertSubtext').textContent =
-    `Última leitura: ${lastTs} · Posição: ${lastPos} m`;
+/* ══ DATA HANDLER ══ */
+function handleData(d){
+  const now=Date.now(), dt=(now-lastSTime)/1000;
+  const delta=(d.pulses||0)-lastSPulses;
+  totalPulses=d.pulses||totalPulses;
+  curDir=d.direction||(delta>0?1:delta<0?-1:0);
+  if(dt>0) curSpd=p2m(Math.abs(delta))/dt;
+  lastSPulses=d.pulses||totalPulses; lastSTime=now; lastRdTs=now;
+  updateUI(); resetIdle();
+}
+
+/* ══ UI ══ */
+function updateUI(){
+  const posM=p2m(Math.abs(totalPulses));
+  const rpm=curSpd/(Math.PI*cfg.diam/1000)*60;
+  const freq=curSpd/(Math.PI*cfg.diam/1000);
+  document.getElementById('valPos').innerHTML=posM.toFixed(3)+'<span class="kunit">m</span>';
+  document.getElementById('valPulses').textContent=totalPulses.toLocaleString('pt-BR')+' pulsos';
+  document.getElementById('valSpd').innerHTML=curSpd.toFixed(3)+'<span class="kunit">m/s</span>';
+  document.getElementById('valSpdMin').textContent=(curSpd*60).toFixed(2)+' m/min';
+  document.getElementById('valRpm').innerHTML=rpm.toFixed(1)+'<span class="kunit">RPM</span>';
+  document.getElementById('valFreq').textContent=freq.toFixed(2)+' Hz';
+  const db=document.getElementById('dirBadge');
+  if(curSpd<0.001){ db.className='dir-badge dir-stop'; db.innerHTML='&#8212; Parado'; document.getElementById('valDirSub').textContent='Sem movimento'; }
+  else if(curDir>=0){ db.className='dir-badge dir-fwd'; db.innerHTML='&#8594; Avan&#231;o'; document.getElementById('valDirSub').textContent='Sentido hor&#225;rio'; }
+  else{ db.className='dir-badge dir-rev'; db.innerHTML='&#8592; Retorno'; document.getElementById('valDirSub').textContent='Anti-hor&#225;rio'; }
+  document.getElementById('valSt').innerHTML='&#9679; Online'; document.getElementById('valSt').style.color='var(--ok)';
+  document.getElementById('valLast').textContent='&#218;ltima: '+new Date().toLocaleTimeString('pt-BR');
+  updateVU();
+}
+
+/* ══ IDLE ALERT ══ */
+function resetIdle(){
+  if(idleTimer) clearTimeout(idleTimer);
+  alertFired=false; document.getElementById('alertBanner').classList.remove('show');
+  idleTimer=setTimeout(fireAlert, cfg.timeout*1000);
+}
+function fireAlert(){
+  if(alertDism) return;
+  alertFired=true;
+  const ts=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
+  document.getElementById('alertSub').textContent=`&#218;ltima: ${ts} &middot; Pos: ${p2m(Math.abs(totalPulses)).toFixed(3)} m`;
   document.getElementById('alertBanner').classList.add('show');
-  addLog('alert', `ALERTA: Encoder sem leitura por ${cfg.timeoutSec}s`);
-  document.getElementById('valStatus').innerHTML = '&#9888; Inativo';
-  document.getElementById('valStatus').style.color = 'var(--danger)';
+  log('a',`ALERTA: sem leitura por ${cfg.timeout}s`);
+  document.getElementById('valSt').innerHTML='&#9888; Inativo'; document.getElementById('valSt').style.color='var(--danger)';
 }
+function dismissAlert(){ alertDism=true; alertFired=false; document.getElementById('alertBanner').classList.remove('show'); setTimeout(()=>{ alertDism=false; },10000); }
 
-function dismissAlert() {
-  alertDismissed = true;
-  alertFired = false;
-  document.getElementById('alertBanner').classList.remove('show');
-  setTimeout(() => { alertDismissed = false; }, 10000);
-}
-
-/* ═══════════════════════════════════════════
-   LOG
-═══════════════════════════════════════════ */
-let logCount = 0;
-function addLog(type, detail) {
-  const tbody = document.getElementById('logBody');
-  const ts = new Date().toLocaleTimeString('pt-BR');
-  const posM = metersToDisplay(pulsesToMeters(Math.abs(totalPulses)));
-  const spdMs = currentSpeed.toFixed(3);
-  const cls = type === 'alert' ? 'log-type-alert' : type === 'reading' ? 'log-type-reading' : 'log-type-info';
-  const typeLabel = type === 'alert' ? '⚠ Alerta' : type === 'reading' ? '● Leitura' : '○ Info';
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${ts}</td><td class="${cls}">${typeLabel}</td><td>${posM}</td><td>${spdMs}</td><td>${totalPulses.toLocaleString('pt-BR')}</td><td>${detail}</td>`;
-  tbody.prepend(tr);
-  logCount++;
-  if (tbody.rows.length > 50) tbody.deleteRow(tbody.rows.length - 1);
-}
-
-function clearLog() {
-  document.getElementById('logBody').innerHTML = '';
-}
-
-/* ═══════════════════════════════════════════
-   DEMO MODE
-═══════════════════════════════════════════ */
-let demoPhase = 0;
-let demoPulseAcc = 0;
-
-function toggleDemo() {
-  demoMode = !demoMode;
-  const btn = document.getElementById('demoBtn');
-  if (demoMode) {
-    btn.textContent = '⏹ Parar Demo';
-    btn.style.background = 'rgba(239,68,68,.15)';
-    btn.style.borderColor = 'rgba(239,68,68,.4)';
-    btn.style.color = 'var(--danger)';
-    setConn('ok', 'Demo Online');
-    addLog('info', 'Modo demonstração iniciado');
-    runDemo();
+/* ══ DEMO ══ */
+let demoPhase=0;
+function toggleDemo(){
+  demoMode=!demoMode;
+  const btn=document.getElementById('demoBtn');
+  if(demoMode){
+    btn.textContent='&#9209; Parar Demo'; btn.className='btn btn-danger';
+    setConn('ok','Demo Online'); log('i','Demo iniciado');
+    let tick=0;
+    demoIv=setInterval(()=>{
+      tick++; demoPhase=Math.floor(tick/30)%5;
+      let d=0;
+      switch(demoPhase){ case 0:d=Math.round(8+Math.random()*4);curDir=1;break; case 1:d=Math.round(20+Math.random()*6);curDir=1;break; case 2:d=Math.round(10+Math.random()*3);curDir=1;break; case 3:d=0;curDir=0;break; case 4:d=Math.round(5+Math.random()*3);curDir=-1;break; }
+      if(d>0||demoPhase===3){ demoPAcc+=d*curDir; handleData({pulses:demoPAcc,direction:curDir}); }
+    },500);
   } else {
-    btn.textContent = '▶ Demo';
-    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
-    if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
-    setConn('off', 'Desconectado');
+    btn.textContent='&#9654; Demo'; btn.className='btn btn-gold';
+    if(demoIv){ clearInterval(demoIv); demoIv=null; }
+    setConn('off','Desconectado');
   }
 }
 
-function runDemo() {
-  let tick = 0;
-  demoInterval = setInterval(() => {
-    tick++;
-    demoPhase = Math.floor(tick / 30) % 5;
-    let pulseDelta = 0;
-
-    switch(demoPhase) {
-      case 0: pulseDelta = Math.round(8 + Math.random() * 4);  currentDir =  1; break; // aceleração
-      case 1: pulseDelta = Math.round(20 + Math.random() * 6); currentDir =  1; break; // velocidade
-      case 2: pulseDelta = Math.round(10 + Math.random() * 3); currentDir =  1; break; // desaceleração
-      case 3: pulseDelta = 0; currentDir = 0; break;                                    // parado
-      case 4: pulseDelta = Math.round(5 + Math.random() * 3);  currentDir = -1; break; // retorno
-    }
-
-    if (pulseDelta > 0 || demoPhase === 3) {
-      demoPulseAcc += pulseDelta * currentDir;
-      handleData({ pulses: demoPulseAcc, direction: currentDir });
-      if (tick % 5 === 0) addLog('reading', `Demo tick #${tick}`);
-    }
-  }, 500);
-}
-
-/* ═══════════════════════════════════════════
-   SUPERVISOR MODAL
-═══════════════════════════════════════════ */
-function openSupervisorModal() {
-  const idleSecs = lastReadingTs ? Math.round((Date.now() - lastReadingTs) / 1000) : cfg.timeoutSec;
-  const idleStr = idleSecs >= 60 ? `${Math.floor(idleSecs/60)}min ${idleSecs%60}s` : `${idleSecs}s`;
-  document.getElementById('modalIdleTime').textContent = idleStr;
-  document.getElementById('mLastRead').textContent = lastReadingTs ? new Date(lastReadingTs).toLocaleTimeString('pt-BR') : '--';
-  document.getElementById('mLastPos').textContent = metersToDisplay(pulsesToMeters(Math.abs(totalPulses))) + ' m';
-  document.getElementById('mLastSpeed').textContent = currentSpeed.toFixed(3) + ' m/s';
-  document.getElementById('mEspIp').textContent = cfg.ip;
-
-  const msg = encodeURIComponent(
-    `⚠ *ALERTA ENCODER* ⚠\n\nEncoder parado há ${idleStr}.\nÚltima leitura: ${lastReadingTs ? new Date(lastReadingTs).toLocaleTimeString('pt-BR') : '--'}\nPosição: ${metersToDisplay(pulsesToMeters(Math.abs(totalPulses)))} m\nVelocidade: ${currentSpeed.toFixed(3)} m/s\nESP32: ${cfg.ip}\n\nAção necessária.`
-  );
-
-  const list = document.getElementById('supervisorList');
-  list.innerHTML = supervisors.map(s => `
-    <div class="supervisor-item">
-      <div class="supervisor-item-left">
-        <div class="supervisor-avatar" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}44;">${s.avatar}</div>
-        <div class="supervisor-info">
-          <strong>${s.name}</strong>
-          <small>${s.role}</small>
-        </div>
+/* ══ SUPERVISOR ══ */
+function openSupervisor(){
+  const idle=lastRdTs?Math.round((Date.now()-lastRdTs)/1000):cfg.timeout;
+  const idleStr=idle>=60?`${Math.floor(idle/60)}min ${idle%60}s`:`${idle}s`;
+  document.getElementById('mIdle').textContent=idleStr;
+  document.getElementById('mLast').textContent=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
+  document.getElementById('mPos').textContent=p2m(Math.abs(totalPulses)).toFixed(3)+' m';
+  document.getElementById('mOP').textContent=opNum||'&#8212;';
+  document.getElementById('mCl').textContent='Clich&#234; '+clicheN;
+  document.getElementById('mIp').textContent=cfg.ip;
+  const msg=encodeURIComponent(`&#9888; *ALERTA ENCODER*\n\nEncoder parado h&#225; ${idleStr}.\nOP: ${opNum||'&#8212;'} | Clich&#234;: ${clicheN}\nPosi&#231;&#227;o: ${p2m(Math.abs(totalPulses)).toFixed(3)} m\nESP32: ${cfg.ip}\n\nA&#231;&#227;o necess&#225;ria.`);
+  document.getElementById('svList').innerHTML=SUPERVISORS.map(s=>`
+    <div class="sv-item">
+      <div class="sv-left">
+        <div class="sv-av" style="background:${s.color}22;color:${s.color};border:1px solid ${s.color}44;">${s.avatar}</div>
+        <div class="sv-info"><strong>${s.name}</strong><small>${s.role}</small></div>
       </div>
-      <a class="btn-call" href="https://wa.me/${s.phone}?text=${msg}" target="_blank" rel="noopener">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <a class="btn-wa" href="https://wa.me/${s.phone}?text=${msg}" target="_blank" rel="noopener">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         WhatsApp
       </a>
-    </div>
-  `).join('');
-
-  document.getElementById('supervisorModal').classList.add('show');
-  addLog('alert', 'Supervisor notificado via modal');
+    </div>`).join('');
+  document.getElementById('mSuper').classList.add('show');
+  log('a','Supervisor notificado');
 }
 
-/* ═══════════════════════════════════════════
-   FIRMWARE CODE
-═══════════════════════════════════════════ */
-const FIRMWARE = `// ESP32 – Encoder Incremental PNP 360ppr
-// Canal A → GPIO 18  |  Canal B → GPIO 19
-// Alimentação encoder: 5V / GND
-// WebSocket: ws://<IP_ESP32>/ws
+/* ══ LOG ══ */
+function log(type,detail){
+  const tbody=document.getElementById('logBody');
+  const ts=new Date().toLocaleTimeString('pt-BR');
+  const cls={a:'lt-a',r:'lt-r',s:'lt-s',i:'lt-i'}[type]||'lt-i';
+  const lbl={a:'&#9888; Alerta',r:'&#9679; Leitura',s:'&#9208; Parada',i:'&#9675; Info'}[type]||'&#9675; Info';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'&#8212;'}</td><td>Clich&#234; ${clicheN}</td><td>${p2m(Math.abs(totalPulses)).toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
+  tbody.prepend(tr);
+  if(tbody.rows.length>60) tbody.deleteRow(tbody.rows.length-1);
+}
+
+/* ══ CONFIG / RESET ══ */
+function setConn(st,lbl){
+  connState=st;
+  document.getElementById('connChip').className=`chip chip-${st==='ok'?'ok':st==='warn'?'warn':st==='fail'?'fail':'off'}`;
+  document.getElementById('connDot').className=`dot dot-${st==='ok'?'ok':st==='warn'?'warn':st==='fail'?'fail':'off'}`;
+  document.getElementById('connLabel').textContent=lbl;
+}
+function toggleConfig(){ const p=document.getElementById('cfgPanel'); p.style.display=p.style.display==='none'?'block':'none'; }
+function applyConfig(){
+  cfg.ip=document.getElementById('cfgIp').value.trim();
+  cfg.port=parseInt(document.getElementById('cfgPort').value)||80;
+  cfg.diam=parseFloat(document.getElementById('cfgDiam').value)||100;
+  cfg.ppr=parseInt(document.getElementById('cfgPpr').value)||360;
+  cfg.timeout=parseInt(document.getElementById('cfgTimeout').value)||60;
+  cfg.sbUrl=document.getElementById('cfgSbUrl').value.trim();
+  cfg.sbKey=document.getElementById('cfgSbKey').value.trim();
+  localStorage.setItem('enc_cfg',JSON.stringify(cfg));
+  document.getElementById('cfgPanel').style.display='none';
+  initSb(); log('i',`Config: IP=${cfg.ip} &#216;=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
+}
+function resetCounter(){
+  totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0;
+  updateUI(); updateVU(); log('i','Contador zerado');
+}
+function closeM(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('show'); }));
+
+/* ══ FIRMWARE ══ */
+const FW=`// ESP32 – Encoder Incremental PNP 360ppr
+// Canal A → GPIO 18  |  Canal B → GPIO 19  |  5V / GND
+// WebSocket: ws://<IP>/ws  |  HTTP: http://<IP>/data
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -853,21 +853,19 @@ const FIRMWARE = `// ESP32 – Encoder Incremental PNP 360ppr
 
 const char* SSID     = "SUA_REDE";
 const char* PASSWORD = "SUA_SENHA";
-
 #define PIN_A  18
 #define PIN_B  19
-#define PPR    360
 
 volatile long pulseCount = 0;
 volatile int  direction  = 1;
 
-WebServer       server(80);
+WebServer        server(80);
 WebSocketsServer wsServer(80);
 
 void IRAM_ATTR onEncoderA() {
   bool a = digitalRead(PIN_A);
   bool b = digitalRead(PIN_B);
-  direction = (a == b) ? 1 : -1;
+  direction   = (a == b) ? 1 : -1;
   pulseCount += direction;
 }
 
@@ -876,105 +874,38 @@ void setup() {
   pinMode(PIN_A, INPUT_PULLUP);
   pinMode(PIN_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
-
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
   Serial.println("\\nIP: " + WiFi.localIP().toString());
-
   server.on("/data", HTTP_GET, []() {
     StaticJsonDocument<128> doc;
-    doc["pulses"]    = pulseCount;
-    doc["direction"] = direction;
-    doc["timestamp"] = millis();
+    doc["pulses"] = pulseCount; doc["direction"] = direction; doc["timestamp"] = millis();
     String out; serializeJson(doc, out);
+    server.sendHeader("Access-Control-Allow-Origin", "*");
     server.send(200, "application/json", out);
   });
-  server.begin();
-
-  wsServer.begin();
-  wsServer.onEvent([](uint8_t, WStype_t type, uint8_t*, size_t) {});
+  server.begin(); wsServer.begin();
+  wsServer.onEvent([](uint8_t, WStype_t, uint8_t*, size_t) {});
 }
 
-unsigned long lastBroadcast = 0;
-
+unsigned long lastBcast = 0;
 void loop() {
-  server.handleClient();
-  wsServer.loop();
-
-  if (millis() - lastBroadcast >= 200) {
-    lastBroadcast = millis();
+  server.handleClient(); wsServer.loop();
+  if (millis() - lastBcast >= 200) {
+    lastBcast = millis();
     StaticJsonDocument<128> doc;
-    doc["pulses"]    = pulseCount;
-    doc["direction"] = direction;
-    doc["timestamp"] = millis();
+    doc["pulses"] = pulseCount; doc["direction"] = direction; doc["timestamp"] = millis();
     String msg; serializeJson(doc, msg);
     wsServer.broadcastTXT(msg);
   }
 }`;
+function openFw(){ document.getElementById('fwCode').textContent=FW; document.getElementById('mFw').classList.add('show'); }
+function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document.querySelector('#mFw .btn-sky'); b.textContent='&#10003; Copiado!'; setTimeout(()=>{ b.textContent='&#128203; Copiar'; },2000); }); }
 
-function openFirmware() {
-  document.getElementById('firmwareCode').textContent = FIRMWARE;
-  document.getElementById('firmwareModal').classList.add('show');
-}
-
-function copyFirmware() {
-  navigator.clipboard.writeText(FIRMWARE).then(() => {
-    const btn = document.querySelector('#firmwareModal .btn-primary');
-    btn.textContent = '✓ Copiado!';
-    setTimeout(() => { btn.textContent = '📋 Copiar Código'; }, 2000);
-  });
-}
-
-/* ═══════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════ */
-function setConn(state, label) {
-  connState = state;
-  const chip = document.getElementById('connChip');
-  const dot  = document.getElementById('connDot');
-  const lbl  = document.getElementById('connLabel');
-  chip.className = `chip chip-${state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'fail' ? 'fail' : 'off'}`;
-  dot.className  = `dot dot-${state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'fail' ? 'fail' : 'off'}`;
-  lbl.textContent = label;
-}
-
-function toggleConfig() {
-  const p = document.getElementById('configPanel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
-}
-
-function applyConfig() {
-  cfg.ip          = document.getElementById('cfgIp').value.trim();
-  cfg.port        = parseInt(document.getElementById('cfgPort').value) || 80;
-  cfg.diameterMm  = parseFloat(document.getElementById('cfgDiameter').value) || 100;
-  cfg.ppr         = parseInt(document.getElementById('cfgPpr').value) || 360;
-  cfg.timeoutSec  = parseInt(document.getElementById('cfgTimeout').value) || 60;
-  document.getElementById('configPanel').style.display = 'none';
-  addLog('info', `Config: IP=${cfg.ip} Ø=${cfg.diameterMm}mm PPR=${cfg.ppr} timeout=${cfg.timeoutSec}s`);
-  connect();
-}
-
-function resetCounter() {
-  totalPulses = 0; demoPulseAcc = 0; lastSamplePulses = 0;
-  currentSpeed = 0; currentDir = 0;
-  timeLabels.length = 0; speedHistory.length = 0; posHistory.length = 0;
-  chartSpeed.update(); chartPos.update();
-  updateUI();
-  updateVidaUtil();
-  addLog('info', 'Contador zerado manualmente');
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
-}
-
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
-});
-
-/* init */
-addLog('info', 'Dashboard iniciado · aguardando conexão');
-resetIdleTimer();
+/* ══ INIT ══ */
+tickClock(); updateVU(); tickEff();
+log('i','Dashboard iniciado &middot; aguardando conex&#227;o');
+resetIdle();
 </script>
 </body>
 </html>
