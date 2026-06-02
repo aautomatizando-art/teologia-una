@@ -240,6 +240,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .rel-save-err{color:var(--danger);font-size:11px;display:none;}
 .rel-save-err.show{display:block;margin-top:8px;}
 
+/* OS SALVAS TABS */
+.os-tab{padding:7px 16px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr);font-family:'Archivo',sans-serif;}
+.os-tab.active{color:var(--sky);border-bottom-color:var(--sky);}
+.os-tab:hover:not(.active){color:var(--text);}
+.os-empty{text-align:center;padding:28px 10px;color:var(--muted);font-size:12px;font-style:italic;}
+
 .fw-mdl{max-width:680px;border-color:rgba(53,200,255,.25);}
 .fw-mdl pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:13px;overflow:auto;max-height:360px;font-family:'Fira Code',monospace;font-size:10px;line-height:1.7;color:#ccc;margin-bottom:16px;}
@@ -266,6 +272,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <button class="btn btn-ghost" onclick="toggleConfig()">&#9881; Config</button>
       <button class="btn btn-gold" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
       <button class="btn btn-ghost" onclick="openFw()">&#60;/&#62; FW</button>
+      <button class="btn btn-ghost" onclick="openOSSalvas()">&#128203; OS Salvas</button>
       <button class="btn btn-green" onclick="openRelatorio()">&#128196; Relat&#243;rio</button>
       <button class="btn btn-danger" onclick="resetCounter()">&#8635; Zerar</button>
     </div>
@@ -593,7 +600,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
         <div class="pass-err" id="passErr">Senha incorreta. Tente novamente.</div>
       </div>
     </div>
-    <div class="mdl-acts" style="margin-top:14px;"><button class="btn btn-ghost" onclick="closeM('mSuper')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- OS SALVAS MODAL -->
+<div class="moverlay" id="mOS">
+  <div class="mdl" style="max-width:860px;width:100%;max-height:88vh;overflow-y:auto;border-color:rgba(53,200,255,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:9px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mdl-icon" style="background:rgba(53,200,255,.08);width:42px;height:42px;font-size:20px;margin-bottom:0;">&#128203;</div>
+        <h2 style="margin-bottom:0;">Ordens de Servi&#231;o Salvas</h2>
+      </div>
+      <button class="btn btn-ghost" style="padding:5px 11px;font-size:11px;" onclick="loadCurrentOSTab()">&#8635; Atualizar</button>
+    </div>
+    <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border);">
+      <button class="os-tab active" id="tabOrdens" onclick="switchOSTab('ordens')">Ordens de Produ&#231;&#227;o</button>
+      <button class="os-tab" id="tabRelatorios" onclick="switchOSTab('relatorios')">Relat&#243;rios Salvos</button>
+    </div>
+    <div id="osTabOrdens" style="overflow-x:auto;">
+      <table class="ltbl">
+        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data In&#237;cio</th><th>Produ&#231;&#227;o</th><th>Parada</th><th>Metros</th><th>Status</th></tr></thead>
+        <tbody id="osBody"><tr><td colspan="7" class="os-empty">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div id="osTabRelatorios" style="display:none;overflow-x:auto;">
+      <table class="ltbl">
+        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data Gera&#231;&#227;o</th><th>Produ&#231;&#227;o</th><th>Efici&#234;ncia</th><th>Metros</th><th>Disponib.</th></tr></thead>
+        <tbody id="relSavedBody"><tr><td colspan="7" class="os-empty">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeM('mOS')">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -1168,6 +1206,66 @@ async function saveRelatorio(){
   }
 }
 
+/* ══ OS SALVAS ══ */
+let currentOSTab='ordens';
+async function openOSSalvas(){
+  document.getElementById('mOS').classList.add('show');
+  switchOSTab('ordens');
+}
+function switchOSTab(tab){
+  currentOSTab=tab;
+  document.getElementById('osTabOrdens').style.display=tab==='ordens'?'block':'none';
+  document.getElementById('osTabRelatorios').style.display=tab==='relatorios'?'block':'none';
+  document.getElementById('tabOrdens').className='os-tab'+(tab==='ordens'?' active':'');
+  document.getElementById('tabRelatorios').className='os-tab'+(tab==='relatorios'?' active':'');
+  if(tab==='ordens') loadOSSalvas(); else loadRelatoriosSalvos();
+}
+function loadCurrentOSTab(){ if(currentOSTab==='ordens') loadOSSalvas(); else loadRelatoriosSalvos(); }
+async function loadOSSalvas(){
+  const tbody=document.getElementById('osBody');
+  tbody.innerHTML='<tr><td colspan="7" class="os-empty">Carregando...</td></tr>';
+  if(!sb){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
+  try{
+    const {data,error}=await sb.from('ordens').select('*, cliches(nome)').order('data_inicio',{ascending:false}).limit(60);
+    if(error) throw error;
+    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Nenhuma ordem encontrada.</td></tr>'; return; }
+    tbody.innerHTML=data.map(o=>`
+      <tr>
+        <td style="color:var(--sky);font-weight:700">${o.numero}</td>
+        <td>${o.cliches?.nome||`Clich&#234; ${o.cliche_id}`}</td>
+        <td>${new Date(o.data_inicio).toLocaleString('pt-BR')}</td>
+        <td style="color:var(--ok)">${hms(o.tempo_producao_s||0)}</td>
+        <td style="color:var(--danger)">${hms(o.tempo_parada_s||0)}</td>
+        <td>${(+(o.posicao_total_m||0)).toFixed(3)} m</td>
+        <td style="color:${o.status==='fechada'?'var(--muted)':'var(--ok)'}">${o.status==='fechada'?'&#10003; Fechada':'&#9679; Aberta'}</td>
+      </tr>`).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="7" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+  }
+}
+async function loadRelatoriosSalvos(){
+  const tbody=document.getElementById('relSavedBody');
+  tbody.innerHTML='<tr><td colspan="7" class="os-empty">Carregando...</td></tr>';
+  if(!sb){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
+  try{
+    const {data,error}=await sb.from('relatorios').select('*').order('data_geracao',{ascending:false}).limit(60);
+    if(error) throw error;
+    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="7" class="os-empty">Nenhum relat&#243;rio salvo.</td></tr>'; return; }
+    tbody.innerHTML=data.map(r=>`
+      <tr>
+        <td style="color:var(--sky);font-weight:700">${r.numero_op||'&#8212;'}</td>
+        <td>Clich&#234; ${r.cliche_id||'&#8212;'}</td>
+        <td>${new Date(r.data_geracao).toLocaleString('pt-BR')}</td>
+        <td style="color:var(--ok)">${hms(r.tempo_producao_s||0)}</td>
+        <td style="color:${(+(r.eficiencia_pct||0))>=70?'var(--ok)':'var(--warn)'}">${(+(r.eficiencia_pct||0)).toFixed(1)}%</td>
+        <td>${(+(r.posicao_total_m||0)).toFixed(3)} m</td>
+        <td style="color:var(--sky)">${(+(r.disponibilidade_pct||0)).toFixed(1)}%</td>
+      </tr>`).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="7" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+  }
+}
+
 /* ══ LOG ══ */
 function log(type,detail){
   const tbody=document.getElementById('logBody');
@@ -1207,7 +1305,7 @@ function resetCounter(){
   updateUI(); updateVU(); log('i','Contador zerado');
 }
 function closeM(id){ document.getElementById(id).classList.remove('show'); }
-document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('show'); }));
+document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el && el.id!=='mSuper') el.classList.remove('show'); }));
 
 /* ══ FIRMWARE ══ */
 const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitais
