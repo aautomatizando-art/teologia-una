@@ -2753,11 +2753,8 @@ async function loadFinalizacao() {
 
 async function saveFinalizacao() {
   if (READ_ONLY) return;
-  const now  = new Date();
-  const date = localDateStr(now);
-  const time = now.toTimeString().slice(0, 5);
-  document.getElementById('ftDate').value = date;
-  document.getElementById('ftTime').value = time;
+  const date = document.getElementById('ftDate').value || localDateStr(new Date());
+  const time = document.getElementById('ftTime').value || new Date().toTimeString().slice(0, 5);
   const btn = document.querySelector('[onclick="saveFinalizacao()"]');
   btn.disabled = true; btn.textContent = '⏳ Salvando…';
   try {
