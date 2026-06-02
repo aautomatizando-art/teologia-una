@@ -807,7 +807,7 @@ const SUPERVISORS = [
 /* ══ HELPERS ══ */
 function p2m(p){ return (p/cfg.ppr)*(Math.PI*cfg.diam/1000); }
 function hms(s){ s=Math.max(0,Math.round(s)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-function vuCol(p){ return p>=90?'#ef4444':p>=70?'#f59e0b':'#4ade80'; }
+function vuCol(p){ return p>=80?'#ef4444':p>=60?'#f59e0b':'#4ade80'; }
 function typeColor(tipo){
   const map={'Manutenção':'#ef4444','Setup':'#f59e0b','Falta de Material':'#ffd166','Refeição':'#35c8ff','Reunião':'#35c8ff','Falta Mão de Obra':'#ff6b35'};
   return map[tipo]||'var(--muted)';
