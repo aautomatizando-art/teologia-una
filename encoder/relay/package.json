@@ -1,0 +1,16 @@
+{
+  "name": "esp32-encoder-relay",
+  "version": "2.0.0",
+  "description": "Relay WebSocket server v2 — ESP32 connects outbound to cloud relay",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "PORT=3001 node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
