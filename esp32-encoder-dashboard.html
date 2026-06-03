@@ -109,10 +109,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 /* DIGITAL I/O */
 .dio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
-.din-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
-.din-card.st-ok{border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.03);}
-.din-card.st-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.03);}
-.din-card.st-fail{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.03);}
+/* ── unified DIN card ── */
+.din-unified-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;grid-column:1/-1;}
+.din-unified-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:12px;}
+.din-lamps{display:flex;gap:10px;}
+.din-lamp{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;padding:12px 8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);transition:all .3s;}
+.din-lamp-img{width:56px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35));transition:filter .3s;}
+.din-lamp.st-ok{border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.05);}
+.din-lamp.st-ok .din-lamp-img{filter:drop-shadow(0 2px 14px rgba(74,222,128,.6));}
+.din-lamp.st-warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.05);}
+.din-lamp.st-warn .din-lamp-img{filter:drop-shadow(0 2px 14px rgba(245,158,11,.6));}
+.din-lamp.st-fail{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.05);}
+.din-lamp.st-fail .din-lamp-img{filter:drop-shadow(0 2px 14px rgba(239,68,68,.6));}
+.din-lamp-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.din-lamp-name{font-size:11px;font-weight:700;color:var(--text);text-align:center;}
+.din-lamp-gpio{font-size:9px;color:var(--muted);font-family:'Fira Code',monospace;}
+.din-lamp-state{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.05);}
+/* ── DOUT cards ── */
 .dout-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
 .dout-card.dout-on{border-color:rgba(53,200,255,.45);background:rgba(53,200,255,.03);}
 .din-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
@@ -515,23 +528,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <!-- DIGITAL I/O -->
   <div class="slbl">Entradas &amp; Sa&#237;das Digitais</div>
   <div class="dio-grid">
-    <div class="din-card" id="dinCard1">
-      <div class="din-lbl">DIN 1 &mdash; Produzindo</div>
-      <div class="din-val" id="dinVal1" style="color:var(--muted)">Inativo</div>
-      <div class="din-sub" id="dinSub1">GPIO 34 &middot; 0</div>
-      <div class="kglow" style="background:var(--ok)"></div>
-    </div>
-    <div class="din-card" id="dinCard2">
-      <div class="din-lbl">DIN 2 &mdash; Setup</div>
-      <div class="din-val" id="dinVal2" style="color:var(--muted)">Inativo</div>
-      <div class="din-sub" id="dinSub2">GPIO 35 &middot; 0</div>
-      <div class="kglow" style="background:var(--warn)"></div>
-    </div>
-    <div class="din-card" id="dinCard3">
-      <div class="din-lbl">DIN 3 &mdash; Falha</div>
-      <div class="din-val" id="dinVal3" style="color:var(--muted)">Ok</div>
-      <div class="din-sub" id="dinSub3">GPIO 36 &middot; 0</div>
-      <div class="kglow" style="background:var(--danger)"></div>
+    <!-- DIN unificado -->
+    <div class="din-unified-card">
+      <div class="din-unified-header">&#9679; Entradas Digitais &mdash; Sin&#225;leiro</div>
+      <div class="din-lamps">
+        <div class="din-lamp" id="dinLamp1">
+          <img class="din-lamp-img" id="dinLampImg1" src="off.png" alt="DIN1">
+          <div class="din-lamp-tag">DIN 1 &middot; GPIO 34</div>
+          <div class="din-lamp-name">Produzindo</div>
+          <div class="din-lamp-state" id="dinLampState1" style="color:var(--muted)">Inativo</div>
+        </div>
+        <div class="din-lamp" id="dinLamp2">
+          <img class="din-lamp-img" id="dinLampImg2" src="off.png" alt="DIN2">
+          <div class="din-lamp-tag">DIN 2 &middot; GPIO 35</div>
+          <div class="din-lamp-name">Setup</div>
+          <div class="din-lamp-state" id="dinLampState2" style="color:var(--muted)">Inativo</div>
+        </div>
+        <div class="din-lamp" id="dinLamp3">
+          <img class="din-lamp-img" id="dinLampImg3" src="off.png" alt="DIN3">
+          <div class="din-lamp-tag">DIN 3 &middot; GPIO 36</div>
+          <div class="din-lamp-name">Falha</div>
+          <div class="din-lamp-state" id="dinLampState3" style="color:var(--ok)">Ok</div>
+        </div>
+      </div>
     </div>
     <div class="dout-card" id="doutCard1">
       <div class="din-lbl">DOUT 1 &mdash; Supervisor</div>
@@ -1310,21 +1329,21 @@ function setDout(pin,val){
   updateDIO();
 }
 function updateDIO(){
-  // DIN cards
+  // DIN unified card — sinaleiro
   const dinCfg=[
-    {label:'Produzindo',cls:'st-ok',onColor:'var(--ok)',offLabel:'Inativo',gpio:34},
-    {label:'Setup',cls:'st-warn',onColor:'var(--warn)',offLabel:'Inativo',gpio:35},
-    {label:'Falha',cls:'st-fail',onColor:'var(--danger)',offLabel:'Ok',gpio:36},
+    {onImg:'green.png',  cls:'st-ok',   onColor:'var(--ok)',     onLabel:'Produzindo', offLabel:'Inativo'},
+    {onImg:'yellow.png', cls:'st-warn',  onColor:'var(--warn)',   onLabel:'Setup',      offLabel:'Inativo'},
+    {onImg:'red.png',    cls:'st-fail',  onColor:'var(--danger)', onLabel:'FALHA',      offLabel:'Ok'},
   ];
   for(let i=0;i<3;i++){
-    const c=document.getElementById(`dinCard${i+1}`);
-    const v=document.getElementById(`dinVal${i+1}`);
-    const s=document.getElementById(`dinSub${i+1}`);
-    const on=din[i];
-    c.className=`din-card${on?' '+dinCfg[i].cls:''}`;
-    v.textContent=on?dinCfg[i].label:dinCfg[i].offLabel;
-    v.style.color=on?dinCfg[i].onColor:'var(--muted)';
-    s.textContent=`GPIO ${dinCfg[i].gpio} · ${on?1:0}`;
+    const lamp  = document.getElementById(`dinLamp${i+1}`);
+    const img   = document.getElementById(`dinLampImg${i+1}`);
+    const state = document.getElementById(`dinLampState${i+1}`);
+    const on    = din[i];
+    lamp.className  = `din-lamp${on?' '+dinCfg[i].cls:''}`;
+    img.src         = on ? dinCfg[i].onImg : 'off.png';
+    state.textContent = on ? dinCfg[i].onLabel : dinCfg[i].offLabel;
+    state.style.color = on ? dinCfg[i].onColor : (i===2?'var(--ok)':'var(--muted)');
   }
   // DOUT cards
   for(let i=0;i<2;i++){
