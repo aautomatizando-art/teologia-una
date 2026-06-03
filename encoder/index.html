@@ -512,6 +512,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="fgrp"><label>Timeout Alerta (s)</label><input class="fctl" id="cfgTimeout" value="60"></div>
       <div class="fgrp"><label>Senha Admin</label><input class="fctl" id="cfgAdminPass" type="password" value="1234"><span class="fhint">Liberar Produ&#231;&#227;o</span></div>
       <hr class="cfg-hr">
+      <div class="fgrp" style="grid-column:1/-1;">
+        <label>Relay URL <span style="color:var(--ok);font-size:10px;font-weight:600;">(acesso mobile &#8212; qualquer rede)</span></label>
+        <input class="fctl" id="cfgRelayUrl" placeholder="wss://abc.trycloudflare.com  ou  ws://localhost:3001" style="width:100%;">
+        <span class="fhint">Deixe vazio para conectar direto ao ESP32 (mesma rede). Com relay, funciona de qualquer dispositivo.</span>
+      </div>
+      <hr class="cfg-hr">
       <div class="fgrp"><label>Supabase URL</label><input class="fctl" id="cfgSbUrl" placeholder="https://xxx.supabase.co"><span class="fhint">Settings &rarr; API</span></div>
       <div class="fgrp"><label>Supabase Anon Key</label><input class="fctl" id="cfgSbKey" placeholder="eyJhbGci..."></div>
       <div class="fgrp" style="align-self:end;">
@@ -943,13 +949,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 <script>
 /* ══ CONFIG ══ */
-let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:200, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234' };
+let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:200, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234', relayUrl:'' };
 try {
   const s = JSON.parse(localStorage.getItem('enc_cfg')||'{}');
   Object.assign(cfg, s);
   const map = {
     cfgIp:'ip', cfgPort:'port', cfgWsPort:'wsPort', cfgDiam:'diam',
-    cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey', cfgAdminPass:'adminPass'
+    cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey', cfgAdminPass:'adminPass',
+    cfgRelayUrl:'relayUrl'
   };
   Object.entries(map).forEach(([id,k]) => { const el=document.getElementById(id); if(el&&cfg[k]!==undefined) el.value=cfg[k]; });
 } catch(_) {}
@@ -1423,6 +1430,18 @@ function updateDIO(){
   }
 }
 
+/* ══ RELAY STATUS MESSAGE ══ */
+function handleRelayMsg(r){
+  if(r.esp32_connected){
+    setConn('ok','Online via Relay');
+    document.getElementById('httpsBanner').style.display='none';
+    log('i',`ESP32 conectado ao relay (${r.esp32_url||''})`);
+  } else {
+    setConn('warn','Relay: aguardando ESP32…');
+    log('a',`Relay conectado — ESP32 offline (${r.esp32_url||''})`);
+  }
+}
+
 /* ══ HTTP POLLING (fallback quando HTTPS bloqueia ws://) ══ */
 function startPolling(){
   if(pollIv) return;
@@ -1451,14 +1470,40 @@ function connect(){
   stopPolling();
   if(ws){ ws.close(); ws=null; }
 
+  /* ── Via Relay (qualquer dispositivo, qualquer rede) ── */
+  if(cfg.relayUrl){
+    setConn('warn','Conectando ao Relay…');
+    try{
+      ws=new WebSocket(cfg.relayUrl);
+      ws.onopen=()=>{ wsFailCount=0; log('i','Relay WebSocket conectado'); };
+      ws.onmessage=e=>{
+        try{
+          const d=JSON.parse(e.data);
+          if(d.__relay){ handleRelayMsg(d); return; }
+          handleData(d);
+        }catch(_){}
+      };
+      ws.onerror=()=>{ wsFailCount++; setConn('fail','Erro Relay'); };
+      ws.onclose=()=>{
+        setConn('off','Relay desconectado');
+        ws=null;
+        const delay=wsFailCount>=5?30000:Math.min(4000*Math.pow(1.5,wsFailCount),30000);
+        setTimeout(()=>{ if(!ws&&!pollIv) connect(); }, delay);
+      };
+    }catch(err){ wsFailCount++; setConn('fail','Falha Relay'); log('a','Falha Relay: '+err.message); }
+    return;
+  }
+
+  /* ── Direto ao ESP32 (mesma rede local) ── */
+
   /* Detecta HTTPS + IP local → ws:// bloqueado pelo browser */
   const isHttpsPage = location.protocol==='https:';
   const isLocalIp   = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
   if(isHttpsPage && isLocalIp){
     setConn('fail','HTTPS bloqueado');
     document.getElementById('httpsBanner').style.display='flex';
-    log('a',`HTTPS impede ws:// para ${cfg.ip} — use o botão "Baixar HTML" e abra no celular sem HTTPS`);
-    startPolling(); // tenta de qualquer forma (funciona se browser permitir mixed-content)
+    log('a',`HTTPS impede ws:// para ${cfg.ip} — configure um Relay URL ou baixe o HTML`);
+    startPolling();
     return;
   }
 
@@ -2116,6 +2161,7 @@ function applyConfig(){
   cfg.ppr=parseInt(document.getElementById('cfgPpr').value)||360;
   cfg.timeout=parseInt(document.getElementById('cfgTimeout').value)||60;
   cfg.adminPass=document.getElementById('cfgAdminPass').value||'1234';
+  cfg.relayUrl=document.getElementById('cfgRelayUrl').value.trim();
   cfg.sbUrl=document.getElementById('cfgSbUrl').value.trim();
   cfg.sbKey=document.getElementById('cfgSbKey').value.trim();
   localStorage.setItem('enc_cfg',JSON.stringify(cfg));
