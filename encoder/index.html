@@ -547,10 +547,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="ksub" id="valQtdSub">OP n&#227;o iniciada</div>
       <div class="kglow" style="background:var(--ok)"></div>
     </div>
-    <div class="kcard">
-      <div class="klbl">Status</div>
-      <div class="kval" id="valSt" style="font-size:16px;color:var(--muted)">&#9679; Offline</div>
-      <div class="ksub" id="valLast">&#218;ltima leitura: --</div>
+    <div class="kcard" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+      <div class="klbl" style="width:100%;text-align:left;">Status</div>
+      <div class="kval" id="valSt" style="font-size:15px;color:var(--muted);width:100%;text-align:left;">&#9679; Offline</div>
+      <img id="dinSinalImg" src="off.png" alt="Sinaleiro" style="width:62px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.4));transition:filter .4s;margin:8px 0 4px;">
+      <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">M&#225;quina Desligada</div>
+      <div class="ksub" id="valLast" style="width:100%;text-align:left;">&#218;ltima leitura: --</div>
       <div class="kglow" style="background:var(--danger)"></div>
     </div>
   </div>
@@ -558,33 +560,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <!-- DIGITAL I/O -->
   <div class="slbl">Entradas &amp; Sa&#237;das Digitais</div>
   <div class="dio-grid">
-    <!-- DIN — sinaleiro único -->
-    <div class="din-unified-card" style="display:flex;align-items:center;gap:22px;">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
-        <img id="dinSinalImg" src="off.png" alt="Sinaleiro" style="width:72px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.4));transition:filter .4s,opacity .4s;">
-        <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);text-align:center;">Inativo</div>
-      </div>
-      <div style="flex:1;">
-        <div class="din-unified-header" style="margin-bottom:10px;">&#9679; Entradas Digitais &mdash; Sin&#225;leiro</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div class="din-row" id="dinRow1">
-            <span class="din-dot" id="dinDot1">&#9679;</span>
-            <span class="din-row-name">DIN 1 &mdash; Produzindo</span>
-            <span class="din-row-gpio">GPIO 34</span>
-            <span class="din-row-val" id="dinRowVal1">Inativo</span>
-          </div>
-          <div class="din-row" id="dinRow2">
-            <span class="din-dot" id="dinDot2">&#9679;</span>
-            <span class="din-row-name">DIN 2 &mdash; Setup</span>
-            <span class="din-row-gpio">GPIO 35</span>
-            <span class="din-row-val" id="dinRowVal2">Inativo</span>
-          </div>
-          <div class="din-row" id="dinRow3">
-            <span class="din-dot" id="dinDot3">&#9679;</span>
-            <span class="din-row-name">DIN 3 &mdash; Falha</span>
-            <span class="din-row-gpio">GPIO 36</span>
-            <span class="din-row-val" id="dinRowVal3">Ok</span>
-          </div>
+    <!-- DIN — entradas digitais -->
+    <div class="din-unified-card">
+      <div class="din-unified-header">&#9679; Entradas Digitais</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="din-row" id="dinRow1">
+          <span class="din-dot" id="dinDot1">&#9679;</span>
+          <span class="din-row-name">DIN 1 &mdash; Produzindo</span>
+          <span class="din-row-gpio">GPIO 34</span>
+          <span class="din-row-val" id="dinRowVal1">Inativo</span>
+        </div>
+        <div class="din-row" id="dinRow2">
+          <span class="din-dot" id="dinDot2">&#9679;</span>
+          <span class="din-row-name">DIN 2 &mdash; Setup</span>
+          <span class="din-row-gpio">GPIO 35</span>
+          <span class="din-row-val" id="dinRowVal2">Inativo</span>
+        </div>
+        <div class="din-row" id="dinRow3">
+          <span class="din-dot" id="dinDot3">&#9679;</span>
+          <span class="din-row-name">DIN 3 &mdash; Falha</span>
+          <span class="din-row-gpio">GPIO 36</span>
+          <span class="din-row-val" id="dinRowVal3">Ok</span>
         </div>
       </div>
     </div>
