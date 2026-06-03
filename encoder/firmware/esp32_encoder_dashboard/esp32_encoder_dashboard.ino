@@ -139,8 +139,8 @@ String buildJson() {
   StaticJsonDocument<320> doc;
   doc["pulses"]     = pulseCount;
   doc["direction"]  = direction;
-  doc["position_m"] = serialized(String(pulseCount * M_PER_PULSE, 4));
-  doc["speed_mpm"]  = serialized(String(speedMpm, 2));
+  doc["position_m"] = (float)(pulseCount * M_PER_PULSE);
+  doc["speed_mpm"]  = speedMpm;
   doc["din1"]       = digitalRead(DIN1);
   doc["din2"]       = digitalRead(DIN2);
   doc["din3"]       = digitalRead(DIN3);
@@ -188,7 +188,8 @@ void setup() {
   // Endpoint HTTP /data
   server.on("/data", HTTP_GET, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "application/json", buildJson());
+    String json = buildJson();
+    server.send(200, "application/json", json);
   });
 
   server.begin();
@@ -212,6 +213,7 @@ void loop() {
 
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
-    wsServer.broadcastTXT(buildJson());
+    String json = buildJson();
+    wsServer.broadcastTXT(json);
   }
 }
