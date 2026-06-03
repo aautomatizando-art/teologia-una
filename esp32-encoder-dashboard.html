@@ -73,6 +73,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .banner.show{display:flex;}
 .banner-stop{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);}
 .banner-alert{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);}
+.banner-https{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.35);}
 .bico{font-size:22px;flex-shrink:0;margin-top:2px;}
 .btxt{flex:1;}
 .btxt strong{display:block;font-family:'Archivo Black',sans-serif;font-size:14px;}
@@ -125,6 +126,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .din-lamp-name{font-size:11px;font-weight:700;color:var(--text);text-align:center;}
 .din-lamp-gpio{font-size:9px;color:var(--muted);font-family:'Fira Code',monospace;}
 .din-lamp-state{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.05);}
+/* blink animation for active sinaleiro */
+@keyframes lampBlink{0%,100%{opacity:1}50%{opacity:.25}}
+.lamp-blink{animation:lampBlink 1s ease-in-out infinite;}
+/* DIN status rows */
+.din-row{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:var(--radius-sm);background:var(--bg3);border:1px solid var(--border);transition:all .3s;}
+.din-row.st-ok{border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.06);}
+.din-row.st-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.06);}
+.din-row.st-fail{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06);}
+.din-dot{font-size:9px;flex-shrink:0;color:var(--muted);}
+.din-row-name{font-size:11px;font-weight:600;flex:1;}
+.din-row-gpio{font-size:9px;color:var(--muted);font-family:'Fira Code',monospace;}
+.din-row-val{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(255,255,255,.05);min-width:54px;text-align:center;}
 /* ── DOUT cards ── */
 .dout-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
 .dout-card.dout-on{border-color:rgba(53,200,255,.45);background:rgba(53,200,255,.03);}
@@ -454,6 +467,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
   </div>
 
+  <!-- HTTPS MIXED-CONTENT BANNER -->
+  <div class="banner banner-https" id="httpsBanner" style="display:none;">
+    <div class="bico" style="color:#ffd166;font-size:20px;">&#9888;</div>
+    <div class="btxt" style="flex:1;">
+      <strong style="color:#ffd166;">P&#225;gina HTTPS &#8212; conex&#227;o local bloqueada pelo navegador</strong>
+      <small style="display:block;margin-top:5px;line-height:1.5;">
+        Navegadores bloqueiam <code>ws://</code> e <code>http://</code> de p&#225;ginas seguras (HTTPS) para IPs locais.<br>
+        <b>Solu&#231;&#227;o:</b> baixe o arquivo e abra diretamente no celular (sem HTTPS):
+      </small>
+    </div>
+    <div class="bact" style="display:flex;flex-direction:column;gap:5px;min-width:126px;">
+      <a id="dlDashBtn" href="index.html" download="esp32-dashboard.html" class="btn btn-gold" style="padding:5px 10px;font-size:11px;text-decoration:none;text-align:center;">&#11015; Baixar HTML</a>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="startPolling()">&#8635; Tentar HTTP</button>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="document.getElementById('httpsBanner').style.display='none'">&#10005; Fechar</button>
+    </div>
+  </div>
+
   <!-- ALERT BANNER -->
   <div class="banner banner-alert" id="alertBanner">
     <div class="bico">&#9888;</div>
@@ -528,27 +558,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <!-- DIGITAL I/O -->
   <div class="slbl">Entradas &amp; Sa&#237;das Digitais</div>
   <div class="dio-grid">
-    <!-- DIN unificado -->
-    <div class="din-unified-card">
-      <div class="din-unified-header">&#9679; Entradas Digitais &mdash; Sin&#225;leiro</div>
-      <div class="din-lamps">
-        <div class="din-lamp" id="dinLamp1">
-          <img class="din-lamp-img" id="dinLampImg1" src="off.png" alt="DIN1">
-          <div class="din-lamp-tag">DIN 1 &middot; GPIO 34</div>
-          <div class="din-lamp-name">Produzindo</div>
-          <div class="din-lamp-state" id="dinLampState1" style="color:var(--muted)">Inativo</div>
-        </div>
-        <div class="din-lamp" id="dinLamp2">
-          <img class="din-lamp-img" id="dinLampImg2" src="off.png" alt="DIN2">
-          <div class="din-lamp-tag">DIN 2 &middot; GPIO 35</div>
-          <div class="din-lamp-name">Setup</div>
-          <div class="din-lamp-state" id="dinLampState2" style="color:var(--muted)">Inativo</div>
-        </div>
-        <div class="din-lamp" id="dinLamp3">
-          <img class="din-lamp-img" id="dinLampImg3" src="off.png" alt="DIN3">
-          <div class="din-lamp-tag">DIN 3 &middot; GPIO 36</div>
-          <div class="din-lamp-name">Falha</div>
-          <div class="din-lamp-state" id="dinLampState3" style="color:var(--ok)">Ok</div>
+    <!-- DIN — sinaleiro único -->
+    <div class="din-unified-card" style="display:flex;align-items:center;gap:22px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
+        <img id="dinSinalImg" src="off.png" alt="Sinaleiro" style="width:72px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.4));transition:filter .4s,opacity .4s;">
+        <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);text-align:center;">Inativo</div>
+      </div>
+      <div style="flex:1;">
+        <div class="din-unified-header" style="margin-bottom:10px;">&#9679; Entradas Digitais &mdash; Sin&#225;leiro</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="din-row" id="dinRow1">
+            <span class="din-dot" id="dinDot1">&#9679;</span>
+            <span class="din-row-name">DIN 1 &mdash; Produzindo</span>
+            <span class="din-row-gpio">GPIO 34</span>
+            <span class="din-row-val" id="dinRowVal1">Inativo</span>
+          </div>
+          <div class="din-row" id="dinRow2">
+            <span class="din-dot" id="dinDot2">&#9679;</span>
+            <span class="din-row-name">DIN 2 &mdash; Setup</span>
+            <span class="din-row-gpio">GPIO 35</span>
+            <span class="din-row-val" id="dinRowVal2">Inativo</span>
+          </div>
+          <div class="din-row" id="dinRow3">
+            <span class="din-dot" id="dinDot3">&#9679;</span>
+            <span class="din-row-name">DIN 3 &mdash; Falha</span>
+            <span class="din-row-gpio">GPIO 36</span>
+            <span class="din-row-val" id="dinRowVal3">Ok</span>
+          </div>
         </div>
       </div>
     </div>
@@ -843,8 +879,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div><label class="edit-lbl">Vida &#218;til (m)</label><input class="edit-inp" id="editVidaUtil" type="number" min="1" step="0.001" value="1000"></div>
       <div><label class="edit-lbl">Consumido (m)</label><input class="edit-inp" id="editConsumido" type="number" min="0" step="0.001" value="0" title="Consumo acumulado hist&#243;rico"></div>
     </div>
+    <!-- Reposição de estoque (oculto até clicar no botão) -->
+    <div id="repostSection" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid rgba(74,222,128,.3);">
+      <div style="font-size:11px;color:var(--ok);font-weight:700;margin-bottom:8px;">&#8635; Reposição de Estoque</div>
+      <label class="edit-lbl">Data da Reposição</label>
+      <input class="edit-inp" id="repostData" type="date" style="margin-bottom:8px;width:100%;">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Ao confirmar, o consumo (%) do clichê será zerado e a data de aquisição atualizada.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ok" style="font-size:11px;padding:5px 12px;" onclick="confirmarReposicao()">&#10003; Confirmar</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="document.getElementById('repostSection').style.display='none'">Cancelar</button>
+      </div>
+    </div>
     <div class="mdl-acts">
       <button class="btn btn-sky" onclick="saveClicheEdit()">&#10003; Salvar</button>
+      <button class="btn btn-ok" onclick="abrirReposicao()" style="background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);color:var(--ok);">&#8635; Reposi&#231;&#227;o de Estoque</button>
       <button class="btn btn-ghost" onclick="closeM('mClicheEdit')">Cancelar</button>
     </div>
   </div>
@@ -945,6 +993,7 @@ let stopCountdownTimer = null;
 let stopCountdownSec = 0;
 let opBasePulses = 0;
 let wsFailCount = 0;
+let pollIv = null;
 let vuAlertCount = 0;
 let lastVuAlertM = 0;
 let vuAlertActive = false;
@@ -1329,21 +1378,40 @@ function setDout(pin,val){
   updateDIO();
 }
 function updateDIO(){
-  // DIN unified card — sinaleiro
+  // DIN — sinaleiro único (prioridade: Falha > Setup > Produzindo > off)
   const dinCfg=[
-    {onImg:'green.png',  cls:'st-ok',   onColor:'var(--ok)',     onLabel:'Produzindo', offLabel:'Inativo'},
-    {onImg:'yellow.png', cls:'st-warn',  onColor:'var(--warn)',   onLabel:'Setup',      offLabel:'Inativo'},
-    {onImg:'red.png',    cls:'st-fail',  onColor:'var(--danger)', onLabel:'FALHA',      offLabel:'Ok'},
+    {onImg:'green.png',  cls:'st-ok',   onColor:'var(--ok)',     onLabel:'Produzindo', offLabel:'Inativo',  glowColor:'rgba(74,222,128,.7)'},
+    {onImg:'yellow.png', cls:'st-warn',  onColor:'var(--warn)',   onLabel:'Setup',      offLabel:'Inativo',  glowColor:'rgba(245,158,11,.7)'},
+    {onImg:'red.png',    cls:'st-fail',  onColor:'var(--danger)', onLabel:'FALHA',      offLabel:'Ok',       glowColor:'rgba(239,68,68,.7)'},
   ];
+  // Determina imagem do sinaleiro (maior prioridade = DIN3)
+  let activeIdx = din[2] ? 2 : din[1] ? 1 : din[0] ? 0 : -1;
+  const sinalImg   = document.getElementById('dinSinalImg');
+  const sinalLabel = document.getElementById('dinSinalLabel');
+  if(activeIdx >= 0){
+    const cfg2 = dinCfg[activeIdx];
+    sinalImg.src = cfg2.onImg;
+    sinalImg.style.filter = `drop-shadow(0 2px 18px ${cfg2.glowColor})`;
+    sinalImg.className = 'lamp-blink';
+    sinalLabel.textContent = cfg2.onLabel;
+    sinalLabel.style.color = cfg2.onColor;
+  } else {
+    sinalImg.src = 'off.png';
+    sinalImg.style.filter = 'drop-shadow(0 2px 10px rgba(0,0,0,.4))';
+    sinalImg.className = '';
+    sinalLabel.textContent = 'Inativo';
+    sinalLabel.style.color = 'var(--muted)';
+  }
+  // Linhas de status individuais
   for(let i=0;i<3;i++){
-    const lamp  = document.getElementById(`dinLamp${i+1}`);
-    const img   = document.getElementById(`dinLampImg${i+1}`);
-    const state = document.getElementById(`dinLampState${i+1}`);
-    const on    = din[i];
-    lamp.className  = `din-lamp${on?' '+dinCfg[i].cls:''}`;
-    img.src         = on ? dinCfg[i].onImg : 'off.png';
-    state.textContent = on ? dinCfg[i].onLabel : dinCfg[i].offLabel;
-    state.style.color = on ? dinCfg[i].onColor : (i===2?'var(--ok)':'var(--muted)');
+    const row  = document.getElementById(`dinRow${i+1}`);
+    const dot  = document.getElementById(`dinDot${i+1}`);
+    const val  = document.getElementById(`dinRowVal${i+1}`);
+    const on   = din[i];
+    row.className = `din-row${on?' '+dinCfg[i].cls:''}`;
+    dot.style.color = on ? dinCfg[i].onColor : 'var(--muted)';
+    val.textContent = on ? dinCfg[i].onLabel : dinCfg[i].offLabel;
+    val.style.color = on ? dinCfg[i].onColor : (i===2?'var(--ok)':'var(--muted)');
   }
   // DOUT cards
   for(let i=0;i<2;i++){
@@ -1359,9 +1427,45 @@ function updateDIO(){
   }
 }
 
+/* ══ HTTP POLLING (fallback quando HTTPS bloqueia ws://) ══ */
+function startPolling(){
+  if(pollIv) return;
+  setConn('warn','Polling HTTP…');
+  log('i',`HTTP polling → http://${cfg.ip}:${cfg.port}/data`);
+  pollIv=setInterval(async ()=>{
+    try{
+      const r=await fetch(`http://${cfg.ip}:${cfg.port}/data`,{cache:'no-store'});
+      if(r.ok){
+        const d=await r.json();
+        wsFailCount=0;
+        handleData(d);
+        if(connState!=='ok') setConn('ok','Online (HTTP)');
+      }
+    }catch(_){
+      if(connState==='ok') setConn('fail','Polling falhou');
+    }
+  },500);
+}
+function stopPolling(){
+  if(pollIv){ clearInterval(pollIv); pollIv=null; }
+}
+
 /* ══ WEBSOCKET ══ */
 function connect(){
+  stopPolling();
   if(ws){ ws.close(); ws=null; }
+
+  /* Detecta HTTPS + IP local → ws:// bloqueado pelo browser */
+  const isHttpsPage = location.protocol==='https:';
+  const isLocalIp   = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
+  if(isHttpsPage && isLocalIp){
+    setConn('fail','HTTPS bloqueado');
+    document.getElementById('httpsBanner').style.display='flex';
+    log('a',`HTTPS impede ws:// para ${cfg.ip} — use o botão "Baixar HTML" e abra no celular sem HTTPS`);
+    startPolling(); // tenta de qualquer forma (funciona se browser permitir mixed-content)
+    return;
+  }
+
   setConn('warn','Conectando...');
   try{
     ws=new WebSocket(`ws://${cfg.ip}:${cfg.wsPort}/ws`);
@@ -1371,11 +1475,11 @@ function connect(){
     ws.onclose=()=>{
       setConn('off','Desconectado');
       ws=null;
-      const delay = wsFailCount >= 5 ? 30000 : Math.min(4000 * Math.pow(1.5, wsFailCount), 30000);
-      if(wsFailCount === 3){
+      const delay=wsFailCount>=5?30000:Math.min(4000*Math.pow(1.5,wsFailCount),30000);
+      if(wsFailCount===3){
         log('a',`Sem conexão com ${cfg.ip}:${cfg.wsPort} — verifique se o celular está na mesma rede WiFi do ESP32`);
       }
-      setTimeout(()=>{ if(!ws) connect(); }, delay);
+      setTimeout(()=>{ if(!ws&&!pollIv) connect(); }, delay);
     };
   }catch(err){ wsFailCount++; setConn('fail','Falha'); log('a','Falha WS: '+err.message); }
 }
@@ -1744,7 +1848,36 @@ function openClicheEdit(id){
   document.getElementById('editEstoque').value=c.qtd_estoque||0;
   document.getElementById('editVidaUtil').value=c.vidaUtilM||1000;
   document.getElementById('editConsumido').value=c.consumidoM||0;
+  document.getElementById('repostSection').style.display='none';
+  document.getElementById('repostData').value=new Date().toISOString().split('T')[0];
   document.getElementById('mClicheEdit').classList.add('show');
+}
+function abrirReposicao(){
+  const sec=document.getElementById('repostSection');
+  sec.style.display=sec.style.display==='none'?'block':'none';
+}
+async function confirmarReposicao(){
+  const id=parseInt(document.getElementById('editClicheId').value);
+  const c=cliches[id-1]; if(!c) return;
+  const data=document.getElementById('repostData').value||new Date().toISOString().split('T')[0];
+  c.consumidoM=0;
+  c.data_compra=data;
+  document.getElementById('editConsumido').value=0;
+  document.getElementById('editDataCompra').value=data;
+  if(sb){
+    try{
+      await sb.from('cliches').upsert({
+        id,nome:c.nome,vida_util_m:c.vidaUtilM,consumido_m:0,
+        fabricante:c.fabricante,modelo:c.modelo,medidas:c.medidas,
+        data_compra:data||null,qtd_estoque:c.qtd_estoque
+      });
+    }catch(e){ showToast('Erro: '+e.message,'danger'); return; }
+  }
+  document.getElementById('repostSection').style.display='none';
+  if(clicheN===id){ vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false; updateVU(); }
+  renderClicheGrid(); updateClicheChart();
+  log('i',`Reposição de estoque: ${c.nome} — consumo zerado (${data})`);
+  showToast(`✓ ${c.nome} reposto — consumo zerado`,'ok');
 }
 
 async function saveClicheEdit(){
