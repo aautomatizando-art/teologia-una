@@ -365,7 +365,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ilbl">&#9208; Tempo de Parada</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
-        <button class="btn btn-gold" style="padding:4px 10px;font-size:10px;height:26px;" onclick="openCliches()">&#128200; Clich&#234;s</button>
+        <button class="btn btn-gold" style="padding:6px 15px;font-size:11px;margin-left:10px;" onclick="requireAdminPass('Gest&#227;o de Clich&#234;s','Digite a senha de administrador para acessar.',openCliches)">&#128200; Gest&#227;o de Clich&#234;s</button>
       </div>
     </div>
   </div>
@@ -740,6 +740,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     <div class="mdl-acts">
       <button class="btn btn-sky" onclick="saveClicheEdit()">&#10003; Salvar</button>
       <button class="btn btn-ghost" onclick="closeM('mClicheEdit')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PASSWORD MODAL -->
+<div class="moverlay" id="mAdminPass">
+  <div class="mdl" style="max-width:380px;border-color:rgba(255,209,102,.35);">
+    <div class="mdl-icon" style="background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.2);">&#128273;</div>
+    <h2 id="adminPassTitle">Acesso Restrito</h2>
+    <p id="adminPassDesc" style="margin-bottom:14px;">Digite a senha de administrador para continuar.</p>
+    <input class="pass-inp" id="adminPassInp" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;" maxlength="32"
+      onkeydown="if(event.key==='Enter') confirmAdminPass()" style="margin-bottom:8px;">
+    <div class="pass-err" id="adminPassErr">Senha incorreta. Tente novamente.</div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-sky" onclick="confirmAdminPass()">&#10003; Confirmar</button>
+      <button class="btn btn-ghost" onclick="closeM('mAdminPass')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1308,6 +1324,31 @@ async function saveRelatorio(){
     document.getElementById('relSaveErr').textContent='Erro ao salvar: '+e.message;
     document.getElementById('relSaveErr').classList.add('show');
     btn.textContent='&#128190; Salvar no Supabase'; btn.disabled=false;
+  }
+}
+
+/* ══ ADMIN PASS GATE ══ */
+let _adminCb = null;
+function requireAdminPass(title, desc, cb){
+  _adminCb = cb;
+  document.getElementById('adminPassTitle').textContent = title;
+  document.getElementById('adminPassDesc').textContent = desc;
+  document.getElementById('adminPassInp').value = '';
+  document.getElementById('adminPassErr').classList.remove('show');
+  document.getElementById('mAdminPass').classList.add('show');
+  setTimeout(()=>document.getElementById('adminPassInp').focus(), 120);
+}
+function confirmAdminPass(){
+  const val = document.getElementById('adminPassInp').value;
+  if(val === cfg.adminPass){
+    closeM('mAdminPass');
+    document.getElementById('adminPassInp').value = '';
+    if(_adminCb){ _adminCb(); _adminCb = null; }
+  } else {
+    document.getElementById('adminPassErr').classList.add('show');
+    document.getElementById('adminPassInp').value = '';
+    document.getElementById('adminPassInp').focus();
+    setTimeout(()=>document.getElementById('adminPassErr').classList.remove('show'), 2500);
   }
 }
 
