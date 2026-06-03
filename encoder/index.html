@@ -924,6 +924,8 @@ let chartSpd = null;
 let chartProg = null;
 let stopCountdownTimer = null;
 let stopCountdownSec = 0;
+let opBasePulses = 0;
+let wsFailCount = 0;
 let vuAlertCount = 0;
 let lastVuAlertM = 0;
 let vuAlertActive = false;
@@ -939,6 +941,7 @@ function p2m(p){ return (p/cfg.ppr)*(Math.PI*cfg.diam/1000); }
 function hms(s){ s=Math.max(0,Math.round(s)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
 function vuCol(p){ return p>=80?'#ef4444':p>=60?'#f59e0b':'#4ade80'; }
 function progCol(p){ return p>=86?'#4ade80':p>=36?'#35c8ff':'#ef4444'; }
+function opSesM(){ return p2m(Math.abs(totalPulses - opBasePulses)); }
 function typeColor(tipo){
   const map={'Manutenção':'#ef4444','Setup':'#f59e0b','Falta de Material':'#ffd166','Refeição':'#35c8ff','Reunião':'#35c8ff','Falta Mão de Obra':'#ff6b35'};
   return map[tipo]||'var(--muted)';
@@ -962,7 +965,7 @@ setInterval(()=>{
   /* history para gráfico */
   speedHistory.push(curSpd*60);
   if(speedHistory.length>60) speedHistory.shift();
-  posHistory.push(p2m(Math.abs(totalPulses)));
+  posHistory.push(opSesM());
   if(posHistory.length>60) posHistory.shift();
   if(chartSpd) updateSpdChart();
   if(chartProg) updateProdProgress();
@@ -1082,7 +1085,7 @@ async function startOP(){
   if(!num){ document.getElementById('opInput').focus(); return; }
   opMetaM=parseFloat(document.getElementById('opMetaMInp').value)||0;
   opNum=num; opActive=true; prodSec=0; stopSec=0; stopHistory=[];
-  totalPulses=0; demoPAcc=0; speedHistory=[]; posHistory=[];
+  opBasePulses=totalPulses; demoPAcc=0; speedHistory=[]; posHistory=[];
   vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false;
   document.getElementById('opBtn').style.display='none';
   document.getElementById('finBtn').style.display='';
@@ -1096,13 +1099,17 @@ async function startOP(){
 }
 async function closeOP(){
   if(!opActive) return;
+  /* Cancela countdown de parada se ativo */
+  if(stopCountdownTimer){ clearInterval(stopCountdownTimer); stopCountdownTimer=null; }
+  document.getElementById('stopCd').classList.remove('show');
+  document.getElementById('stopBanner').classList.remove('show');
   if(!isProd && stopStartTs){
     const dur=Math.round((Date.now()-stopStartTs.getTime())/1000);
     if(stopType){ stopHistory.push({tipo:stopType,inicio:stopStartTs,fim:new Date(),duracao_s:dur}); }
     await closeStopEv(dur); stopStartTs=null; stopType='';
   }
   opActive=false;
-  const posM=p2m(Math.abs(totalPulses));
+  const posM=opSesM();
   cliches[clicheN-1].consumidoM += posM;
   if(sb){
     try{ await sb.from('cliches').upsert({id:clicheN,nome:`Clichê ${clicheN}`,vida_util_m:cliches[clicheN-1].vidaUtilM,consumido_m:cliches[clicheN-1].consumidoM}); }catch(_){}
@@ -1116,10 +1123,9 @@ async function closeOP(){
   document.getElementById('clicheSelect').disabled=false;
   renderStopHistory();
   opId=null;
-  /* Zera quantidade produzida ao finalizar OP */
-  totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0;
-  speedHistory=[]; posHistory=[];
-  updateUI(); updateProdProgress();
+  /* Reseta base de pulsos para zerar Quantidade Produzida */
+  opBasePulses=totalPulses; speedHistory=[]; posHistory=[];
+  updateProdProgress();
 }
 
 /* ══ CLICHÊ ══ */
@@ -1160,7 +1166,7 @@ const chartVU=new Chart(ctxVU,{type:'doughnut',data:{datasets:[{data:[0,100],bac
 
 function updateVU(){
   const c=cliches[clicheN-1];
-  const sesM=p2m(Math.abs(totalPulses));
+  const sesM=opSesM();
   const tot=c.consumidoM+sesM;
   const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
   const rem=Math.max(c.vidaUtilM-tot,0);
@@ -1255,7 +1261,7 @@ function updateSpdChart(){
 }
 
 function updateProdProgress(){
-  const posM=p2m(Math.abs(totalPulses));
+  const posM=opSesM();
   const meta=opMetaM||0;
   const pct=meta>0?Math.min((posM/meta)*100,100):0;
   const col=progCol(pct);
@@ -1340,15 +1346,19 @@ function connect(){
   setConn('warn','Conectando...');
   try{
     ws=new WebSocket(`ws://${cfg.ip}:${cfg.wsPort}/ws`);
-    ws.onopen=()=>{ setConn('ok','Online'); log('i','WebSocket conectado'); };
+    ws.onopen=()=>{ setConn('ok','Online'); wsFailCount=0; log('i','WebSocket conectado'); };
     ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
-    ws.onerror=()=>setConn('fail','Erro WS');
+    ws.onerror=()=>{ wsFailCount++; setConn('fail','Erro WS'); };
     ws.onclose=()=>{
-      setConn('off','Desconectado'); log('i','WebSocket desconectado');
+      setConn('off','Desconectado');
       ws=null;
-      setTimeout(()=>{ if(!ws) connect(); }, 4000);
+      const delay = wsFailCount >= 5 ? 30000 : Math.min(4000 * Math.pow(1.5, wsFailCount), 30000);
+      if(wsFailCount === 3){
+        log('a',`Sem conexão com ${cfg.ip}:${cfg.wsPort} — verifique se o celular está na mesma rede WiFi do ESP32`);
+      }
+      setTimeout(()=>{ if(!ws) connect(); }, delay);
     };
-  }catch(err){ setConn('fail','Falha'); log('a','Falha: '+err.message); }
+  }catch(err){ wsFailCount++; setConn('fail','Falha'); log('a','Falha WS: '+err.message); }
 }
 
 /* ══ DATA HANDLER ══ */
@@ -1369,7 +1379,7 @@ function handleData(d){
 
 /* ══ UI ══ */
 function updateUI(){
-  const posM=p2m(Math.abs(totalPulses));
+  const posM=opSesM();
   const rpm=curSpd/(Math.PI*cfg.diam/1000)*60;
   const freq=curSpd/(Math.PI*cfg.diam/1000);
   document.getElementById('valPos').innerHTML=posM.toFixed(3)+'<span class="kunit">m</span>';
@@ -1398,7 +1408,7 @@ function fireAlert(){
   if(alertDism) return;
   alertFired=true;
   const ts=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
-  document.getElementById('alertSub').textContent=`Última: ${ts} · Pos: ${p2m(Math.abs(totalPulses)).toFixed(3)} m`;
+  document.getElementById('alertSub').textContent=`Última: ${ts} · Pos: ${opSesM().toFixed(3)} m`;
   document.getElementById('alertBanner').classList.add('show');
   log('a',`ALERTA: sem leitura por ${cfg.timeout}s`);
   document.getElementById('valSt').innerHTML='&#9888; Inativo'; document.getElementById('valSt').style.color='var(--danger)';
@@ -1434,11 +1444,11 @@ function openSupervisor(){
   const idleStr=idle>=60?`${Math.floor(idle/60)}min ${idle%60}s`:`${idle}s`;
   document.getElementById('mIdle').textContent=idleStr;
   document.getElementById('mLast').textContent=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
-  document.getElementById('mPos').textContent=p2m(Math.abs(totalPulses)).toFixed(3)+' m';
+  document.getElementById('mPos').textContent=opSesM().toFixed(3)+' m';
   document.getElementById('mOP').textContent=opNum||'—';
   document.getElementById('mCl').textContent='Clichê '+clicheN;
   document.getElementById('mIp').textContent=cfg.ip;
-  const msg=encodeURIComponent(`⚠️ *ALERTA ENCODER*\n\nEncoder parado há ${idleStr}.\nOP: ${opNum||'—'} | Clichê: ${clicheN}\nPosição: ${p2m(Math.abs(totalPulses)).toFixed(3)} m\nESP32: ${cfg.ip}\n\nAção necessária.`);
+  const msg=encodeURIComponent(`⚠️ *ALERTA ENCODER*\n\nEncoder parado há ${idleStr}.\nOP: ${opNum||'—'} | Clichê: ${clicheN}\nPosição: ${opSesM().toFixed(3)} m\nESP32: ${cfg.ip}\n\nAção necessária.`);
   document.getElementById('svList').innerHTML=SUPERVISORS.map(s=>`
     <div class="sv-item">
       <div class="sv-left">
@@ -1482,7 +1492,7 @@ function confirmPass(){
 
 /* ══ RELATÓRIO ══ */
 function openRelatorio(){
-  const posM=p2m(Math.abs(totalPulses));
+  const posM=opSesM();
   const pp=Math.min((prodSec/JORNADA)*100,100);
   const sp=Math.min((stopSec/JORNADA)*100,100);
   const tot=prodSec+stopSec;
@@ -1633,7 +1643,7 @@ function updateClicheSelect(){
 function renderClicheGrid(){
   const div=document.getElementById('clicheGrid');
   div.innerHTML=cliches.map(c=>{
-    const sesM=(clicheN===c.id&&opActive)?p2m(Math.abs(totalPulses)):0;
+    const sesM=(clicheN===c.id&&opActive)?opSesM():0;
     const tot=c.consumidoM+sesM;
     const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
     const rem=Math.max(c.vidaUtilM-tot,0);
@@ -1676,7 +1686,7 @@ function renderClicheGrid(){
 function updateClicheChart(){
   const labels=cliches.map(c=>c.nome||`Clichê ${c.id}`);
   const values=cliches.map(c=>{
-    const sesM=(clicheN===c.id&&opActive)?p2m(Math.abs(totalPulses)):0;
+    const sesM=(clicheN===c.id&&opActive)?opSesM():0;
     const tot=c.consumidoM+sesM;
     return c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
   });
@@ -1749,7 +1759,7 @@ async function saveClicheEdit(){
 
 function pedidoCompra(id){
   const c=cliches[id-1];
-  const sesM=(clicheN===id&&opActive)?p2m(Math.abs(totalPulses)):0;
+  const sesM=(clicheN===id&&opActive)?opSesM():0;
   const tot=c.consumidoM+sesM;
   const pctStr=(c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0).toFixed(1);
   const urgente=parseFloat(pctStr)>=80;
@@ -1934,7 +1944,7 @@ function log(type,detail){
   const cls={a:'lt-a',r:'lt-r',s:'lt-s',i:'lt-i'}[type]||'lt-i';
   const lbl={a:'&#9888; Alerta',r:'&#9679; Leitura',s:'&#9208; Parada',i:'&#9675; Info'}[type]||'&#9675; Info';
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'—'}</td><td>Clichê ${clicheN}</td><td>${p2m(Math.abs(totalPulses)).toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
+  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'—'}</td><td>Clichê ${clicheN}</td><td>${opSesM().toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
   tbody.prepend(tr);
   if(tbody.rows.length>60) tbody.deleteRow(tbody.rows.length-1);
 }
@@ -1964,7 +1974,7 @@ function applyConfig(){
   log('i',`Config: IP=${cfg.ip} Ø=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
 }
 function resetCounter(){
-  totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0;
+  totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0; opBasePulses=0;
   updateUI(); updateVU(); log('i','Contador zerado');
 }
 function closeM(id){ document.getElementById(id).classList.remove('show'); }
