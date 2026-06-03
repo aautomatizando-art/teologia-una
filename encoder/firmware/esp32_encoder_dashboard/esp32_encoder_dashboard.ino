@@ -68,7 +68,7 @@ const char* PASSWORD = "SUA_SENHA_WIFI";  // ← altere aqui
 
 // ─── RELAY CLOUD (deixe vazio para desabilitar) ────────────
 // Exemplo: "abc.up.railway.app"
-#define RELAY_HOST  ""       // ← cole aqui o host do relay
+#define RELAY_HOST  "teologia-una-production.up.railway.app"  // Railway relay
 #define RELAY_PORT  443      // 443 = WSS (HTTPS), 80 = WS
 #define RELAY_PATH  "/esp32"
 
