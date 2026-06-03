@@ -847,6 +847,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   </div>
 </div>
 
+<!-- SUBSTITUIR CLICHÊ MODAL -->
+<div class="moverlay" id="mSubCliche">
+  <div class="mdl" style="max-width:420px;border-color:rgba(255,107,53,.45);">
+    <div class="mdl-icon" style="background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.25);font-size:28px;">&#128295;</div>
+    <h2 style="color:var(--orange)">Substituir Clich&#234;</h2>
+    <p id="mSubClicheDesc" style="margin-bottom:14px;">A vida &#250;til do clich&#234; atingiu 100%. Troque o clich&#234; antes de continuar.</p>
+    <div class="mdl-info">
+      <div class="mdl-row"><span>Clich&#234;</span><span id="mSubClicheNome">&#8212;</span></div>
+      <div class="mdl-row"><span>Consumido</span><span id="mSubClicheConsumido">&#8212;</span></div>
+      <div class="mdl-row"><span>Ocorr&#234;ncia</span><span id="mSubClicheCount" style="color:var(--warn);font-weight:700;">1&#170;</span></div>
+    </div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-ok" onclick="confirmarSubstituicao()" style="font-size:13px;padding:9px 20px;">&#10003; OK &#8212; Clich&#234; Trocado</button>
+    </div>
+  </div>
+</div>
+
 <!-- FIRMWARE MODAL -->
 <div class="moverlay" id="mFw">
   <div class="mdl fw-mdl" style="max-height:90vh;overflow-y:auto;">
@@ -907,6 +924,9 @@ let chartSpd = null;
 let chartProg = null;
 let stopCountdownTimer = null;
 let stopCountdownSec = 0;
+let vuAlertCount = 0;
+let lastVuAlertM = 0;
+let vuAlertActive = false;
 
 const SUPERVISORS = [
   {name:'Carlos Silva',  role:'Supervisor Turno A',          phone:'5511999990001',avatar:'CS',color:'#35c8ff'},
@@ -1062,6 +1082,7 @@ async function startOP(){
   opMetaM=parseFloat(document.getElementById('opMetaMInp').value)||0;
   opNum=num; opActive=true; prodSec=0; stopSec=0; stopHistory=[];
   totalPulses=0; demoPAcc=0; speedHistory=[]; posHistory=[];
+  vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false;
   document.getElementById('opBtn').style.display='none';
   document.getElementById('finBtn').style.display='';
   document.getElementById('opInput').disabled=true;
@@ -1100,6 +1121,7 @@ async function closeOP(){
 async function onClicheChange(){
   if(opActive) return;
   clicheN=parseInt(document.getElementById('clicheSelect').value);
+  vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false;
   await loadCliche(clicheN); updateVU(); log('i',`Clichê ${clicheN} selecionado`);
 }
 async function loadCliche(id){
@@ -1147,6 +1169,44 @@ function updateVU(){
   chartVU.data.datasets[0].data=[pct,Math.max(100-pct,0)];
   chartVU.data.datasets[0].backgroundColor=[col,'#1e1e1e'];
   chartVU.update('none');
+  checkVuAlert(pct, tot);
+}
+
+function checkVuAlert(pct, tot){
+  if(!opActive || vuAlertActive) return;
+  if(pct < 100) return;
+  if(vuAlertCount === 0 || (tot - lastVuAlertM) >= 100){
+    vuAlertActive = true;
+    vuAlertCount++;
+    lastVuAlertM = tot;
+    const c = cliches[clicheN-1];
+    const countLbl = ['1ª','2ª','3ª'][Math.min(vuAlertCount-1,2)];
+    setDout(1,1);
+    log('a',`Clichê ${clicheN} — vida útil 100% (${countLbl} ocorrência)`);
+    if(vuAlertCount >= 3){
+      requireAdminPass(
+        `Substituir Clichê — 3ª Ocorrência`,
+        `Vida útil do ${c.nome} esgotada pela 3ª vez. Somente o supervisor pode liberar a produção.`,
+        confirmarSubstituicao
+      );
+    } else {
+      document.getElementById('mSubClicheNome').textContent = c.nome;
+      document.getElementById('mSubClicheConsumido').textContent = tot.toFixed(3)+' m';
+      document.getElementById('mSubClicheCount').textContent = countLbl+' ocorrência';
+      document.getElementById('mSubClicheDesc').textContent =
+        `${c.nome} atingiu 100% da vida útil (${countLbl} ocorrência). Troque o clichê antes de continuar.`;
+      document.getElementById('mSubCliche').classList.add('show');
+    }
+  }
+}
+
+function confirmarSubstituicao(){
+  setDout(1,0);
+  closeM('mSubCliche');
+  const prev = vuAlertCount;
+  if(vuAlertCount >= 3) vuAlertCount = 0;
+  vuAlertActive = false;
+  log('i',`Substituição confirmada — clichê ${clicheN} (ocorrência ${prev})`);
 }
 
 /* ══ EFFICIENCY CHART ══ */
@@ -1278,7 +1338,11 @@ function connect(){
     ws.onopen=()=>{ setConn('ok','Online'); log('i','WebSocket conectado'); };
     ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
     ws.onerror=()=>setConn('fail','Erro WS');
-    ws.onclose=()=>{ setConn('off','Desconectado'); log('i','WebSocket desconectado'); };
+    ws.onclose=()=>{
+      setConn('off','Desconectado'); log('i','WebSocket desconectado');
+      ws=null;
+      setTimeout(()=>{ if(!ws) connect(); }, 4000);
+    };
   }catch(err){ setConn('fail','Falha'); log('a','Falha: '+err.message); }
 }
 
@@ -1899,7 +1963,7 @@ function resetCounter(){
   updateUI(); updateVU(); log('i','Contador zerado');
 }
 function closeM(id){ document.getElementById(id).classList.remove('show'); }
-document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el && el.id!=='mSuper') el.classList.remove('show'); }));
+document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el && el.id!=='mSuper' && el.id!=='mSubCliche') el.classList.remove('show'); }));
 
 /* ══ FIRMWARE ══ */
 const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitais
@@ -2037,6 +2101,8 @@ function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document
 tickClock(); updateVU(); tickEff(); updateDIO();
 log('i','Dashboard iniciado · aguardando conexão');
 resetIdle();
+/* Auto-connect ao abrir a página */
+connect();
 /* Auto-carrega clichês do Supabase ao abrir (se já configurado) */
 if(sb) loadAllCliches().then(()=>{ updateClicheSelect(); updateVU(); });
 </script>
