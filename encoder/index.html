@@ -488,8 +488,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
     <div class="kcard">
       <div class="klbl">Velocidade</div>
-      <div class="kval" id="valSpd" style="color:var(--ok)">0.000<span class="kunit">m/s</span></div>
-      <div class="ksub" id="valSpdMin">0.00 m/min</div>
+      <div class="kval" id="valSpd" style="color:var(--ok)">0.00<span class="kunit">m/min</span></div>
+      <div class="ksub" id="valSpdMin">0.000 m/s</div>
       <div class="kglow" style="background:var(--ok)"></div>
     </div>
     <div class="kcard">
@@ -553,7 +553,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <div class="slbl">Hist&#243;rico de Velocidade &amp; Posi&#231;&#227;o Acumulada</div>
   <div class="spdhist-card">
     <div class="spdhist-head">
-      <h4>&#218;ltimos 60 segundos &#8212; Verde: Velocidade (m/s) &nbsp;|&nbsp; Azul: Posi&#231;&#227;o acumulada (m)</h4>
+      <h4>&#218;ltimos 60 segundos &#8212; Verde: Velocidade (m/min) &nbsp;|&nbsp; Azul: Posi&#231;&#227;o acumulada (m)</h4>
     </div>
     <canvas id="chartSpd" height="68"></canvas>
   </div>
@@ -959,7 +959,7 @@ setInterval(()=>{
   }
   if(!isProd && stopStartTs && stopType) renderStopHistory();
   /* history para gráfico */
-  speedHistory.push(curSpd);
+  speedHistory.push(curSpd*60);
   if(speedHistory.length>60) speedHistory.shift();
   posHistory.push(p2m(Math.abs(totalPulses)));
   if(posHistory.length>60) posHistory.shift();
@@ -1227,7 +1227,7 @@ chartSpd=new Chart(document.getElementById('chartSpd').getContext('2d'),{
   data:{
     labels:Array(60).fill(''),
     datasets:[
-      {label:'Velocidade (m/s)',data:Array(60).fill(0),borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.07)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'ySpd'},
+      {label:'Velocidade (m/min)',data:Array(60).fill(0),borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.07)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'ySpd'},
       {label:'Posição (m)',data:Array(60).fill(0),borderColor:'#35c8ff',backgroundColor:'rgba(53,200,255,.03)',fill:false,tension:.3,pointRadius:0,borderWidth:1.5,yAxisID:'yPos'}
     ]
   },
@@ -1236,7 +1236,7 @@ chartSpd=new Chart(document.getElementById('chartSpd').getContext('2d'),{
     animation:{duration:0},
     scales:{
       x:{display:false},
-      ySpd:{position:'left',grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4ade80',font:{size:9}},title:{display:true,text:'m/s',color:'#4ade80',font:{size:9}}},
+      ySpd:{position:'left',grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4ade80',font:{size:9}},title:{display:true,text:'m/min',color:'#4ade80',font:{size:9}}},
       yPos:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#35c8ff',font:{size:9}},title:{display:true,text:'m',color:'#35c8ff',font:{size:9}}}
     },
     plugins:{legend:{display:true,labels:{color:'#888',font:{size:9},boxWidth:10,padding:8}},tooltip:{enabled:false}}
@@ -1369,8 +1369,8 @@ function updateUI(){
   const freq=curSpd/(Math.PI*cfg.diam/1000);
   document.getElementById('valPos').innerHTML=posM.toFixed(3)+'<span class="kunit">m</span>';
   document.getElementById('valPulses').textContent=totalPulses.toLocaleString('pt-BR')+' pulsos';
-  document.getElementById('valSpd').innerHTML=curSpd.toFixed(3)+'<span class="kunit">m/s</span>';
-  document.getElementById('valSpdMin').textContent=(curSpd*60).toFixed(2)+' m/min';
+  document.getElementById('valSpd').innerHTML=(curSpd*60).toFixed(2)+'<span class="kunit">m/min</span>';
+  document.getElementById('valSpdMin').textContent=curSpd.toFixed(3)+' m/s';
   document.getElementById('valRpm').innerHTML=rpm.toFixed(1)+'<span class="kunit">RPM</span>';
   document.getElementById('valFreq').textContent=freq.toFixed(2)+' Hz';
   const db=document.getElementById('dirBadge');
