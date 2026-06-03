@@ -314,6 +314,26 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   .hdr-title{display:none;}
   .ifield{flex:1 1 100%;}
 }
+
+/* ── THREECOL ───────────────────────────────────────────── */
+.threecol{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+@media(max-width:1060px){.threecol{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.threecol{grid-template-columns:1fr;}}
+
+/* Progresso da OP */
+.prog-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.prog-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px;}
+
+/* Speed history */
+.spdhist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;}
+.spdhist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.spdhist-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+
+/* Stop countdown badge */
+.stop-cd{display:none;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);
+  color:var(--warn);animation:bl 1s infinite;margin-left:8px;}
+.stop-cd.show{display:inline-flex;}
 </style>
 </head>
 <body>
@@ -352,8 +372,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     <div class="idiv"></div>
     <div class="ifield ifield-op">
       <span class="ilbl">N&#186; Ordem de Produ&#231;&#227;o</span>
-      <div style="display:flex;gap:5px;align-items:center;">
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
         <input class="iinput" id="opInput" placeholder="ex: OP-2024-001" maxlength="30">
+        <input class="iinput" id="opMetaMInp" type="number" min="0" step="0.1" placeholder="Meta (m)" style="width:90px;" title="Quantidade em metros da OP">
         <button class="btn btn-ok" id="opBtn" onclick="startOP()" style="padding:5px 10px;font-size:11px;">&#9654; Iniciar</button>
         <button class="btn btn-danger" id="finBtn" onclick="closeOP()" style="padding:5px 10px;font-size:11px;display:none;">&#9632; Finalizar OP</button>
       </div>
@@ -391,6 +412,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ilbl">&#9208; Tempo de Parada</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
+        <span class="stop-cd" id="stopCd">&#9201; <span id="stopCdSec">20</span>s</span>
         <button class="btn btn-gold" style="padding:6px 15px;font-size:11px;margin-left:10px;" onclick="requireAdminPass('Gest&#227;o de Clich&#234;s','Digite a senha de administrador para acessar.',openCliches)">&#128200; Gest&#227;o de Clich&#234;s</button>
       </div>
     </div>
@@ -527,9 +549,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
   </div>
 
-  <!-- VIDA ÚTIL + EFFICIENCY -->
-  <div class="slbl">Vida &#218;til &amp; Efici&#234;ncia</div>
-  <div class="twocol">
+  <!-- SPEED HISTORY -->
+  <div class="slbl">Hist&#243;rico de Velocidade &amp; Posi&#231;&#227;o Acumulada</div>
+  <div class="spdhist-card">
+    <div class="spdhist-head">
+      <h4>&#218;ltimos 60 segundos &#8212; Verde: Velocidade (m/s) &nbsp;|&nbsp; Azul: Posi&#231;&#227;o acumulada (m)</h4>
+    </div>
+    <canvas id="chartSpd" height="68"></canvas>
+  </div>
+
+  <!-- VIDA ÚTIL + PROGRESSO + EFFICIENCY -->
+  <div class="slbl">Vida &#218;til &amp; Progresso &amp; Efici&#234;ncia</div>
+  <div class="threecol">
     <div class="vu-card">
       <div class="vu-head">
         <h4>Consumo da Vida &#218;til</h4>
@@ -558,6 +589,36 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
         </div>
       </div>
     </div>
+
+    <!-- PROGRESSO DA OP -->
+    <div class="prog-card">
+      <div class="prog-head">Progresso da OP &#8212; Meta em Metros</div>
+      <div class="eff-inner">
+        <div class="eff-donut" style="width:148px;height:148px;">
+          <canvas id="chartProg"></canvas>
+          <div class="eff-donut-ctr">
+            <span class="eff-dpct" id="progPct" style="color:var(--sky)">0%</span>
+            <span class="eff-dsub">da meta</span>
+          </div>
+        </div>
+        <div class="eff-right">
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--sky)"></span><span>Produzido</span></div>
+            <span class="eff-pct" id="progPosM" style="color:var(--sky)">0.000 m</span>
+          </div>
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--muted)"></span><span>Meta</span></div>
+            <span class="eff-pct" id="progMetaM" style="color:var(--muted)">&#8212; m</span>
+          </div>
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--gold)"></span><span>Restante</span></div>
+            <span class="eff-pct" id="progRemM" style="color:var(--gold)">&#8212; m</span>
+          </div>
+          <hr class="eff-sep">
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Defina a meta em metros no campo<br>&#34;Meta (m)&#34; ao lado da OP.</div>
+        </div>
+      </div>
+    </div><!-- /prog-card -->
 
     <div class="eff-card">
       <div class="eff-head">Efici&#234;ncia &#8212; Meta 8 horas de produ&#231;&#227;o</div>
@@ -839,6 +900,13 @@ let stopHistory = [];
 let din = [0, 0, 0];
 let dout = [0, 0];
 let relatorioData = null;
+let opMetaM = 0;
+let speedHistory = [];
+let posHistory = [];
+let chartSpd = null;
+let chartProg = null;
+let stopCountdownTimer = null;
+let stopCountdownSec = 0;
 
 const SUPERVISORS = [
   {name:'Carlos Silva',  role:'Supervisor Turno A',          phone:'5511999990001',avatar:'CS',color:'#35c8ff'},
@@ -870,6 +938,13 @@ setInterval(()=>{
     tickTimers(); tickEff();
   }
   if(!isProd && stopStartTs && stopType) renderStopHistory();
+  /* history para gráfico */
+  speedHistory.push(curSpd);
+  if(speedHistory.length>60) speedHistory.shift();
+  posHistory.push(p2m(Math.abs(totalPulses)));
+  if(posHistory.length>60) posHistory.shift();
+  if(chartSpd) updateSpdChart();
+  if(chartProg) updateProdProgress();
 },1000);
 
 function tickClock(){
@@ -888,10 +963,24 @@ function tickTimers(){
 function onStop(){
   if(!opActive) return;
   stopStartTs=new Date();
-  document.getElementById('stopBanner').classList.add('show');
-  log('s','Encoder parado');
+  log('s','Encoder parado — aguardando 20s');
+  stopCountdownSec=20;
+  const cdEl=document.getElementById('stopCd');
+  const cdSec=document.getElementById('stopCdSec');
+  cdEl.classList.add('show'); cdSec.textContent=stopCountdownSec;
+  stopCountdownTimer=setInterval(()=>{
+    stopCountdownSec--;
+    cdSec.textContent=stopCountdownSec;
+    if(stopCountdownSec<=0){
+      clearInterval(stopCountdownTimer); stopCountdownTimer=null;
+      cdEl.classList.remove('show');
+      document.getElementById('stopBanner').classList.add('show');
+    }
+  },1000);
 }
 function onResume(){
+  if(stopCountdownTimer){ clearInterval(stopCountdownTimer); stopCountdownTimer=null; }
+  document.getElementById('stopCd').classList.remove('show');
   document.getElementById('stopBanner').classList.remove('show');
   document.getElementById('stopSel').value='';
   document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel'));
@@ -913,8 +1002,10 @@ function selectStop(tipo){
   stopType=tipo;
   document.getElementById('stopSel').value=tipo;
   document.querySelectorAll('.sbtn').forEach(b=>{ b.classList.toggle('sel', b.textContent.includes(tipo.split(' ')[0])); });
+  document.getElementById('stopBanner').classList.remove('show');
   createStopEv(tipo); log('s',`Parada: ${tipo}`);
   renderStopHistory();
+  setTimeout(openSupervisor, 120);
 }
 function onStopSelChange(){ const v=document.getElementById('stopSel').value; if(v) selectStop(v); }
 
@@ -968,11 +1059,15 @@ async function startOP(){
   if(opActive) return;
   const num=document.getElementById('opInput').value.trim();
   if(!num){ document.getElementById('opInput').focus(); return; }
+  opMetaM=parseFloat(document.getElementById('opMetaMInp').value)||0;
   opNum=num; opActive=true; prodSec=0; stopSec=0; stopHistory=[];
+  totalPulses=0; demoPAcc=0; speedHistory=[]; posHistory=[];
   document.getElementById('opBtn').style.display='none';
   document.getElementById('finBtn').style.display='';
   document.getElementById('opInput').disabled=true;
+  document.getElementById('opMetaMInp').disabled=true;
   document.getElementById('clicheSelect').disabled=true;
+  updateProdProgress();
   renderStopHistory();
   log('i',`OP ${opNum} iniciada &middot; Clichê ${clicheN}`);
   if(sb){ try{ const {data}=await sb.from('ordens').insert({numero:opNum,cliche_id:clicheN,data_inicio:new Date().toISOString()}).select().single(); if(data) opId=data.id; }catch(_){} }
@@ -995,6 +1090,7 @@ async function closeOP(){
   document.getElementById('opBtn').style.display='';
   document.getElementById('finBtn').style.display='none';
   document.getElementById('opInput').disabled=false;
+  document.getElementById('opMetaMInp').disabled=false;
   document.getElementById('clicheSelect').disabled=false;
   renderStopHistory();
   opId=null;
@@ -1057,6 +1153,56 @@ function updateVU(){
 const JORNADA=28800;
 const ctxEff=document.getElementById('chartEff').getContext('2d');
 const chartEff=new Chart(ctxEff,{type:'doughnut',data:{labels:['Produção','Parada','Disponível'],datasets:[{data:[0,0,100],backgroundColor:['#4ade80','#ef4444','#262626'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'71%',animation:{duration:350},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
+
+/* ── PROGRESSO DA OP (doughnut) ─────────────────────── */
+chartProg=new Chart(document.getElementById('chartProg').getContext('2d'),{
+  type:'doughnut',
+  data:{datasets:[{data:[0,100],backgroundColor:['#35c8ff','#1e1e1e'],borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:true,cutout:'73%',animation:{duration:450},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}
+});
+
+/* ── SPEED HISTORY (line) ───────────────────────────── */
+chartSpd=new Chart(document.getElementById('chartSpd').getContext('2d'),{
+  type:'line',
+  data:{
+    labels:Array(60).fill(''),
+    datasets:[
+      {label:'Velocidade (m/s)',data:Array(60).fill(0),borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.07)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'ySpd'},
+      {label:'Posição (m)',data:Array(60).fill(0),borderColor:'#35c8ff',backgroundColor:'rgba(53,200,255,.03)',fill:false,tension:.3,pointRadius:0,borderWidth:1.5,yAxisID:'yPos'}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:true,
+    animation:{duration:0},
+    scales:{
+      x:{display:false},
+      ySpd:{position:'left',grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4ade80',font:{size:9}},title:{display:true,text:'m/s',color:'#4ade80',font:{size:9}}},
+      yPos:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#35c8ff',font:{size:9}},title:{display:true,text:'m',color:'#35c8ff',font:{size:9}}}
+    },
+    plugins:{legend:{display:true,labels:{color:'#888',font:{size:9},boxWidth:10,padding:8}},tooltip:{enabled:false}}
+  }
+});
+
+function updateSpdChart(){
+  chartSpd.data.datasets[0].data=[...speedHistory];
+  chartSpd.data.datasets[1].data=[...posHistory];
+  chartSpd.update('none');
+}
+
+function updateProdProgress(){
+  const posM=p2m(Math.abs(totalPulses));
+  const meta=opMetaM||0;
+  const pct=meta>0?Math.min((posM/meta)*100,100):0;
+  const col=vuCol(pct);
+  document.getElementById('progPct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('progPct').style.color=col;
+  document.getElementById('progPosM').textContent=posM.toFixed(3)+' m';
+  document.getElementById('progMetaM').textContent=meta>0?meta.toFixed(1)+' m':'— m';
+  document.getElementById('progRemM').textContent=meta>0?Math.max(0,meta-posM).toFixed(3)+' m':'— m';
+  chartProg.data.datasets[0].data=[pct,Math.max(0,100-pct)];
+  chartProg.data.datasets[0].backgroundColor[0]=col;
+  chartProg.update('none');
+}
 
 function tickEff(){
   const pp=Math.min((prodSec/JORNADA)*100,100);
@@ -1170,6 +1316,7 @@ function updateUI(){
   document.getElementById('valSt').innerHTML='&#9679; Online'; document.getElementById('valSt').style.color='var(--ok)';
   document.getElementById('valLast').textContent='Última: '+new Date().toLocaleTimeString('pt-BR');
   updateVU();
+  updateProdProgress();
 }
 
 /* ══ IDLE ALERT ══ */
