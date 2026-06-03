@@ -442,7 +442,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="fgrp"><label>IP do ESP32</label><input class="fctl" id="cfgIp" value="192.168.1.100"><span class="fhint">Endere&#231;o IP na rede local</span></div>
       <div class="fgrp"><label>Porta HTTP</label><input class="fctl" id="cfgPort" value="80"><span class="fhint">Endpoint /data</span></div>
       <div class="fgrp"><label>Porta WebSocket</label><input class="fctl" id="cfgWsPort" value="81"><span class="fhint">ws://IP:porta/ws</span></div>
-      <div class="fgrp"><label>Di&#226;metro da Polia (mm)</label><input class="fctl" id="cfgDiam" value="100"><span class="fhint">&#960; &times; d &#247; PPR = m/pulso</span></div>
+      <div class="fgrp"><label>Di&#226;metro da Polia (mm)</label><input class="fctl" id="cfgDiam" value="200"><span class="fhint">&#960; &times; d &#247; PPR = m/pulso &nbsp;|&nbsp; Padr&#227;o: 200 mm</span></div>
       <div class="fgrp"><label>PPR (pulsos/rev)</label><input class="fctl" id="cfgPpr" value="360"></div>
       <div class="fgrp"><label>Timeout Alerta (s)</label><input class="fctl" id="cfgTimeout" value="60"></div>
       <div class="fgrp"><label>Senha Admin</label><input class="fctl" id="cfgAdminPass" type="password" value="1234"><span class="fhint">Liberar Produ&#231;&#227;o</span></div>
@@ -802,7 +802,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 <script>
 /* ══ CONFIG ══ */
-let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:100, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234' };
+let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:200, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234' };
 try {
   const s = JSON.parse(localStorage.getItem('enc_cfg')||'{}');
   Object.assign(cfg, s);
@@ -1756,6 +1756,7 @@ document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e
 
 /* ══ FIRMWARE ══ */
 const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitais
+// Firmware v2.1 — Polia 200 mm
 // Encoder A → GPIO 18  |  Canal B → GPIO 19  |  5V / GND
 // DIN1 (Produzindo) → GPIO 34  |  DIN2 (Setup) → GPIO 35  |  DIN3 (Falha) → GPIO 36
 // DOUT1 (Supervisor) → GPIO 25  |  DOUT2 (Geral) → GPIO 26
@@ -1770,6 +1771,11 @@ const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitai
 const char* SSID     = "SUA_REDE";
 const char* PASSWORD = "SUA_SENHA";
 
+// ── Polia / Encoder ──────────────────────────────────────
+#define PULLEY_DIAM_MM  200.0f   // diâmetro da polia em mm
+#define PPR             360      // pulsos por revolução
+#define M_PER_PULSE  (PI * PULLEY_DIAM_MM / (PPR * 1000.0f))
+
 #define PIN_A  18
 #define PIN_B  19
 #define DIN1   34   // input-only, sem pull-up interno
@@ -1782,6 +1788,10 @@ volatile long pulseCount = 0;
 volatile int  direction  = 1;
 bool dout1State = false;
 bool dout2State = false;
+
+unsigned long lastSpeedTs     = 0;
+long          lastSpeedPulses = 0;
+float         speedMpm        = 0.0f;
 
 WebServer        server(80);
 WebSocketsServer wsServer(81);
@@ -1808,22 +1818,37 @@ void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   }
 }
 
+void updateSpeed() {
+  unsigned long now = millis();
+  unsigned long dt  = now - lastSpeedTs;
+  if (dt >= 500) {
+    long dp = pulseCount - lastSpeedPulses;
+    speedMpm = (abs(dp) * M_PER_PULSE) / (dt / 60000.0f);
+    lastSpeedPulses = pulseCount;
+    lastSpeedTs     = now;
+  }
+}
+
 String buildJson() {
-  StaticJsonDocument<256> doc;
-  doc["pulses"]    = pulseCount;
-  doc["direction"] = direction;
-  doc["din1"]      = digitalRead(DIN1);
-  doc["din2"]      = digitalRead(DIN2);
-  doc["din3"]      = digitalRead(DIN3);
-  doc["dout1"]     = dout1State ? 1 : 0;
-  doc["dout2"]     = dout2State ? 1 : 0;
-  doc["timestamp"] = millis();
+  StaticJsonDocument<320> doc;
+  doc["pulses"]     = pulseCount;
+  doc["direction"]  = direction;
+  doc["position_m"] = serialized(String(pulseCount * M_PER_PULSE, 4));
+  doc["speed_mpm"]  = serialized(String(speedMpm, 2));
+  doc["din1"]       = digitalRead(DIN1);
+  doc["din2"]       = digitalRead(DIN2);
+  doc["din3"]       = digitalRead(DIN3);
+  doc["dout1"]      = dout1State ? 1 : 0;
+  doc["dout2"]      = dout2State ? 1 : 0;
+  doc["timestamp"]  = millis();
   String out; serializeJson(doc, out);
   return out;
 }
 
 void setup() {
   Serial.begin(115200);
+  Serial.printf("\\nPolia: %.0f mm | PPR: %d | %.6f m/pulso\\n",
+                PULLEY_DIAM_MM, PPR, M_PER_PULSE);
   pinMode(PIN_A, INPUT_PULLUP);
   pinMode(PIN_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
@@ -1842,6 +1867,7 @@ void setup() {
   server.begin();
   wsServer.begin();
   wsServer.onEvent(onWsEvent);
+  lastSpeedTs = millis();
   Serial.println("HTTP :80  WS :81");
 }
 
@@ -1849,6 +1875,7 @@ unsigned long lastBcast = 0;
 void loop() {
   server.handleClient();
   wsServer.loop();
+  updateSpeed();
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
     wsServer.broadcastTXT(buildJson());

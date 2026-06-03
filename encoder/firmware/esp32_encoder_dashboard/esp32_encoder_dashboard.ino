@@ -1,12 +1,17 @@
 /*
  * ═══════════════════════════════════════════════════════════
- *  ESP32 Encoder Dashboard — Firmware v2.0
+ *  ESP32 Encoder Dashboard — Firmware v2.1
  * ═══════════════════════════════════════════════════════════
  *
  *  ENCODER PNP 360ppr
  *    Canal A    → GPIO 18  (INPUT_PULLUP)
  *    Canal B    → GPIO 19  (INPUT_PULLUP)
  *    Alimentação→ 5V / GND
+ *
+ *  POLIA
+ *    Diâmetro   → 200 mm  (altere PULLEY_DIAM_MM se necessário)
+ *    PPR        → 360     (altere PPR se o encoder for diferente)
+ *    m/pulso    → π × 200 / (360 × 1000) ≈ 0.001745 m
  *
  *  ENTRADAS DIGITAIS  (sinal PNP: 1 = ativo)
  *    DIN1  Produzindo → GPIO 34  (input-only, sem pull-up)
@@ -35,9 +40,10 @@
  *
  *  JSON broadcast (ESP32 → dashboard a cada 200 ms):
  *    {
- *      "pulses":1234,   "direction":1,
- *      "din1":0,        "din2":0,  "din3":0,
- *      "dout1":0,       "dout2":0,
+ *      "pulses":1234,     "direction":1,
+ *      "position_m":2.15, "speed_mpm":12.4,
+ *      "din1":0,          "din2":0,  "din3":0,
+ *      "dout1":0,         "dout2":0,
  *      "timestamp":12345
  *    }
  * ═══════════════════════════════════════════════════════════
@@ -53,6 +59,13 @@
 const char* SSID     = "SUA_REDE_WIFI";   // ← altere aqui
 const char* PASSWORD = "SUA_SENHA_WIFI";  // ← altere aqui
 
+// ─── POLIA / ENCODER ───────────────────────────────────────
+#define PULLEY_DIAM_MM  200.0f   // ← diâmetro da polia em mm
+#define PPR             360      // ← pulsos por revolução do encoder
+
+// metros por pulso (calculado em tempo de compilação)
+#define M_PER_PULSE  (PI * PULLEY_DIAM_MM / (PPR * 1000.0f))
+
 // ─── PINOS ─────────────────────────────────────────────────
 #define PIN_A  18
 #define PIN_B  19
@@ -67,6 +80,11 @@ volatile long pulseCount = 0;
 volatile int  direction  = 1;
 bool dout1State = false;
 bool dout2State = false;
+
+// Cálculo de velocidade
+unsigned long lastSpeedTs  = 0;
+long          lastSpeedPulses = 0;
+float         speedMpm     = 0.0f;   // metros por minuto
 
 WebServer        server(80);
 WebSocketsServer wsServer(81);
@@ -104,17 +122,31 @@ void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   }
 }
 
+// ─── CALCULAR VELOCIDADE (m/min) ───────────────────────────
+void updateSpeed() {
+  unsigned long now = millis();
+  unsigned long dt  = now - lastSpeedTs;
+  if (dt >= 500) {                              // atualiza a cada 500 ms
+    long dp = pulseCount - lastSpeedPulses;
+    speedMpm = (abs(dp) * M_PER_PULSE) / (dt / 60000.0f);
+    lastSpeedPulses = pulseCount;
+    lastSpeedTs     = now;
+  }
+}
+
 // ─── MONTAR JSON ───────────────────────────────────────────
 String buildJson() {
-  StaticJsonDocument<256> doc;
-  doc["pulses"]    = pulseCount;
-  doc["direction"] = direction;
-  doc["din1"]      = digitalRead(DIN1);
-  doc["din2"]      = digitalRead(DIN2);
-  doc["din3"]      = digitalRead(DIN3);
-  doc["dout1"]     = dout1State ? 1 : 0;
-  doc["dout2"]     = dout2State ? 1 : 0;
-  doc["timestamp"] = millis();
+  StaticJsonDocument<320> doc;
+  doc["pulses"]     = pulseCount;
+  doc["direction"]  = direction;
+  doc["position_m"] = serialized(String(pulseCount * M_PER_PULSE, 4));
+  doc["speed_mpm"]  = serialized(String(speedMpm, 2));
+  doc["din1"]       = digitalRead(DIN1);
+  doc["din2"]       = digitalRead(DIN2);
+  doc["din3"]       = digitalRead(DIN3);
+  doc["dout1"]      = dout1State ? 1 : 0;
+  doc["dout2"]      = dout2State ? 1 : 0;
+  doc["timestamp"]  = millis();
   String out;
   serializeJson(doc, out);
   return out;
@@ -124,7 +156,9 @@ String buildJson() {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("\n=== ESP32 Encoder Dashboard ===");
+  Serial.println("\n=== ESP32 Encoder Dashboard v2.1 ===");
+  Serial.printf("Polia: %.0f mm | PPR: %d | %.6f m/pulso\n",
+                PULLEY_DIAM_MM, PPR, M_PER_PULSE);
 
   // Encoder
   pinMode(PIN_A, INPUT_PULLUP);
@@ -161,9 +195,11 @@ void setup() {
   wsServer.begin();
   wsServer.onEvent(onWsEvent);
 
+  lastSpeedTs = millis();
+
   Serial.println("HTTP  :80  → http://" + WiFi.localIP().toString() + "/data");
   Serial.println("WS    :81  → ws://"  + WiFi.localIP().toString() + ":81/ws");
-  Serial.println("================================");
+  Serial.println("=====================================");
 }
 
 // ─── LOOP ──────────────────────────────────────────────────
@@ -172,6 +208,7 @@ unsigned long lastBcast = 0;
 void loop() {
   server.handleClient();
   wsServer.loop();
+  updateSpeed();
 
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
