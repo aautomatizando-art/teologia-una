@@ -379,7 +379,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <button class="btn btn-ghost" onclick="openFw()">&#60;/&#62; FW</button>
       <button class="btn btn-ghost" onclick="openOSSalvas()">&#128203; OS Salvas</button>
       <button class="btn btn-green" onclick="openRelatorio()">&#128196; Relat&#243;rio</button>
-      <button class="btn btn-danger" onclick="resetCounter()">&#8635; Zerar</button>
+      <button class="btn btn-danger" onclick="requireAdminPass('Zerar Contador','Isso apaga a posição acumulada do encoder. Confirme com a senha de administrador.',resetCounter)">&#8635; Zerar</button>
     </div>
   </div>
 </header>
@@ -524,7 +524,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <div class="slbl">Leituras em Tempo Real</div>
   <div class="kpi-grid">
     <div class="kcard">
-      <div class="klbl">Quantidade Produzida</div>
+      <div class="klbl">Posi&#231;&#227;o Encoder</div>
       <div class="kval" id="valPos" style="color:var(--sky)">0.000<span class="kunit">m</span></div>
       <div class="ksub" id="valPulses">0 pulsos</div>
       <div class="kglow" style="background:var(--sky)"></div>
@@ -542,10 +542,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="kglow" style="background:var(--gold)"></div>
     </div>
     <div class="kcard">
-      <div class="klbl">Dire&#231;&#227;o</div>
-      <div id="valDir"><span id="dirBadge" class="dir-badge dir-stop">&#8212; Parado</span></div>
-      <div class="ksub" id="valDirSub">Aguardando</div>
-      <div class="kglow" style="background:var(--orange)"></div>
+      <div class="klbl">Quantidade Produzida</div>
+      <div class="kval" id="valQtdProd" style="color:var(--ok)">0.000<span class="kunit">m</span></div>
+      <div class="ksub" id="valQtdSub">OP n&#227;o iniciada</div>
+      <div class="kglow" style="background:var(--ok)"></div>
     </div>
     <div class="kcard">
       <div class="klbl">Status</div>
@@ -1399,7 +1399,7 @@ function updateDIO(){
     sinalImg.src = 'off.png';
     sinalImg.style.filter = 'drop-shadow(0 2px 10px rgba(0,0,0,.4))';
     sinalImg.className = '';
-    sinalLabel.textContent = 'Inativo';
+    sinalLabel.textContent = 'Máquina Desligada';
     sinalLabel.style.color = 'var(--muted)';
   }
   // Linhas de status individuais
@@ -1502,19 +1502,22 @@ function handleData(d){
 
 /* ══ UI ══ */
 function updateUI(){
-  const posM=opSesM();
+  const absM=p2m(Math.abs(totalPulses));
+  const sesM=opSesM();
   const rpm=curSpd/(Math.PI*cfg.diam/1000)*60;
   const freq=curSpd/(Math.PI*cfg.diam/1000);
-  document.getElementById('valPos').innerHTML=posM.toFixed(3)+'<span class="kunit">m</span>';
+  /* Slot 1 — Posição Encoder (absoluta desde último reset) */
+  document.getElementById('valPos').innerHTML=absM.toFixed(3)+'<span class="kunit">m</span>';
   document.getElementById('valPulses').textContent=totalPulses.toLocaleString('pt-BR')+' pulsos';
+  /* Slot 2 — Velocidade */
   document.getElementById('valSpd').innerHTML=(curSpd*60).toFixed(2)+'<span class="kunit">m/min</span>';
   document.getElementById('valSpdMin').textContent=curSpd.toFixed(3)+' m/s';
+  /* Slot 3 — Rotação */
   document.getElementById('valRpm').innerHTML=rpm.toFixed(1)+'<span class="kunit">RPM</span>';
   document.getElementById('valFreq').textContent=freq.toFixed(2)+' Hz';
-  const db=document.getElementById('dirBadge');
-  if(curSpd<0.001){ db.className='dir-badge dir-stop'; db.innerHTML='&#8212; Parado'; document.getElementById('valDirSub').textContent='Sem movimento'; }
-  else if(curDir>=0){ db.className='dir-badge dir-fwd'; db.innerHTML='&#8594; Avanço'; document.getElementById('valDirSub').textContent='Sentido horário'; }
-  else{ db.className='dir-badge dir-rev'; db.innerHTML='&#8592; Retorno'; document.getElementById('valDirSub').textContent='Anti-horário'; }
+  /* Slot 4 — Quantidade Produzida na OP (sessão) */
+  document.getElementById('valQtdProd').innerHTML=sesM.toFixed(3)+'<span class="kunit">m</span>';
+  document.getElementById('valQtdSub').textContent=opActive?`OP ${opNum}`:'OP não iniciada';
   document.getElementById('valSt').innerHTML='&#9679; Online'; document.getElementById('valSt').style.color='var(--ok)';
   document.getElementById('valLast').textContent='Última: '+new Date().toLocaleTimeString('pt-BR');
   updateVU();
