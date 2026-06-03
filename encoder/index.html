@@ -288,6 +288,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   margin-bottom:13px;display:flex;align-items:center;gap:9px;}
 .slbl::after{content:'';flex:1;height:1px;background:var(--border);}
 .footer{text-align:center;padding:24px 0 40px;font-size:11px;color:var(--muted);}
+
+/* ── MOBILE ─────────────────────────────────────────── */
+@media(max-width:680px){
+  /* Header: permite múltiplas linhas */
+  .hdr-in{height:auto;min-height:50px;padding:8px 0;flex-wrap:wrap;row-gap:5px;}
+  .hdr-in>div:first-child{flex:1 1 auto;}
+  .hdr-in>div:last-child{flex-wrap:wrap;gap:4px;}
+  /* Strip: esconde divisórias verticais */
+  .idiv{display:none;}
+  .strip-in{gap:8px 10px;}
+  /* Campos da strip: 2 colunas */
+  .ifield{flex:1 1 140px;}
+  /* Campo de OP ocupa linha inteira */
+  .ifield-op{flex:1 1 100%;}
+  .ifield-op .iinput{min-width:0;flex:1;}
+  .ifield-op>div{flex-wrap:wrap;gap:5px;}
+  /* Linha de parada: botão Gestão quebra abaixo */
+  .ifield-stop>div{flex-wrap:wrap;gap:5px;}
+  .ifield-stop .btn-gold{flex:1 1 100%;margin-left:0!important;justify-content:center;}
+  /* Timer menor */
+  .timer{font-size:17px;}
+}
+@media(max-width:400px){
+  .hdr-title{display:none;}
+  .ifield{flex:1 1 100%;}
+}
 </style>
 </head>
 <body>
@@ -324,7 +350,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ival" id="clockTime">--:--:--</span>
     </div>
     <div class="idiv"></div>
-    <div class="ifield">
+    <div class="ifield ifield-op">
       <span class="ilbl">N&#186; Ordem de Produ&#231;&#227;o</span>
       <div style="display:flex;gap:5px;align-items:center;">
         <input class="iinput" id="opInput" placeholder="ex: OP-2024-001" maxlength="30">
@@ -361,7 +387,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ilbl">&#9201; Tempo de Produ&#231;&#227;o</span>
       <span class="timer" id="prodTimer" style="color:var(--muted)">00:00:00</span>
     </div>
-    <div class="ifield">
+    <div class="ifield ifield-stop">
       <span class="ilbl">&#9208; Tempo de Parada</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
@@ -1380,6 +1406,13 @@ async function loadAllCliches(){
     });
   }catch(_){}
 }
+function updateClicheSelect(){
+  const sel=document.getElementById('clicheSelect');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=cliches.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  sel.value=cur;
+}
 
 function renderClicheGrid(){
   const div=document.getElementById('clicheGrid');
@@ -1710,7 +1743,9 @@ function applyConfig(){
   cfg.sbKey=document.getElementById('cfgSbKey').value.trim();
   localStorage.setItem('enc_cfg',JSON.stringify(cfg));
   document.getElementById('cfgPanel').style.display='none';
-  initSb(); log('i',`Config: IP=${cfg.ip} Ø=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
+  initSb();
+  if(sb) loadAllCliches().then(()=>{ updateClicheSelect(); updateVU(); });
+  log('i',`Config: IP=${cfg.ip} Ø=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
 }
 function resetCounter(){
   totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0;
@@ -1826,6 +1861,8 @@ function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document
 tickClock(); updateVU(); tickEff(); updateDIO();
 log('i','Dashboard iniciado · aguardando conexão');
 resetIdle();
+/* Auto-carrega clichês do Supabase ao abrir (se já configurado) */
+if(sb) loadAllCliches().then(()=>{ updateClicheSelect(); updateVU(); });
 </script>
 </body>
 </html>
