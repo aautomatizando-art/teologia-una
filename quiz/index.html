@@ -123,6 +123,8 @@ html,body{min-height:100%;background:
 .qa-item{display:flex;gap:9px;align-items:flex-start;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:13px;}
 .qa-item .qx{flex:1;line-height:1.4;}
 .qa-item .qx small{color:var(--muted);font-family:'Fira Code',monospace;font-size:11px;}
+.qa-edit{background:rgba(53,200,255,.12);border:1px solid rgba(53,200,255,.35);color:var(--sky);border-radius:6px;cursor:pointer;font-size:14px;padding:2px 9px;flex-shrink:0;}
+.qa-edit:hover{background:rgba(53,200,255,.22);}
 .qa-del{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:var(--danger);border-radius:6px;cursor:pointer;font-size:14px;padding:2px 9px;flex-shrink:0;}
 .qa-del:hover{background:rgba(239,68,68,.22);}
 .adm-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);}
@@ -369,6 +371,7 @@ html,body{min-height:100%;background:
       <div class="fld"><label>Referência (opcional)</label><input id="adRef" placeholder="Ex.: João 3:16"></div>
     </div>
     <div class="fld"><label>Versículo ARC (opcional)</label><textarea id="adVers" placeholder="Texto do versículo…"></textarea></div>
+    <div id="adEditing" style="display:none;color:var(--sky);font-size:12px;font-weight:700;margin-bottom:8px">✏️ Editando pergunta — clique em "Limpar" para cancelar.</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
       <button class="btn btn-ghost" id="adClear">Limpar</button>
       <button class="btn btn-sky" id="adSave">💾 Salvar pergunta</button>
@@ -942,15 +945,31 @@ function openAdmin(){
   document.getElementById('adMode').textContent = sb
     ? 'As perguntas serão salvas no Supabase e ficam disponíveis em todos os dispositivos.'
     : 'Sem Supabase configurado: as perguntas serão salvas localmente neste navegador.';
+  clearAdmForm();
   setAdmTab('nova');
   openModal('mAdmin');
 }
 
-let adCorreta=0;
+let adCorreta=0, editingId=null;
 function clearAdmForm(){
   ['adPergunta','adOpt1','adOpt2','adOpt3','adOpt4','adOpt5','adRef','adVers'].forEach(id=>document.getElementById(id).value='');
-  adCorreta=0;
+  adCorreta=0; editingId=null;
   document.querySelectorAll('#atNova .onb').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('adSave').textContent='💾 Salvar pergunta';
+  const ed=document.getElementById('adEditing'); if(ed) ed.style.display='none';
+}
+function editQuestion(id){
+  const q=questions.find(x=>x.id===id); if(!q) return;
+  setAdmTab('nova');
+  document.getElementById('adNivel').value=q.nivel;
+  document.getElementById('adPergunta').value=q.pergunta;
+  [1,2,3,4,5].forEach(i=>document.getElementById('adOpt'+i).value=q.opcoes[i-1]||'');
+  document.getElementById('adRef').value=q.referencia||'';
+  document.getElementById('adVers').value=q.versiculo||'';
+  adCorreta=q.correta; editingId=id;
+  document.querySelectorAll('#atNova .onb').forEach(b=>b.classList.toggle('sel',+b.dataset.c===q.correta));
+  document.getElementById('adSave').textContent='💾 Atualizar pergunta';
+  const ed=document.getElementById('adEditing'); if(ed) ed.style.display='block';
 }
 async function saveQuestion(){
   const nivel=document.getElementById('adNivel').value;
@@ -961,22 +980,40 @@ async function saveQuestion(){
   if(!pergunta) return toast('Digite a pergunta.','err');
   if(opcoes.some(o=>!o)) return toast('Preencha as 5 alternativas.','err');
   if(!adCorreta) return toast('Marque a alternativa correta (clique no número).','err');
-  const novo={nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo};
+  const dados={nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo};
 
+  /* ── EDIÇÃO ── */
+  if(editingId){
+    const isPersisted = sb && !String(editingId).startsWith('custom-') && !String(editingId).startsWith('local-');
+    if(isPersisted){
+      try{ const {error}=await sb.from('quiz_perguntas').update(dados).eq('id',editingId); if(error) throw error; }
+      catch(err){ return toast('Erro ao atualizar: '+err.message,'err'); }
+    } else if(String(editingId).startsWith('custom-')){
+      saveCustomQ(loadCustomQ().map(q=>q.id===editingId?{...dados,id:editingId}:q));
+    }
+    const idx=questions.findIndex(q=>q.id===editingId);
+    if(idx>=0) questions[idx]={...dados,id:editingId};
+    toast('Pergunta atualizada ✓','ok');
+    log('ok',`Pergunta (${LVL_PT[nivel]}) atualizada`);
+    clearAdmForm(); setAdmTab('lista');
+    return;
+  }
+
+  /* ── NOVA ── */
   if(sb){
     try{
       const {data,error}=await sb.from('quiz_perguntas')
-        .insert({nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo,ativa:true})
+        .insert({...dados,ativa:true})
         .select('id').single();
       if(error) throw error;
-      questions.push({...novo,id:data.id});
+      questions.push({...dados,id:data.id});
       toast('Pergunta salva no Supabase ✓','ok');
     }catch(err){ return toast('Erro ao salvar: '+err.message,'err'); }
   } else {
     const custom=loadCustomQ();
     const id='custom-'+Date.now();
-    custom.push({...novo,id}); saveCustomQ(custom);
-    questions.push({...novo,id});
+    custom.push({...dados,id}); saveCustomQ(custom);
+    questions.push({...dados,id});
     toast('Pergunta salva localmente ✓','ok');
   }
   log('ok',`Nova pergunta (${LVL_PT[nivel]}) cadastrada`);
@@ -992,6 +1029,9 @@ function renderAdmList(){
     const item=document.createElement('div'); item.className='qa-item';
     item.innerHTML=`<div class="qx">${q.pergunta}<br><small>✔ ${q.opcoes[q.correta-1]}${q.referencia?' · '+q.referencia:''}</small></div>`;
     if(editable){
+      const ed=document.createElement('button'); ed.className='qa-edit'; ed.textContent='✏️';
+      ed.title='Editar'; ed.onclick=()=>editQuestion(q.id);
+      item.appendChild(ed);
       const del=document.createElement('button'); del.className='qa-del'; del.textContent='🗑';
       del.title='Excluir'; del.onclick=()=>delQuestion(q.id);
       item.appendChild(del);
