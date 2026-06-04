@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Encoder · ESP32 · Produção</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Dashboard Encoder · ESP32 · Produção · v3.0.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -556,7 +559,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     <div class="kcard" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
       <div class="klbl" style="width:100%;text-align:left;">Status</div>
       <div class="kval" id="valSt" style="font-size:15px;color:var(--muted);width:100%;text-align:left;">&#9679; Offline</div>
-      <img id="dinSinalImg" src="off.png" alt="Sinaleiro" style="width:62px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.4));transition:filter .4s;margin:8px 0 4px;">
+      <img id="dinSinalImg" src="/off.png" alt="Sinaleiro" style="width:62px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.4));transition:filter .4s;margin:8px 0 4px;">
       <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">M&#225;quina Desligada</div>
       <div class="ksub" id="valLast" style="width:100%;text-align:left;">&#218;ltima leitura: --</div>
       <div class="kglow" style="background:var(--danger)"></div>
@@ -963,11 +966,37 @@ try {
 
 /* ══ SUPABASE ══ */
 let sb = null;
+let supaChannel = null;
 function initSb() {
-  if (!cfg.sbUrl || !cfg.sbKey) return;
-  try { sb = supabase.createClient(cfg.sbUrl, cfg.sbKey); } catch(_) {}
+  if (!cfg.sbUrl || !cfg.sbKey) { sb = null; return; }
+  try { sb = supabase.createClient(cfg.sbUrl, cfg.sbKey); } catch(_) { sb = null; }
 }
 initSb();
+
+/* ══ SUPABASE REALTIME (telemetria do ESP32 — funciona em qualquer rede) ══ */
+function subscribeSupabase(){
+  if(!sb){ return; }
+  if(supaChannel){ sb.removeChannel(supaChannel); supaChannel=null; }
+  supaChannel=sb.channel('esp32_telemetry_ch')
+    .on('postgres_changes',{event:'*',schema:'public',table:'esp32_telemetry',filter:'id=eq.main'},
+      payload=>{
+        if(payload.new){
+          handleData(payload.new);
+          if(!ws||ws.readyState!==WebSocket.OPEN) setConn('ok','Online via Supabase');
+        }
+      })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){ log('i','Supabase Realtime conectado'); fetchLatestTelemetry(); }
+      else if(status==='CHANNEL_ERROR') log('a','Supabase Realtime erro — verifique URL e Key');
+    });
+}
+async function fetchLatestTelemetry(){
+  if(!sb) return;
+  try{
+    const {data}=await sb.from('esp32_telemetry').select('*').eq('id','main').single();
+    if(data) handleData(data);
+  }catch(_){}
+}
 
 /* ══ ENCODER STATE ══ */
 let ws=null, demoMode=false, demoIv=null;
@@ -1383,9 +1412,9 @@ function setDout(pin,val){
 function updateDIO(){
   // DIN — sinaleiro único (prioridade: Falha > Setup > Produzindo > off)
   const dinCfg=[
-    {onImg:'green.png',  cls:'st-ok',   onColor:'var(--ok)',     onLabel:'Produzindo', offLabel:'Inativo',  glowColor:'rgba(74,222,128,.7)'},
-    {onImg:'yellow.png', cls:'st-warn',  onColor:'var(--warn)',   onLabel:'Setup',      offLabel:'Inativo',  glowColor:'rgba(245,158,11,.7)'},
-    {onImg:'red.png',    cls:'st-fail',  onColor:'var(--danger)', onLabel:'FALHA',      offLabel:'Ok',       glowColor:'rgba(239,68,68,.7)'},
+    {onImg:'/green.png',  cls:'st-ok',   onColor:'var(--ok)',     onLabel:'Produzindo', offLabel:'Inativo',  glowColor:'rgba(74,222,128,.7)'},
+    {onImg:'/yellow.png', cls:'st-warn',  onColor:'var(--warn)',   onLabel:'Setup',      offLabel:'Inativo',  glowColor:'rgba(245,158,11,.7)'},
+    {onImg:'/red.png',    cls:'st-fail',  onColor:'var(--danger)', onLabel:'FALHA',      offLabel:'Ok',       glowColor:'rgba(239,68,68,.7)'},
   ];
   // Determina imagem do sinaleiro (maior prioridade = DIN3)
   let activeIdx = din[2] ? 2 : din[1] ? 1 : din[0] ? 0 : -1;
@@ -1399,7 +1428,7 @@ function updateDIO(){
     sinalLabel.textContent = cfg2.onLabel;
     sinalLabel.style.color = cfg2.onColor;
   } else {
-    sinalImg.src = 'off.png';
+    sinalImg.src = '/off.png';
     sinalImg.style.filter = 'drop-shadow(0 2px 10px rgba(0,0,0,.4))';
     sinalImg.className = '';
     sinalLabel.textContent = 'Máquina Desligada';
@@ -1470,7 +1499,27 @@ function connect(){
   stopPolling();
   if(ws){ ws.close(); ws=null; }
 
-  /* ── Via Relay (qualquer dispositivo, qualquer rede) ── */
+  /* ── Supabase Realtime — acesso de qualquer rede/dispositivo (celular via HTTPS) ── */
+  subscribeSupabase();
+
+  const isHttpsPage = location.protocol==='https:';
+  const isLocalIp   = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
+
+  /* Em página HTTPS, ws:// para IP local é bloqueado pelo browser.
+     Se o Supabase estiver configurado, usamos só o Realtime (sem relay/polling). */
+  if(isHttpsPage && isLocalIp){
+    if(sb){
+      setConn('warn','Aguardando Supabase…');
+    } else if(!cfg.relayUrl){
+      setConn('fail','Configure Supabase URL e Key');
+      const bn=document.getElementById('httpsBanner'); if(bn) bn.style.display='flex';
+      log('a','HTTPS bloqueia ws:// — configure Supabase URL e Key (Config) para acesso remoto');
+      return;
+    }
+    if(!cfg.relayUrl) return;
+  }
+
+  /* ── Via Relay (opcional — qualquer dispositivo, qualquer rede) ── */
   if(cfg.relayUrl){
     setConn('warn','Conectando ao Relay…');
     try{
@@ -1494,28 +1543,17 @@ function connect(){
     return;
   }
 
-  /* ── Direto ao ESP32 (mesma rede local) ── */
-
-  /* Detecta HTTPS + IP local → ws:// bloqueado pelo browser */
-  const isHttpsPage = location.protocol==='https:';
-  const isLocalIp   = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
-  if(isHttpsPage && isLocalIp){
-    setConn('fail','HTTPS bloqueado');
-    document.getElementById('httpsBanner').style.display='flex';
-    log('a',`HTTPS impede ws:// para ${cfg.ip} — configure um Relay URL ou baixe o HTML`);
-    startPolling();
-    return;
-  }
-
+  /* ── Direto ao ESP32 (mesma rede local, página HTTP ou IP público) ── */
   setConn('warn','Conectando...');
   try{
     ws=new WebSocket(`ws://${cfg.ip}:${cfg.wsPort}/ws`);
-    ws.onopen=()=>{ setConn('ok','Online'); wsFailCount=0; log('i','WebSocket conectado'); };
+    ws.onopen=()=>{ setConn('ok','Online (LAN)'); wsFailCount=0; log('i','WebSocket LAN conectado'); };
     ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
-    ws.onerror=()=>{ wsFailCount++; setConn('fail','Erro WS'); };
+    ws.onerror=()=>{ wsFailCount++; if(!supaChannel) setConn('fail','Erro WS'); };
     ws.onclose=()=>{
-      setConn('off','Desconectado');
       ws=null;
+      if(supaChannel){ return; }   // Supabase Realtime cobre os dados; não fica reconectando LAN
+      setConn('off','Desconectado');
       const delay=wsFailCount>=5?30000:Math.min(4000*Math.pow(1.5,wsFailCount),30000);
       if(wsFailCount===3){
         log('a',`Sem conexão com ${cfg.ip}:${cfg.wsPort} — verifique se o celular está na mesma rede WiFi do ESP32`);
@@ -1551,7 +1589,7 @@ function updateUI(){
   document.getElementById('valPos').innerHTML=absM.toFixed(3)+'<span class="kunit">m</span>';
   document.getElementById('valPulses').textContent=totalPulses.toLocaleString('pt-BR')+' pulsos';
   /* Slot 2 — Velocidade */
-  document.getElementById('valSpd').innerHTML=(curSpd*60).toFixed(2)+'<span class="kunit">m/min</span>';
+  document.getElementById('valSpd').innerHTML=Math.round(curSpd*60)+'<span class="kunit">m/min</span>';
   document.getElementById('valSpdMin').textContent=curSpd.toFixed(3)+' m/s';
   /* Slot 3 — Rotação */
   document.getElementById('valRpm').innerHTML=rpm.toFixed(1)+'<span class="kunit">RPM</span>';
@@ -2178,35 +2216,95 @@ function closeM(id){ document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el && el.id!=='mSuper' && el.id!=='mSubCliche') el.classList.remove('show'); }));
 
 /* ══ FIRMWARE ══ */
-const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitais
-// Firmware v2.1 — Polia 200 mm
-// Encoder A → GPIO 18  |  Canal B → GPIO 19  |  5V / GND
-// DIN1 (Produzindo) → GPIO 34  |  DIN2 (Setup) → GPIO 35  |  DIN3 (Falha) → GPIO 36
-// DOUT1 (Supervisor) → GPIO 25  |  DOUT2 (Geral) → GPIO 26
-// HTTP: http://<IP>/data  |  WebSocket: ws://<IP>:81/ws
+const FW=`/*
+ * ═══════════════════════════════════════════════════════════
+ *  ESP32 Encoder Dashboard — Firmware v2.3
+ * ═══════════════════════════════════════════════════════════
+ *
+ *  ENCODER PNP 360ppr
+ *    Canal A    → GPIO 18  (INPUT_PULLUP)
+ *    Canal B    → GPIO 19  (INPUT_PULLUP)
+ *    Alimentação→ 5V / GND
+ *
+ *  POLIA
+ *    Diâmetro   → 200 mm  (altere PULLEY_DIAM_MM se necessário)
+ *    PPR        → 360     (altere PPR se o encoder for diferente)
+ *    m/pulso    → π × 200 / (360 × 1000) ≈ 0.001745 m
+ *
+ *  ENTRADAS DIGITAIS  (botões físicos PNP: pressionado=1, solto=0)
+ *    DIN1  Produzindo → GPIO 34  (input-only, sem pull-up)
+ *    DIN2  Setup      → GPIO 35  (input-only, sem pull-up)
+ *    DIN3  Falha      → GPIO 36  (input-only, sem pull-up)
+ *
+ *  SAÍDAS DIGITAIS
+ *    DOUT1 Supervisor → GPIO 25
+ *    DOUT2 Geral      → GPIO 26
+ *
+ *  COMUNICAÇÃO LOCAL
+ *    HTTP REST  → http://<IP>/data    porta 80
+ *    WebSocket  → ws://<IP>:81/ws     porta 81
+ *    Broadcast JSON a cada 200 ms
+ *
+ *  SUPABASE (acesso de qualquer dispositivo/rede via Vercel)
+ *    Preencha SUPA_URL e SUPA_KEY com os dados do projeto Supabase.
+ *    O ESP32 faz HTTP POST a cada 500 ms atualizando a linha 'main'
+ *    na tabela esp32_telemetry. O dashboard assina via Realtime.
+ *    Deixe SUPA_URL vazio ("") para desabilitar.
+ *
+ *  BIBLIOTECAS NECESSÁRIAS  (instale via Library Manager)
+ *    • WebSockets  by Markus Sattler   (WebSocketsServer)
+ *    • ArduinoJson by Benoit Blanchon  (versão 6.x)
+ *    WiFi, WebServer, HTTPClient, WiFiClientSecure já vêm no core
+ *
+ *  COMANDO WebSocket para controlar saídas (dashboard → ESP32):
+ *    {"cmd":"setout","pin":1,"val":1}  → DOUT1 LIGADO
+ *    {"cmd":"setout","pin":2,"val":0}  → DOUT2 DESLIGADO
+ *
+ *  JSON broadcast / POST (ESP32 → dashboard a cada 200/500 ms):
+ *    {
+ *      "id":"main",
+ *      "pulses":1234,     "direction":1,
+ *      "position_m":2.15, "speed_mpm":12.4,
+ *      "din1":0,          "din2":0,  "din3":0,
+ *      "dout1":0,         "dout2":0,
+ *      "esp32_ts":12345
+ *    }
+ * ═══════════════════════════════════════════════════════════
+ */
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
-const char* SSID     = "SUA_REDE";
-const char* PASSWORD = "SUA_SENHA";
+// ─── CONFIGURAÇÃO DE REDE ───────────────────────────────────
+const char* SSID     = "SUA_REDE_WIFI";   // ← altere aqui
+const char* PASSWORD = "SUA_SENHA_WIFI";  // ← altere aqui
 
-// ── Polia / Encoder ──────────────────────────────────────
-#define PULLEY_DIAM_MM  200.0f   // diâmetro da polia em mm
-#define PPR             360      // pulsos por revolução
+// ─── SUPABASE (deixe vazio para desabilitar) ────────────────
+// Exemplo: "https://zcevjbtzucwpmioiqtis.supabase.co"
+#define SUPA_URL  ""   // ← cole aqui o URL do projeto Supabase
+#define SUPA_KEY  ""   // ← cole aqui a Anon Key do Supabase
+
+// ─── POLIA / ENCODER ───────────────────────────────────────
+#define PULLEY_DIAM_MM  200.0f   // ← diâmetro da polia em mm
+#define PPR             360      // ← pulsos por revolução do encoder
+
 #define M_PER_PULSE  (PI * PULLEY_DIAM_MM / (PPR * 1000.0f))
 
+// ─── PINOS ─────────────────────────────────────────────────
 #define PIN_A  18
 #define PIN_B  19
-#define DIN1   34   // input-only, sem pull-up interno
+#define DIN1   34
 #define DIN2   35
 #define DIN3   36
 #define DOUT1  25
 #define DOUT2  26
 
+// ─── VARIÁVEIS GLOBAIS ─────────────────────────────────────
 volatile long pulseCount = 0;
 volatile int  direction  = 1;
 bool dout1State = false;
@@ -2216,9 +2314,13 @@ unsigned long lastSpeedTs     = 0;
 long          lastSpeedPulses = 0;
 float         speedMpm        = 0.0f;
 
+bool supaEnabled = false;
+unsigned long lastSupaPost = 0;
+
 WebServer        server(80);
 WebSocketsServer wsServer(81);
 
+// ─── INTERRUPÇÃO DO ENCODER ────────────────────────────────
 void IRAM_ATTR onEncoderA() {
   bool a = digitalRead(PIN_A);
   bool b = digitalRead(PIN_B);
@@ -2226,21 +2328,24 @@ void IRAM_ATTR onEncoderA() {
   pulseCount += direction;
 }
 
-void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-  if (type == WStype_TEXT) {
-    StaticJsonDocument<128> cmd;
-    if (deserializeJson(cmd, payload, length) == DeserializationError::Ok) {
-      const char* c = cmd["cmd"];
-      if (c && strcmp(c, "setout") == 0) {
-        int pin = cmd["pin"] | 0;
-        int val = cmd["val"] | 0;
-        if (pin == 1) { dout1State = val; digitalWrite(DOUT1, val ? HIGH : LOW); }
-        if (pin == 2) { dout2State = val; digitalWrite(DOUT2, val ? HIGH : LOW); }
-      }
-    }
-  }
+// ─── PROCESSAR COMANDO SETOUT ──────────────────────────────
+void processSetout(uint8_t* payload, size_t length) {
+  StaticJsonDocument<128> cmd;
+  if (deserializeJson(cmd, payload, length) != DeserializationError::Ok) return;
+  const char* c = cmd["cmd"];
+  if (!c || strcmp(c, "setout") != 0) return;
+  int pin = cmd["pin"] | 0;
+  int val = cmd["val"] | 0;
+  if (pin == 1) { dout1State = (val != 0); digitalWrite(DOUT1, dout1State ? HIGH : LOW); Serial.printf("DOUT1=%d\\n", dout1State); }
+  if (pin == 2) { dout2State = (val != 0); digitalWrite(DOUT2, dout2State ? HIGH : LOW); Serial.printf("DOUT2=%d\\n", dout2State); }
 }
 
+// ─── HANDLER WEBSOCKET LOCAL ───────────────────────────────
+void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+  if (type == WStype_TEXT) processSetout(payload, length);
+}
+
+// ─── CALCULAR VELOCIDADE (m/min) ───────────────────────────
 void updateSpeed() {
   unsigned long now = millis();
   unsigned long dt  = now - lastSpeedTs;
@@ -2252,8 +2357,10 @@ void updateSpeed() {
   }
 }
 
-String buildJson() {
-  StaticJsonDocument<320> doc;
+// ─── MONTAR JSON ───────────────────────────────────────────
+String buildJson(bool includeId) {
+  StaticJsonDocument<384> doc;
+  if (includeId) doc["id"] = "main";   // necessário para upsert no Supabase
   doc["pulses"]     = pulseCount;
   doc["direction"]  = direction;
   doc["position_m"] = (float)(pulseCount * M_PER_PULSE);
@@ -2263,49 +2370,103 @@ String buildJson() {
   doc["din3"]       = digitalRead(DIN3);
   doc["dout1"]      = dout1State ? 1 : 0;
   doc["dout2"]      = dout2State ? 1 : 0;
-  doc["timestamp"]  = millis();
-  String out; serializeJson(doc, out);
+  doc["esp32_ts"]   = millis();
+  String out;
+  serializeJson(doc, out);
   return out;
 }
 
+// ─── POST PARA SUPABASE ────────────────────────────────────
+void postToSupabase() {
+  WiFiClientSecure client;
+  client.setInsecure();                   // Supabase já tem cert válido; setInsecure evita bundle de CA
+
+  HTTPClient http;
+  String url = String(SUPA_URL) + "/rest/v1/esp32_telemetry";
+  if (!http.begin(client, url)) { http.end(); return; }
+
+  http.addHeader("Content-Type",  "application/json");
+  http.addHeader("apikey",        SUPA_KEY);
+  http.addHeader("Authorization", String("Bearer ") + SUPA_KEY);
+  http.addHeader("Prefer",        "resolution=merge-duplicates,return=minimal");
+
+  String body = buildJson(true);
+  int code = http.POST(body);
+  http.end();
+
+  if (code > 0) Serial.printf("[Supa] POST %d\\n", code);
+  else          Serial.printf("[Supa] Erro %d\\n", code);
+}
+
+// ─── SETUP ─────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
-  Serial.printf("\\nPolia: %.0f mm | PPR: %d | %.6f m/pulso\\n",
+  delay(200);
+  Serial.println("\\n=== ESP32 Encoder Dashboard v2.3 ===");
+  Serial.printf("Polia: %.0f mm | PPR: %d | %.6f m/pulso\\n",
                 PULLEY_DIAM_MM, PPR, M_PER_PULSE);
+
   pinMode(PIN_A, INPUT_PULLUP);
   pinMode(PIN_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
+
   pinMode(DIN1, INPUT);
   pinMode(DIN2, INPUT);
   pinMode(DIN3, INPUT);
+
   pinMode(DOUT1, OUTPUT); digitalWrite(DOUT1, LOW);
   pinMode(DOUT2, OUTPUT); digitalWrite(DOUT2, LOW);
+
+  Serial.print("Conectando WiFi");
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
-  Serial.println("\\nIP: " + WiFi.localIP().toString());
+  Serial.println();
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+
   server.on("/data", HTTP_GET, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
-    String json = buildJson();
-    server.send(200, "application/json", json);
+    server.send(200, "application/json", buildJson(false));
   });
   server.begin();
+
   wsServer.begin();
   wsServer.onEvent(onWsEvent);
-  lastSpeedTs = millis();
-  Serial.println("HTTP :80  WS :81");
+
+  supaEnabled = (strlen(SUPA_URL) > 0 && strlen(SUPA_KEY) > 0);
+  if (supaEnabled) Serial.println("[Supa] Habilitado — POST a cada 500 ms");
+  else             Serial.println("[Supa] Desabilitado (SUPA_URL vazio)");
+
+  lastSpeedTs  = millis();
+  lastSupaPost = millis();
+
+  Serial.println("HTTP  :80  → http://" + WiFi.localIP().toString() + "/data");
+  Serial.println("WS    :81  → ws://"   + WiFi.localIP().toString() + ":81/ws");
+  Serial.println("=====================================");
 }
 
+// ─── LOOP ──────────────────────────────────────────────────
 unsigned long lastBcast = 0;
+
 void loop() {
   server.handleClient();
   wsServer.loop();
   updateSpeed();
+
+  // Broadcast local (LAN WebSocket) a cada 200 ms
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
-    String json = buildJson();
-    wsServer.broadcastTXT(json);
+    String jsonLocal = buildJson(false);
+    wsServer.broadcastTXT(jsonLocal);
   }
-}`;
+
+  // POST para Supabase a cada 500 ms (HTTPS é mais lento que WS local)
+  if (supaEnabled && millis() - lastSupaPost >= 500) {
+    lastSupaPost = millis();
+    postToSupabase();
+  }
+}
+`;
 function openFw(){ document.getElementById('fwCode').textContent=FW; document.getElementById('mFw').classList.add('show'); }
 function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document.querySelector('#mFw .btn-sky'); b.textContent='&#10003; Copiado!'; setTimeout(()=>{ b.textContent='&#128203; Copiar'; },2000); }); }
 
