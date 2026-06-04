@@ -79,6 +79,32 @@ CREATE POLICY "anon_relatorios" ON relatorios FOR ALL USING (true) WITH CHECK (t
 CREATE INDEX IF NOT EXISTS idx_relatorios_ordem ON relatorios(ordem_id);
 CREATE INDEX IF NOT EXISTS idx_relatorios_data  ON relatorios(data_geracao);
 
+-- 5. TELEMETRIA EM TEMPO REAL (ESP32 → Supabase → Dashboard)
+CREATE TABLE IF NOT EXISTS esp32_telemetry (
+  id          TEXT PRIMARY KEY DEFAULT 'main',
+  pulses      BIGINT  DEFAULT 0,
+  direction   INT     DEFAULT 1,
+  position_m  FLOAT   DEFAULT 0,
+  speed_mpm   FLOAT   DEFAULT 0,
+  din1        INT     DEFAULT 0,
+  din2        INT     DEFAULT 0,
+  din3        INT     DEFAULT 0,
+  dout1       INT     DEFAULT 0,
+  dout2       INT     DEFAULT 0,
+  esp32_ts    BIGINT  DEFAULT 0,
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Linha inicial (ESP32 faz upsert nesta linha)
+INSERT INTO esp32_telemetry (id) VALUES ('main') ON CONFLICT (id) DO NOTHING;
+
+-- Habilitar Realtime (Supabase Dashboard → Database → Replication → supabase_realtime)
+ALTER PUBLICATION supabase_realtime ADD TABLE esp32_telemetry;
+
+-- RLS
+ALTER TABLE esp32_telemetry ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_telemetry" ON esp32_telemetry FOR ALL USING (true) WITH CHECK (true);
+
 -- ─── VIEW ÚTIL ─────────────────────────────────────────
 CREATE OR REPLACE VIEW resumo_ordens AS
 SELECT

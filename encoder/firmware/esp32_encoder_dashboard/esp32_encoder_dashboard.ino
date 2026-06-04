@@ -1,6 +1,6 @@
 /*
  * ═══════════════════════════════════════════════════════════
- *  ESP32 Encoder Dashboard — Firmware v2.2
+ *  ESP32 Encoder Dashboard — Firmware v2.3
  * ═══════════════════════════════════════════════════════════
  *
  *  ENCODER PNP 360ppr
@@ -13,7 +13,7 @@
  *    PPR        → 360     (altere PPR se o encoder for diferente)
  *    m/pulso    → π × 200 / (360 × 1000) ≈ 0.001745 m
  *
- *  ENTRADAS DIGITAIS  (sinal PNP: 1 = ativo / botão pressionado)
+ *  ENTRADAS DIGITAIS  (botões físicos PNP: pressionado=1, solto=0)
  *    DIN1  Produzindo → GPIO 34  (input-only, sem pull-up)
  *    DIN2  Setup      → GPIO 35  (input-only, sem pull-up)
  *    DIN3  Falha      → GPIO 36  (input-only, sem pull-up)
@@ -27,30 +27,29 @@
  *    WebSocket  → ws://<IP>:81/ws     porta 81
  *    Broadcast JSON a cada 200 ms
  *
- *  RELAY CLOUD (opcional — acesso de qualquer dispositivo/rede)
- *    Preencha RELAY_HOST com o host do relay hospedado em cloud.
- *    O ESP32 conecta de forma ativa (outbound WSS) ao relay.
- *    Deixe RELAY_HOST vazio ("") para desabilitar o relay.
- *    Ex: "abc.up.railway.app"
+ *  SUPABASE (acesso de qualquer dispositivo/rede via Vercel)
+ *    Preencha SUPA_URL e SUPA_KEY com os dados do projeto Supabase.
+ *    O ESP32 faz HTTP POST a cada 500 ms atualizando a linha 'main'
+ *    na tabela esp32_telemetry. O dashboard assina via Realtime.
+ *    Deixe SUPA_URL vazio ("") para desabilitar.
  *
  *  BIBLIOTECAS NECESSÁRIAS  (instale via Library Manager)
- *    • WebSockets  by Markus Sattler   (WebSocketsServer + WebSocketsClient)
+ *    • WebSockets  by Markus Sattler   (WebSocketsServer)
  *    • ArduinoJson by Benoit Blanchon  (versão 6.x)
- *    WiFi e WebServer já vêm no ESP32 Arduino core
+ *    WiFi, WebServer, HTTPClient, WiFiClientSecure já vêm no core
  *
  *  COMANDO WebSocket para controlar saídas (dashboard → ESP32):
  *    {"cmd":"setout","pin":1,"val":1}  → DOUT1 LIGADO
- *    {"cmd":"setout","pin":1,"val":0}  → DOUT1 DESLIGADO
- *    {"cmd":"setout","pin":2,"val":1}  → DOUT2 LIGADO
  *    {"cmd":"setout","pin":2,"val":0}  → DOUT2 DESLIGADO
  *
- *  JSON broadcast (ESP32 → dashboard a cada 200 ms):
+ *  JSON broadcast / POST (ESP32 → dashboard a cada 200/500 ms):
  *    {
+ *      "id":"main",
  *      "pulses":1234,     "direction":1,
  *      "position_m":2.15, "speed_mpm":12.4,
  *      "din1":0,          "din2":0,  "din3":0,
  *      "dout1":0,         "dout2":0,
- *      "timestamp":12345
+ *      "esp32_ts":12345
  *    }
  * ═══════════════════════════════════════════════════════════
  */
@@ -59,24 +58,23 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
-#include <WebSocketsClient.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
 // ─── CONFIGURAÇÃO DE REDE ───────────────────────────────────
 const char* SSID     = "SUA_REDE_WIFI";   // ← altere aqui
 const char* PASSWORD = "SUA_SENHA_WIFI";  // ← altere aqui
 
-// ─── RELAY CLOUD (deixe vazio para desabilitar) ────────────
-// Exemplo: "abc.up.railway.app"
-#define RELAY_HOST  "teologia-una-production.up.railway.app"  // Railway relay
-#define RELAY_PORT  443      // 443 = WSS (HTTPS), 80 = WS
-#define RELAY_PATH  "/esp32"
+// ─── SUPABASE (deixe vazio para desabilitar) ────────────────
+// Exemplo: "https://zcevjbtzucwpmioiqtis.supabase.co"
+#define SUPA_URL  ""   // ← cole aqui o URL do projeto Supabase
+#define SUPA_KEY  ""   // ← cole aqui a Anon Key do Supabase
 
 // ─── POLIA / ENCODER ───────────────────────────────────────
 #define PULLEY_DIAM_MM  200.0f   // ← diâmetro da polia em mm
 #define PPR             360      // ← pulsos por revolução do encoder
 
-// metros por pulso (calculado em tempo de compilação)
 #define M_PER_PULSE  (PI * PULLEY_DIAM_MM / (PPR * 1000.0f))
 
 // ─── PINOS ─────────────────────────────────────────────────
@@ -94,16 +92,15 @@ volatile int  direction  = 1;
 bool dout1State = false;
 bool dout2State = false;
 
-// Cálculo de velocidade
 unsigned long lastSpeedTs     = 0;
 long          lastSpeedPulses = 0;
-float         speedMpm        = 0.0f;   // metros por minuto
+float         speedMpm        = 0.0f;
+
+bool supaEnabled = false;
+unsigned long lastSupaPost = 0;
 
 WebServer        server(80);
 WebSocketsServer wsServer(81);
-WebSocketsClient relayClient;
-
-bool relayEnabled = false;
 
 // ─── INTERRUPÇÃO DO ENCODER ────────────────────────────────
 void IRAM_ATTR onEncoderA() {
@@ -116,56 +113,25 @@ void IRAM_ATTR onEncoderA() {
 // ─── PROCESSAR COMANDO SETOUT ──────────────────────────────
 void processSetout(uint8_t* payload, size_t length) {
   StaticJsonDocument<128> cmd;
-  DeserializationError err = deserializeJson(cmd, payload, length);
-  if (err != DeserializationError::Ok) return;
-
+  if (deserializeJson(cmd, payload, length) != DeserializationError::Ok) return;
   const char* c = cmd["cmd"];
   if (!c || strcmp(c, "setout") != 0) return;
-
   int pin = cmd["pin"] | 0;
   int val = cmd["val"] | 0;
-  if (pin == 1) {
-    dout1State = (val != 0);
-    digitalWrite(DOUT1, dout1State ? HIGH : LOW);
-    Serial.printf("DOUT1 = %d\n", dout1State ? 1 : 0);
-  }
-  if (pin == 2) {
-    dout2State = (val != 0);
-    digitalWrite(DOUT2, dout2State ? HIGH : LOW);
-    Serial.printf("DOUT2 = %d\n", dout2State ? 1 : 0);
-  }
+  if (pin == 1) { dout1State = (val != 0); digitalWrite(DOUT1, dout1State ? HIGH : LOW); Serial.printf("DOUT1=%d\n", dout1State); }
+  if (pin == 2) { dout2State = (val != 0); digitalWrite(DOUT2, dout2State ? HIGH : LOW); Serial.printf("DOUT2=%d\n", dout2State); }
 }
 
 // ─── HANDLER WEBSOCKET LOCAL ───────────────────────────────
 void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-  if (type == WStype_TEXT) {
-    processSetout(payload, length);
-  }
-}
-
-// ─── HANDLER WEBSOCKET RELAY ───────────────────────────────
-void onRelayEvent(WStype_t type, uint8_t* payload, size_t length) {
-  switch (type) {
-    case WStype_CONNECTED:
-      Serial.println("[Relay] ✓ Conectado ao relay cloud");
-      break;
-    case WStype_DISCONNECTED:
-      Serial.println("[Relay] Desconectado — reconectando...");
-      break;
-    case WStype_TEXT:
-      // Comandos do browser via relay (ex: setout)
-      processSetout(payload, length);
-      break;
-    default:
-      break;
-  }
+  if (type == WStype_TEXT) processSetout(payload, length);
 }
 
 // ─── CALCULAR VELOCIDADE (m/min) ───────────────────────────
 void updateSpeed() {
   unsigned long now = millis();
   unsigned long dt  = now - lastSpeedTs;
-  if (dt >= 500) {                              // atualiza a cada 500 ms
+  if (dt >= 500) {
     long dp = pulseCount - lastSpeedPulses;
     speedMpm = (abs(dp) * M_PER_PULSE) / (dt / 60000.0f);
     lastSpeedPulses = pulseCount;
@@ -174,8 +140,9 @@ void updateSpeed() {
 }
 
 // ─── MONTAR JSON ───────────────────────────────────────────
-String buildJson() {
-  StaticJsonDocument<320> doc;
+String buildJson(bool includeId) {
+  StaticJsonDocument<384> doc;
+  if (includeId) doc["id"] = "main";   // necessário para upsert no Supabase
   doc["pulses"]     = pulseCount;
   doc["direction"]  = direction;
   doc["position_m"] = (float)(pulseCount * M_PER_PULSE);
@@ -185,80 +152,78 @@ String buildJson() {
   doc["din3"]       = digitalRead(DIN3);
   doc["dout1"]      = dout1State ? 1 : 0;
   doc["dout2"]      = dout2State ? 1 : 0;
-  doc["timestamp"]  = millis();
+  doc["esp32_ts"]   = millis();
   String out;
   serializeJson(doc, out);
   return out;
+}
+
+// ─── POST PARA SUPABASE ────────────────────────────────────
+void postToSupabase() {
+  WiFiClientSecure client;
+  client.setInsecure();                   // Supabase já tem cert válido; setInsecure evita bundle de CA
+
+  HTTPClient http;
+  String url = String(SUPA_URL) + "/rest/v1/esp32_telemetry";
+  if (!http.begin(client, url)) { http.end(); return; }
+
+  http.addHeader("Content-Type",  "application/json");
+  http.addHeader("apikey",        SUPA_KEY);
+  http.addHeader("Authorization", String("Bearer ") + SUPA_KEY);
+  http.addHeader("Prefer",        "resolution=merge-duplicates,return=minimal");
+
+  String body = buildJson(true);
+  int code = http.POST(body);
+  http.end();
+
+  if (code > 0) Serial.printf("[Supa] POST %d\n", code);
+  else          Serial.printf("[Supa] Erro %d\n", code);
 }
 
 // ─── SETUP ─────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("\n=== ESP32 Encoder Dashboard v2.2 ===");
+  Serial.println("\n=== ESP32 Encoder Dashboard v2.3 ===");
   Serial.printf("Polia: %.0f mm | PPR: %d | %.6f m/pulso\n",
                 PULLEY_DIAM_MM, PPR, M_PER_PULSE);
 
-  // Encoder
   pinMode(PIN_A, INPUT_PULLUP);
   pinMode(PIN_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
 
-  // Entradas digitais (GPIO 34/35/36 = input-only, sem pull-up interno)
   pinMode(DIN1, INPUT);
   pinMode(DIN2, INPUT);
   pinMode(DIN3, INPUT);
 
-  // Saídas digitais (iniciam desligadas)
   pinMode(DOUT1, OUTPUT); digitalWrite(DOUT1, LOW);
   pinMode(DOUT2, OUTPUT); digitalWrite(DOUT2, LOW);
 
-  // Conectar WiFi
   Serial.print("Conectando WiFi");
   WiFi.begin(SSID, PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(300);
-    Serial.print(".");
-  }
+  while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
   Serial.println();
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
 
-  // Endpoint HTTP /data
   server.on("/data", HTTP_GET, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
-    String json = buildJson();
-    server.send(200, "application/json", json);
+    server.send(200, "application/json", buildJson(false));
   });
-
   server.begin();
 
-  // WebSocket local (LAN)
   wsServer.begin();
   wsServer.onEvent(onWsEvent);
 
-  // Relay cloud (opcional)
-  relayEnabled = (strlen(RELAY_HOST) > 0);
-  if (relayEnabled) {
-    Serial.printf("[Relay] Conectando → %s:%d%s\n", RELAY_HOST, RELAY_PORT, RELAY_PATH);
-    if (RELAY_PORT == 443) {
-      relayClient.beginSSL(RELAY_HOST, RELAY_PORT, RELAY_PATH);
-    } else {
-      relayClient.begin(RELAY_HOST, RELAY_PORT, RELAY_PATH);
-    }
-    relayClient.onEvent(onRelayEvent);
-    relayClient.setReconnectInterval(5000);
-  }
+  supaEnabled = (strlen(SUPA_URL) > 0 && strlen(SUPA_KEY) > 0);
+  if (supaEnabled) Serial.println("[Supa] Habilitado — POST a cada 500 ms");
+  else             Serial.println("[Supa] Desabilitado (SUPA_URL vazio)");
 
-  lastSpeedTs = millis();
+  lastSpeedTs  = millis();
+  lastSupaPost = millis();
 
   Serial.println("HTTP  :80  → http://" + WiFi.localIP().toString() + "/data");
-  Serial.println("WS    :81  → ws://"  + WiFi.localIP().toString() + ":81/ws");
-  if (relayEnabled) {
-    Serial.printf("Relay       → wss://%s%s\n", RELAY_HOST, RELAY_PATH);
-  } else {
-    Serial.println("Relay       → desabilitado (RELAY_HOST vazio)");
-  }
+  Serial.println("WS    :81  → ws://"   + WiFi.localIP().toString() + ":81/ws");
   Serial.println("=====================================");
 }
 
@@ -268,19 +233,17 @@ unsigned long lastBcast = 0;
 void loop() {
   server.handleClient();
   wsServer.loop();
-  if (relayEnabled) relayClient.loop();
   updateSpeed();
 
+  // Broadcast local (LAN WebSocket) a cada 200 ms
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
-    String json = buildJson();
+    wsServer.broadcastTXT(buildJson(false));
+  }
 
-    // Broadcast local (LAN)
-    wsServer.broadcastTXT(json);
-
-    // Enviar ao relay cloud
-    if (relayEnabled && relayClient.isConnected()) {
-      relayClient.sendTXT(json);
-    }
+  // POST para Supabase a cada 500 ms (HTTPS é mais lento que WS local)
+  if (supaEnabled && millis() - lastSupaPost >= 500) {
+    lastSupaPost = millis();
+    postToSupabase();
   }
 }
