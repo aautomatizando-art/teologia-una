@@ -651,6 +651,7 @@ initSb();
 let ws=null, demoMode=false, demoIv=null;
 let totalPulses=0, demoPAcc=0, lastSPulses=0, lastSTime=Date.now();
 let curSpd=0, curDir=0, lastRdTs=null, connState='off';
+let wsFailCount=0, supaChannel=null;
 
 /* ══ PRODUCTION STATE ══ */
 let opNum='', opActive=false, opId=null;
@@ -938,17 +939,51 @@ function updateDIO(){
   }
 }
 
-/* ══ WEBSOCKET ══ */
+/* ══ CONEXÃO ══ */
 function connect(){
   if(ws){ ws.close(); ws=null; }
+  subscribeSupabase();
+  if(location.protocol==='https:'){
+    if(!sb) setConn('fail','Configure Supabase URL e Key');
+    else setConn('warn','Aguardando Supabase…');
+    return;
+  }
   setConn('warn','Conectando...');
   try{
     ws=new WebSocket(`ws://${cfg.ip}:${cfg.wsPort}/ws`);
-    ws.onopen=()=>{ setConn('ok','Online'); log('i','WebSocket conectado'); };
+    ws.onopen=()=>{ wsFailCount=0; setConn('ok','Online (LAN)'); log('i','WebSocket LAN conectado'); };
     ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
-    ws.onerror=()=>setConn('fail','Erro WS');
-    ws.onclose=()=>{ setConn('off','Desconectado'); log('i','WebSocket desconectado'); };
-  }catch(err){ setConn('fail','Falha'); log('a','Falha: '+err.message); }
+    ws.onerror=()=>{ wsFailCount++; setConn('fail','Erro WS'); };
+    ws.onclose=()=>{
+      ws=null; setConn('off','Desconectado');
+      if(!supaChannel){ const d=Math.min(4000*Math.pow(1.5,wsFailCount),30000); setTimeout(()=>{ if(!ws) connect(); },d); }
+    };
+  }catch(err){ wsFailCount++; setConn('fail','Falha'); log('a','Falha: '+err.message); }
+}
+
+function subscribeSupabase(){
+  if(!sb) return;
+  if(supaChannel){ sb.removeChannel(supaChannel); supaChannel=null; }
+  supaChannel=sb.channel('esp32_telemetry_ch')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'esp32_telemetry',filter:'id=eq.main'},
+      payload=>{
+        if(payload.new){
+          handleData(payload.new);
+          if(!ws||ws.readyState!==WebSocket.OPEN) setConn('ok','Online via Supabase');
+        }
+      })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){ log('i','Supabase Realtime conectado'); fetchLatestTelemetry(); }
+      else if(status==='CHANNEL_ERROR') log('a','Supabase Realtime erro — verifique URL e Key');
+    });
+}
+
+async function fetchLatestTelemetry(){
+  if(!sb) return;
+  try{
+    const {data}=await sb.from('esp32_telemetry').select('*').eq('id','main').single();
+    if(data) handleData(data);
+  }catch(_){}
 }
 
 /* ══ DATA HANDLER ══ */
@@ -957,7 +992,8 @@ function handleData(d){
   const delta=(d.pulses||0)-lastSPulses;
   totalPulses=d.pulses||totalPulses;
   curDir=d.direction||(delta>0?1:delta<0?-1:0);
-  if(dt>0) curSpd=p2m(Math.abs(delta))/dt;
+  if(dt>0&&dt<5) curSpd=p2m(Math.abs(delta))/dt;
+  else if(d.speed_mpm!==undefined) curSpd=d.speed_mpm/60;
   lastSPulses=d.pulses||totalPulses; lastSTime=now; lastRdTs=now;
   din[0]=(d.din1||0)?1:0;
   din[1]=(d.din2||0)?1:0;
@@ -1316,6 +1352,7 @@ function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document
 tickClock(); updateVU(); tickEff(); updateDIO();
 log('i','Dashboard iniciado · aguardando conexão');
 resetIdle();
+connect();
 </script>
 </body>
 </html>
