@@ -41,12 +41,18 @@ html,body{min-height:100%;background:
 .ls-link a{color:var(--sky);text-decoration:none;font-weight:600;}
 
 /* ── Ranking global ── */
-.grank-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px;}
-.grank-row:last-child{border-bottom:none;}
-.grank-medal{font-size:15px;min-width:28px;text-align:center;}
+.grank-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;margin-bottom:5px;border:1px solid var(--border);font-size:13px;background:var(--bg3);}
+.grank-row.top1{background:linear-gradient(90deg,rgba(255,209,102,.18),rgba(255,209,102,.04));border-color:rgba(255,209,102,.55);}
+.grank-row.top2{background:linear-gradient(90deg,rgba(203,213,225,.16),rgba(203,213,225,.03));border-color:rgba(203,213,225,.45);}
+.grank-row.top3{background:linear-gradient(90deg,rgba(251,146,60,.15),rgba(251,146,60,.03));border-color:rgba(251,146,60,.45);}
+.grank-pos{display:flex;align-items:center;gap:3px;min-width:46px;font-weight:800;font-size:13px;color:var(--muted);}
+.grank-row.top1 .grank-pos{color:var(--gold);}
+.grank-row.top2 .grank-pos{color:#cbd5e1;}
+.grank-row.top3 .grank-pos{color:#fb923c;}
+.grank-medal{font-size:16px;}
 .grank-nome{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.grank-pts{color:var(--gold);font-weight:700;font-size:14px;}
-.grank-pct{color:var(--muted);font-size:11px;min-width:30px;text-align:right;}
+.grank-pts{color:var(--gold);font-weight:800;font-size:15px;}
+.grank-pct{color:var(--muted);font-size:11px;min-width:34px;text-align:right;}
 .tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
   padding:2px 8px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25);border-radius:4px;color:var(--gold);}
 
@@ -649,10 +655,11 @@ async function renderGlobalRanking(){
   const medals=['🥇','🥈','🥉'];
   el.innerHTML = r.map((u,i)=>{
     const pct = (u.acertos+u.erros)>0 ? Math.round(u.acertos/(u.acertos+u.erros)*100) : 0;
-    const medal = medals[i] || (i+1)+'º';
+    const topCls = i<3 ? ' top'+(i+1) : '';
+    const medal = medals[i] || '';
     const me = currentUser && u.id===currentUser.id ? 'style="color:var(--sky)"' : '';
-    return `<div class="grank-row">
-      <span class="grank-medal">${medal}</span>
+    return `<div class="grank-row${topCls}">
+      <span class="grank-pos">${i+1}º ${medal}</span>
       <span class="grank-nome" ${me}>${u.nome}</span>
       <span class="grank-pts">${u.pontos}</span>
       <span class="grank-pct">${pct}%</span>
@@ -976,9 +983,15 @@ function renderScores(){
 }
 
 /* ══════════════ JOGO ══════════════ */
+let drawnThisCycle=new Set();   // jogadores já sorteados no ciclo atual
 function drawPlayer(){
   const n=cfg.num;
-  currentPlayer=Math.floor(Math.random()*n)+1;
+  // só sorteia entre quem ainda não jogou neste ciclo
+  let avail=[];
+  for(let i=1;i<=n;i++) if(!drawnThisCycle.has(i)) avail.push(i);
+  if(!avail.length){ drawnThisCycle.clear(); for(let i=1;i<=n;i++) avail.push(i); }
+  currentPlayer=avail[Math.floor(Math.random()*avail.length)];
+  drawnThisCycle.add(currentPlayer);
   sendCmd({cmd:'sorteio',player:currentPlayer});   // aciona saída do ESP32
   log('i',`🎲 Sorteado: ${cfg.names[currentPlayer-1]} (saída ${currentPlayer})`);
   // animação de sorteio
@@ -999,11 +1012,29 @@ function drawPlayer(){
   renderScores();
 }
 
+const LEVEL_ORDER=['basico','medio','avancado','teologico'];
 function pickQuestion(){
+  // nunca repete: usa só perguntas ainda não usadas do nível atual
   let pool=questions.filter(q=>q.nivel===cfg.level && !usedIds.has(q.id));
-  if(!pool.length){ // recicla
-    questions.filter(q=>q.nivel===cfg.level).forEach(q=>usedIds.delete(q.id));
-    pool=questions.filter(q=>q.nivel===cfg.level);
+  if(!pool.length){
+    // nível esgotado → avança para o próximo nível que ainda tenha perguntas
+    const start=LEVEL_ORDER.indexOf(cfg.level);
+    let found=null;
+    for(let k=1;k<=LEVEL_ORDER.length;k++){
+      const lvl=LEVEL_ORDER[(start+k)%LEVEL_ORDER.length];
+      const p=questions.filter(q=>q.nivel===lvl && !usedIds.has(q.id));
+      if(p.length){ found=lvl; pool=p; break; }
+    }
+    if(found){
+      setLevel(found);
+      toast('Perguntas do nível esgotadas — indo para '+LVL_PT[found],'ok');
+      log('i','Nível alterado para '+LVL_PT[found]+' (perguntas anteriores esgotadas)');
+    } else {
+      // todos os níveis esgotados → recicla tudo
+      usedIds.clear();
+      pool=questions.filter(q=>q.nivel===cfg.level);
+      log('i','Todas as perguntas de todos os níveis foram usadas — reciclando');
+    }
   }
   if(!pool.length) return null;
   const q=pool[Math.floor(Math.random()*pool.length)];
@@ -1079,6 +1110,8 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
   const res=document.getElementById('result');
   res.className='result show '+(correct?'win':'lose');
   document.getElementById('resEmoji').textContent=correct?'🎉':'😬';
+  const nextBtn=document.getElementById('btnNext');
+  nextBtn.disabled=false; nextBtn.textContent='➡️ Próxima Rodada';
   if(correct){
     document.getElementById('resEmoji').style.animation='pop .4s ease';
     document.getElementById('resTitle').textContent='Parabéns!';
@@ -1097,7 +1130,9 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
     somErro();
     if(cfg.castigoSec>0){
       sendCmd({cmd:'castigo',ms:cfg.castigoSec*1000});   // aciona saída de castigo do ESP32
-      showEsteira(cfg.castigoSec);                       // animação enquanto a saída está ligada
+      // bloqueia "Próxima Rodada" até o tempo do castigo terminar
+      nextBtn.disabled=true; nextBtn.textContent=`⏳ Aguarde o castigo (${cfg.castigoSec}s)`;
+      showEsteira(cfg.castigoSec, ()=>{ nextBtn.disabled=false; nextBtn.textContent='➡️ Próxima Rodada'; });
       log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — saída de castigo por ${cfg.castigoSec}s · ${cast}`);
     } else {
       log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — castigo: ${cast}`);
@@ -1149,7 +1184,7 @@ function nextRound(){
 }
 
 function resetGame(){
-  scores={}; usedIds.clear(); partidaId=null;
+  scores={}; usedIds.clear(); partidaId=null; drawnThisCycle.clear();
   nextRound(); renderScores();
   log('i','Placar zerado');
 }
@@ -1165,7 +1200,7 @@ async function finalizarPartida(){
   if(ok){
     toast('Partida finalizada — ranking atualizado ✓','ok');
     log('ok',`🏁 Partida finalizada — ${pts} pts somados ao ranking de ${currentUser?currentUser.nome:'—'}`);
-    scores={}; usedIds.clear(); partidaId=null;
+    scores={}; usedIds.clear(); partidaId=null; drawnThisCycle.clear();
     nextRound(); renderScores();
     openModal('mRanking');
   } else {
@@ -1184,8 +1219,9 @@ function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 
 /* ── Esteira (visível enquanto a saída de castigo está ligada) ── */
-let esteiraIv=null;
-function showEsteira(sec){
+let esteiraIv=null, esteiraDone=null;
+function showEsteira(sec,onDone){
+  esteiraDone=onDone||null;
   const el=document.getElementById('esteira'), lbl=document.getElementById('estLabel');
   el.classList.add('show');
   let left=Math.max(1,sec|0);
@@ -1194,7 +1230,11 @@ function showEsteira(sec){
   clearInterval(esteiraIv);
   esteiraIv=setInterval(()=>{ left--; if(left<=0) hideEsteira(); else upd(); },1000);
 }
-function hideEsteira(){ clearInterval(esteiraIv); document.getElementById('esteira').classList.remove('show'); }
+function hideEsteira(){
+  clearInterval(esteiraIv);
+  document.getElementById('esteira').classList.remove('show');
+  const cb=esteiraDone; esteiraDone=null; if(cb) cb();
+}
 
 function requireAdmin(cb){
   if(adminUnlocked){ cb(); return; }
@@ -1364,7 +1404,7 @@ function changePass(){
 /* ══════════════ EVENTOS ══════════════ */
 document.getElementById('lvlTabs').onclick=e=>{ if(e.target.dataset.l) setLevel(e.target.dataset.l); };
 document.getElementById('numPlayers').onchange=e=>{
-  cfg.num=+e.target.value; saveCfg(); renderPlayersEdit(); renderScores(); };
+  cfg.num=+e.target.value; saveCfg(); drawnThisCycle.clear(); renderPlayersEdit(); renderScores(); };
 document.getElementById('cfgTime').onchange=e=>{ cfg.time=Math.max(5,+e.target.value||30); saveCfg(); };
 document.getElementById('cfgCastigo').onchange=e=>{ cfg.castigoSec=Math.max(0,Math.min(60,+e.target.value||0)); saveCfg(); };
 document.getElementById('btnDraw').onclick=drawPlayer;
@@ -1412,7 +1452,8 @@ document.addEventListener('keydown',e=>{
   else if(e.key.toLowerCase()==='s'){ if(answered && !document.getElementById('btnDraw').disabled
       && document.getElementById('drawZone').style.display!=='none') drawPlayer(); }
   else if(e.key===' '){ e.preventDefault();
-    if(document.getElementById('mResult').classList.contains('show')) nextRound(); }
+    if(document.getElementById('mResult').classList.contains('show')
+       && !document.getElementById('btnNext').disabled) nextRound(); }
 });
 
 /* ══════════════ INIT ══════════════ */
