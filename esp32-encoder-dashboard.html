@@ -430,6 +430,43 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
   </div>
 
+  <!-- DIGITAL I/O -->
+  <div class="slbl">Entradas &amp; Sa&#237;das Digitais</div>
+  <div class="dio-grid">
+    <div class="din-card" id="dinCard1">
+      <div class="din-lbl">DIN 1 &mdash; Produzindo</div>
+      <div class="din-val" id="dinVal1" style="color:var(--muted)">Inativo</div>
+      <div class="din-sub" id="dinSub1">GPIO 34 &middot; 0</div>
+      <div class="kglow" style="background:var(--ok)"></div>
+    </div>
+    <div class="din-card" id="dinCard2">
+      <div class="din-lbl">DIN 2 &mdash; Setup</div>
+      <div class="din-val" id="dinVal2" style="color:var(--muted)">Inativo</div>
+      <div class="din-sub" id="dinSub2">GPIO 35 &middot; 0</div>
+      <div class="kglow" style="background:var(--warn)"></div>
+    </div>
+    <div class="din-card" id="dinCard3">
+      <div class="din-lbl">DIN 3 &mdash; Falha</div>
+      <div class="din-val" id="dinVal3" style="color:var(--muted)">Ok</div>
+      <div class="din-sub" id="dinSub3">GPIO 36 &middot; 0</div>
+      <div class="kglow" style="background:var(--danger)"></div>
+    </div>
+    <div class="dout-card" id="doutCard1">
+      <div class="din-lbl">DOUT 1 &mdash; Supervisor</div>
+      <div class="din-val" id="doutVal1" style="color:var(--muted)">Desligada</div>
+      <div class="din-sub">GPIO 25</div>
+      <button class="dout-toggle dout-off" id="doutBtn1" onclick="toggleDout(1)">&#9654; Acionar</button>
+      <div class="kglow" style="background:var(--sky)"></div>
+    </div>
+    <div class="dout-card" id="doutCard2">
+      <div class="din-lbl">DOUT 2 &mdash; Sa&#237;da Geral</div>
+      <div class="din-val" id="doutVal2" style="color:var(--muted)">Desligada</div>
+      <div class="din-sub">GPIO 26</div>
+      <button class="dout-toggle dout-off" id="doutBtn2" onclick="toggleDout(2)">&#9654; Acionar</button>
+      <div class="kglow" style="background:var(--sky)"></div>
+    </div>
+  </div>
+
   <!-- VIDA ÚTIL + EFFICIENCY -->
   <div class="slbl">Vida &#218;til &amp; Efici&#234;ncia</div>
   <div class="twocol">
@@ -881,15 +918,45 @@ function setDout(pin,val){
   updateDIO();
 }
 function updateDIO(){
+  // ── DIN cards ──
+  const dinCfg=[
+    {label:'Produzindo',cls:'st-ok', onColor:'var(--ok)',     offLabel:'Inativo', gpio:34},
+    {label:'Setup',     cls:'st-warn',onColor:'var(--warn)',  offLabel:'Inativo', gpio:35},
+    {label:'Falha',     cls:'st-fail',onColor:'var(--danger)',offLabel:'Ok',      gpio:36},
+  ];
+  for(let i=0;i<3;i++){
+    const c=document.getElementById(`dinCard${i+1}`);
+    const v=document.getElementById(`dinVal${i+1}`);
+    const s=document.getElementById(`dinSub${i+1}`);
+    if(!c) continue;
+    const on=din[i];
+    c.className=`din-card${on?' '+dinCfg[i].cls:''}`;
+    v.textContent=on?dinCfg[i].label:dinCfg[i].offLabel;
+    v.style.color=on?dinCfg[i].onColor:'var(--muted)';
+    s.textContent=`GPIO ${dinCfg[i].gpio} · ${on?1:0}`;
+  }
+  // ── DOUT cards ──
+  for(let i=0;i<2;i++){
+    const on=dout[i];
+    const card=document.getElementById(`doutCard${i+1}`);
+    const val=document.getElementById(`doutVal${i+1}`);
+    const btn=document.getElementById(`doutBtn${i+1}`);
+    if(!card) continue;
+    card.className=`dout-card${on?' dout-on':''}`;
+    val.textContent=on?'Ligada':'Desligada';
+    val.style.color=on?'var(--sky)':'var(--muted)';
+    btn.className=`dout-toggle ${on?'dout-on-btn':'dout-off'}`;
+    btn.innerHTML=on?'&#9726; Desligar':'&#9654; Acionar';
+  }
+  // ── Sinaleiro (Status card) ──
   const rEl=document.getElementById('sinalRed');
   const yEl=document.getElementById('sinalYellow');
   const gEl=document.getElementById('sinalGreen');
   const lEl=document.getElementById('dinSinalLabel');
   if(!rEl) return;
-  // reset all to dark (off state)
-  rEl.style.background='#2a0a0a'; rEl.style.boxShadow='none'; rEl.className='';
-  yEl.style.background='#2a1a00'; yEl.style.boxShadow='none'; yEl.className='';
-  gEl.style.background='#0a2a0a'; gEl.style.boxShadow='none'; gEl.className='';
+  rEl.style.background='#4a2020'; rEl.style.boxShadow='none'; rEl.className='';
+  yEl.style.background='#3a2e10'; yEl.style.boxShadow='none'; yEl.className='';
+  gEl.style.background='#1a3a1a'; gEl.style.boxShadow='none'; gEl.className='';
   if(din[2]){
     rEl.style.background='#ef4444'; rEl.style.boxShadow='0 0 18px rgba(239,68,68,.9)'; rEl.className='lamp-blink';
     lEl.textContent='FALHA'; lEl.style.color='var(--danger)';
