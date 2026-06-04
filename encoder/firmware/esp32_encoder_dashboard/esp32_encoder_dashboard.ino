@@ -238,7 +238,8 @@ void loop() {
   // Broadcast local (LAN WebSocket) a cada 200 ms
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
-    wsServer.broadcastTXT(buildJson(false));
+    String jsonLocal = buildJson(false);
+    wsServer.broadcastTXT(jsonLocal);
   }
 
   // POST para Supabase a cada 500 ms (HTTPS é mais lento que WS local)
