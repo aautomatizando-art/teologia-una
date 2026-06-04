@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS quiz_perguntas (
   opcoes      JSONB NOT NULL,          -- array com 5 alternativas (strings)
   correta     INT  NOT NULL CHECK (correta BETWEEN 1 AND 5),
   referencia  TEXT DEFAULT '',         -- ex: "Gênesis 6:14"
+  versiculo   TEXT DEFAULT '',         -- texto ARC (Almeida Revista e Corrigida)
   explicacao  TEXT DEFAULT '',
   ativa       BOOLEAN DEFAULT TRUE,
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -250,3 +251,50 @@ SELECT
 FROM quiz_respostas
 GROUP BY jogador_nome
 ORDER BY pontos DESC;
+
+-- ═══════════════════════════════════════════════════════════
+--  VERSÍCULOS — Almeida Revista e Corrigida (ARC), texto fixo
+--  (idempotente: rode mesmo em bancos já populados)
+-- ═══════════════════════════════════════════════════════════
+ALTER TABLE quiz_perguntas ADD COLUMN IF NOT EXISTS versiculo TEXT DEFAULT '';
+
+UPDATE quiz_perguntas SET versiculo='E formou o Senhor Deus o homem do pó da terra e soprou em seus narizes o fôlego da vida; e o homem foi feito alma vivente.' WHERE referencia='Gênesis 2:7';
+UPDATE quiz_perguntas SET versiculo='Mas da árvore do conhecimento do bem e do mal, dela não comerás; porque, no dia em que dela comeres, certamente morrerás.' WHERE referencia='Gênesis 2:17';
+UPDATE quiz_perguntas SET versiculo='E foram todos os dias de Matusalém novecentos e sessenta e nove anos; e morreu.' WHERE referencia='Gênesis 5:27';
+UPDATE quiz_perguntas SET versiculo='Faze para ti uma arca da madeira de gofer; farás compartimentos na arca e a betumarás por dentro e por fora com betume.' WHERE referencia='Gênesis 6:14';
+UPDATE quiz_perguntas SET versiculo='E houve chuva sobre a terra quarenta dias e quarenta noites.' WHERE referencia='Gênesis 7:12';
+UPDATE quiz_perguntas SET versiculo='E, passando os mercadores midianitas, tiraram e alçaram a José da cova e venderam José por vinte moedas de prata aos ismaelitas, os quais levaram José ao Egito.' WHERE referencia='Gênesis 37:28';
+UPDATE quiz_perguntas SET versiculo='Então, Moisés estendeu a sua mão sobre o mar, e o Senhor fez retirar o mar por um forte vento oriental toda aquela noite; e o mar se tornou em seco, e as águas foram partidas.' WHERE referencia='Êxodo 14:21';
+UPDATE quiz_perguntas SET versiculo='E vossos filhos pastorearão neste deserto quarenta anos e levarão sobre si as vossas prostituições, até que os vossos cadáveres se consumam neste deserto.' WHERE referencia='Números 14:33';
+UPDATE quiz_perguntas SET versiculo='E sucedeu, depois da morte de Moisés, servo do Senhor, que o Senhor falou a Josué, filho de Num, servo de Moisés, dizendo: Moisés, meu servo, é morto; levanta-te, pois, agora, passa este Jordão, tu e todo este povo, à terra que eu dou aos filhos de Israel.' WHERE referencia='Josué 1:1-2';
+UPDATE quiz_perguntas SET versiculo='Então, o povo jubilou, tocando os sacerdotes as buzinas; e sucedeu que, ouvindo o povo o sonido da buzina, jubilou o povo com grande júbilo, e o muro caiu abaixo, e o povo subiu à cidade, cada qual em frente de si, e tomaram a cidade.' WHERE referencia='Josué 6:20';
+UPDATE quiz_perguntas SET versiculo='Assim, Davi prevaleceu contra o filisteu, com uma funda e com uma pedra, e feriu o filisteu, e o matou; sem que Davi tivesse uma espada na mão.' WHERE referencia='1 Samuel 17:50';
+UPDATE quiz_perguntas SET versiculo='E sucedeu que, no ano quatrocentos e oitenta depois de saírem os filhos de Israel do Egito, no ano quarto do reinado de Salomão sobre Israel, no mês de Zive (este é o mês segundo), começou a edificar a casa do Senhor.' WHERE referencia='1 Reis 6:1';
+UPDATE quiz_perguntas SET versiculo='Agora, pois, envia e ajunta a mim todo o Israel no monte Carmelo; como também os quatrocentos e cinquenta profetas de Baal e os quatrocentos profetas do bosque que comem da mesa de Jezabel.' WHERE referencia='1 Reis 18:19';
+UPDATE quiz_perguntas SET versiculo='E sucedeu que, indo eles andando e falando, eis que um carro de fogo, com cavalos de fogo, os separou um do outro; e Elias subiu ao céu num redemoinho.' WHERE referencia='2 Reis 2:11';
+UPDATE quiz_perguntas SET versiculo='E o chefe dos eunucos lhes pôs outros nomes, a saber: a Daniel pôs o de Beltessazar; a Hananias, o de Sadraque; a Misael, o de Mesaque; e a Azarias, o de Abede-Nego.' WHERE referencia='Daniel 1:7';
+UPDATE quiz_perguntas SET versiculo='Esta, pois, é a escritura que se escreveu: MENE, MENE, TEQUEL e PARSIM.' WHERE referencia='Daniel 5:25';
+UPDATE quiz_perguntas SET versiculo='O meu Deus enviou o seu anjo e fechou a boca dos leões, para que não me fizessem dano, porque foi achada em mim inocência diante dele; e também contra ti, ó rei, não tenho cometido delito algum.' WHERE referencia='Daniel 6:22';
+UPDATE quiz_perguntas SET versiculo='O princípio da palavra do Senhor por Oseias. Disse, pois, o Senhor a Oseias: Vai, toma uma mulher de prostituições e filhos de prostituição; porque a terra se prostituiu gravemente, desviando-se do Senhor.' WHERE referencia='Oseias 1:2-3';
+UPDATE quiz_perguntas SET versiculo='Preparou, porém, o Senhor um grande peixe, para que tragasse a Jonas; e esteve Jonas três dias e três noites nas entranhas do peixe.' WHERE referencia='Jonas 1:17';
+UPDATE quiz_perguntas SET versiculo='E, tendo nascido Jesus em Belém de Judeia, no tempo do rei Herodes, eis que uns magos vieram do oriente a Jerusalém.' WHERE referencia='Mateus 2:1';
+UPDATE quiz_perguntas SET versiculo='Então, Herodes, vendo que tinha sido iludido pelos magos, irou-se muito e mandou matar todos os meninos que havia em Belém e em todos os seus contornos, de dois anos para baixo, segundo o tempo que diligentemente inquirira dos magos.' WHERE referencia='Mateus 2:16';
+UPDATE quiz_perguntas SET versiculo='Então, veio Jesus da Galileia ter com João, junto do Jordão, para ser batizado por ele.' WHERE referencia='Mateus 3:13';
+UPDATE quiz_perguntas SET versiculo='E Jesus, passando adiante dali, viu assentado na alfândega um homem chamado Mateus e disse-lhe: Segue-me. E ele, levantando-se, o seguiu.' WHERE referencia='Mateus 9:9';
+UPDATE quiz_perguntas SET versiculo='Então, chegou Jesus com eles a um lugar chamado Getsêmani e disse a seus discípulos: Assentai-vos aqui, enquanto vou ali orar.' WHERE referencia='Mateus 26:36';
+UPDATE quiz_perguntas SET versiculo='E, os que prenderam a Jesus, o conduziram à casa de Caifás, o sumo sacerdote, onde os escribas e os anciãos estavam reunidos.' WHERE referencia='Mateus 26:57';
+UPDATE quiz_perguntas SET versiculo='E Jesus, tendo ressuscitado na manhã do primeiro dia da semana, apareceu primeiramente a Maria Madalena, da qual tinha expulsado sete demônios.' WHERE referencia='Marcos 16:9';
+UPDATE quiz_perguntas SET versiculo='E, virando-se o Senhor, olhou para Pedro, e Pedro lembrou-se da palavra do Senhor, como lhe havia dito: Antes que o galo cante, três vezes me negarás.' WHERE referencia='Lucas 22:61';
+UPDATE quiz_perguntas SET versiculo='Jesus principiou assim os seus sinais em Caná da Galileia e manifestou a sua glória; e os seus discípulos creram nele. (v. 11)' WHERE referencia='João 2:1-11';
+UPDATE quiz_perguntas SET versiculo='Está aqui um rapaz que tem cinco pães de cevada e dois peixinhos; mas que é isto para tantos?' WHERE referencia='João 6:9';
+UPDATE quiz_perguntas SET versiculo='E, tendo dito isto, voltou-se para trás e viu Jesus em pé, mas não sabia que era Jesus. Jesus disse-lhe: Maria! Ela, voltando-se, disse-lhe: Rabôni (que quer dizer Mestre).' WHERE referencia='João 20:14-16';
+UPDATE quiz_perguntas SET versiculo='E lançaram-lhes sortes, e caiu a sorte sobre Matias; e por voto comum foi contado com os onze apóstolos.' WHERE referencia='Atos 1:26';
+UPDATE quiz_perguntas SET versiculo='E foram vistas por eles línguas repartidas, como que de fogo, as quais pousaram sobre cada um deles. E todos foram cheios do Espírito Santo e começaram a falar em outras línguas, conforme o Espírito Santo lhes concedia que falassem.' WHERE referencia='Atos 2:3-4';
+UPDATE quiz_perguntas SET versiculo='E Saulo, respirando ainda ameaças e mortes contra os discípulos do Senhor, foi para Damasco. E, indo no caminho, subitamente o cercou um resplendor de luz do céu. E, caindo por terra, ouviu uma voz que lhe dizia: Saulo, Saulo, por que me persegues?' WHERE referencia='Atos 9:1-4';
+UPDATE quiz_perguntas SET versiculo='E sucedeu que todo um ano se reuniram naquela igreja e ensinaram muita gente; e em Antioquia foram os discípulos, pela primeira vez, chamados cristãos.' WHERE referencia='Atos 11:26';
+UPDATE quiz_perguntas SET versiculo='Mas o fruto do Espírito é: amor, gozo, paz, longanimidade, benignidade, bondade, fé, mansidão, temperança. Contra estas coisas não há lei.' WHERE referencia='Gálatas 5:22-23';
+UPDATE quiz_perguntas SET versiculo='Saúda-vos Lucas, o médico amado, e Demas.' WHERE referencia='Colossenses 4:14';
+UPDATE quiz_perguntas SET versiculo='Porque a um, pelo Espírito, é dada a palavra da sabedoria; e a outro, pelo mesmo Espírito, a palavra da ciência; e a outro, a fé; e a outro, os dons de curar; e a outro, a operação de maravilhas; e a outro, a profecia; e a outro, o dom de discernir os espíritos; e a outro, a variedade de línguas; e a outro, a interpretação das línguas.' WHERE referencia='1 Coríntios 12:8-10';
+UPDATE quiz_perguntas SET versiculo='Os quais noutro tempo foram rebeldes, quando a longanimidade de Deus esperava nos dias de Noé, enquanto se preparava a arca; na qual poucas (isto é, oito) almas se salvaram pela água.' WHERE referencia='1 Pedro 3:20';
+UPDATE quiz_perguntas SET versiculo='Revelação de Jesus Cristo, a qual Deus lhe deu, para mostrar aos seus servos as coisas que brevemente devem acontecer; e pelo seu anjo as enviou e as notificou a João, seu servo.' WHERE referencia='Apocalipse 1:1';
+UPDATE quiz_perguntas SET versiculo='Eu, João, que também sou vosso irmão e companheiro na aflição, e no reino, e paciência de Jesus Cristo, estava na ilha chamada Patmos, por causa da palavra de Deus e pelo testemunho de Jesus Cristo.' WHERE referencia='Apocalipse 1:9';
