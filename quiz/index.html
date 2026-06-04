@@ -232,26 +232,7 @@ html,body{min-height:100%;background:
   </div>
 </div></header>
 
-<div class="strip"><div class="strip-in">
-  <div class="ifield"><span class="ilbl">Relay / WS URL</span>
-    <input class="iinput" id="cfgRelay" placeholder="wss://… (opcional)"></div>
-  <div class="ifield"><span class="ilbl">IP do ESP32</span>
-    <input class="iinput" id="cfgIp" placeholder="192.168.1.100" style="width:120px"></div>
-  <button class="btn btn-sky" id="btnConnect">🔌 Conectar ESP32</button>
-  <div class="idiv"></div>
-  <div class="ifield"><span class="ilbl">Supabase URL</span>
-    <input class="iinput" id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
-  <div class="ifield"><span class="ilbl">Supabase anon key</span>
-    <input class="iinput" id="cfgSbKey" placeholder="eyJ…" type="password"></div>
-  <button class="btn btn-ghost" id="btnSaveSb">💾 Salvar</button>
-</div></div>
-
 <div class="body">
-
-  <div class="banner banner-https" id="httpsBanner"><div class="bico">🔒</div><div class="btxt">
-    <strong>Conexão ws:// bloqueada nesta página HTTPS</strong>
-    <small>Para usar o ESP32 na rede local, rode o <b>relay</b> e cole a URL <b>wss://</b> acima, ou abra este HTML salvo no computador.</small>
-  </div></div>
 
   <!-- ── SETUP ── -->
   <div class="card" id="setupCard">
@@ -303,10 +284,6 @@ html,body{min-height:100%;background:
         <div class="card-h"><div class="card-t">🏆 Placar</div>
           <button class="btn btn-ghost" id="btnReset" style="padding:5px 10px">Zerar</button></div>
         <div class="score-list" id="scoreList"></div>
-      </div>
-      <div class="card">
-        <div class="card-h"><div class="card-t">📋 Eventos</div></div>
-        <div class="log" id="log"></div>
       </div>
     </div>
   </div>
@@ -414,8 +391,23 @@ html,body{min-height:100%;background:
 
   <!-- aba config -->
   <div id="atCfg" style="display:none">
-    <div class="fld"><label>Senha do administrador atual</label><input type="password" id="adPassCur" placeholder="Senha atual"></div>
-    <div class="fld"><label>Nova senha</label><input type="password" id="adPassNew" placeholder="Nova senha"></div>
+    <div style="font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📡 ESP32</div>
+    <div class="row2">
+      <div class="fld"><label>Relay / WS URL (opcional)</label><input id="cfgRelay" placeholder="wss://…"></div>
+      <div class="fld"><label>IP do ESP32</label><input id="cfgIp" placeholder="192.168.1.100"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn btn-sky" id="btnConnect">🔌 Conectar ESP32</button></div>
+
+    <div style="font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">☁️ Supabase</div>
+    <div class="fld"><label>Supabase URL</label><input id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div class="fld"><label>Supabase anon key</label><input type="password" id="cfgSbKey" placeholder="eyJ…"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn btn-ghost" id="btnSaveSb">💾 Salvar Supabase</button></div>
+
+    <div style="font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🔐 Senha do administrador</div>
+    <div class="row2">
+      <div class="fld"><label>Senha atual</label><input type="password" id="adPassCur" placeholder="Senha atual"></div>
+      <div class="fld"><label>Nova senha</label><input type="password" id="adPassNew" placeholder="Nova senha"></div>
+    </div>
     <div style="display:flex;justify-content:flex-end"><button class="btn btn-sky" id="adPassSave">Alterar senha</button></div>
     <p class="muted" style="font-size:11px;margin-top:14px">As perguntas são salvas no <b>Supabase</b> quando configurado; caso contrário, ficam salvas <b>localmente</b> neste navegador.</p>
   </div>
@@ -623,7 +615,7 @@ function connect(){
   const isLocal=/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
   if(isHttps && isLocal){
     setConn('fail','HTTPS bloqueia ws://');
-    document.getElementById('httpsBanner').classList.add('show');
+    toast('ws:// bloqueado em HTTPS — use um Relay (wss://) ou abra o HTML salvo no PC','err');
     log('warn','HTTPS impede ws:// — use um Relay (wss://) ou abra o HTML salvo localmente');
     return;
   }
@@ -666,6 +658,7 @@ function tick(){ tone(1200,.05,0,'square',.08); }
 /* ══════════════ LOG ══════════════ */
 function log(t,m){
   const el=document.getElementById('log');
+  if(!el) return;
   const d=document.createElement('div');
   d.className='log-'+(t==='ok'?'ok':t==='warn'?'warn':t==='err'?'err':'i');
   d.textContent=`${new Date().toLocaleTimeString('pt-BR')} ${m}`;
@@ -1037,7 +1030,7 @@ document.getElementById('cfgTime').onchange=e=>{ cfg.time=Math.max(5,+e.target.v
 document.getElementById('cfgCastigo').onchange=e=>{ cfg.castigoSec=Math.max(0,Math.min(60,+e.target.value||0)); saveCfg(); };
 document.getElementById('btnDraw').onclick=drawPlayer;
 document.getElementById('btnNext').onclick=nextRound;
-document.getElementById('btnReset').onclick=resetGame;
+document.getElementById('btnReset').onclick=()=>requireAdmin(resetGame);
 document.getElementById('btnVerse').onclick=()=>{
   const box=document.getElementById('resVerse'), btn=document.getElementById('btnVerse');
   const show=box.style.display==='none';
