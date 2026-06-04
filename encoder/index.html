@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Dashboard Encoder · ESP32 · Produção · v2.4</title>
+<title>Dashboard Encoder · ESP32 · Produção · v3.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -54,7 +54,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .dot-fail{background:var(--danger);box-shadow:0 0 5px var(--danger);animation:bl .5s infinite;}
 .dot-off{background:var(--muted);}
 @keyframes bl{0%,100%{opacity:1;}50%{opacity:.25;}}
-.lamp-blink{animation:bl 1s ease-in-out infinite;}
 
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);
   font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr);border:1px solid;}
@@ -77,6 +76,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .banner.show{display:flex;}
 .banner-stop{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);}
 .banner-alert{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);}
+.banner-https{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.35);}
 .bico{font-size:22px;flex-shrink:0;margin-top:2px;}
 .btxt{flex:1;}
 .btxt strong{display:block;font-family:'Archivo Black',sans-serif;font-size:14px;}
@@ -113,10 +113,35 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 /* DIGITAL I/O */
 .dio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
-.din-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
-.din-card.st-ok{border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.03);}
-.din-card.st-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.03);}
-.din-card.st-fail{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.03);}
+/* ── unified DIN card ── */
+.din-unified-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;grid-column:1/-1;}
+.din-unified-header{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:12px;}
+.din-lamps{display:flex;gap:10px;}
+.din-lamp{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;padding:12px 8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);transition:all .3s;}
+.din-lamp-img{width:56px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35));transition:filter .3s;}
+.din-lamp.st-ok{border-color:rgba(74,222,128,.5);background:rgba(74,222,128,.05);}
+.din-lamp.st-ok .din-lamp-img{filter:drop-shadow(0 2px 14px rgba(74,222,128,.6));}
+.din-lamp.st-warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.05);}
+.din-lamp.st-warn .din-lamp-img{filter:drop-shadow(0 2px 14px rgba(245,158,11,.6));}
+.din-lamp.st-fail{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.05);}
+.din-lamp.st-fail .din-lamp-img{filter:drop-shadow(0 2px 14px rgba(239,68,68,.6));}
+.din-lamp-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.din-lamp-name{font-size:11px;font-weight:700;color:var(--text);text-align:center;}
+.din-lamp-gpio{font-size:9px;color:var(--muted);font-family:'Fira Code',monospace;}
+.din-lamp-state{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.05);}
+/* blink animation for active sinaleiro */
+@keyframes lampBlink{0%,100%{opacity:1}50%{opacity:.25}}
+.lamp-blink{animation:lampBlink 1s ease-in-out infinite;}
+/* DIN status rows */
+.din-row{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:var(--radius-sm);background:var(--bg3);border:1px solid var(--border);transition:all .3s;}
+.din-row.st-ok{border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.06);}
+.din-row.st-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.06);}
+.din-row.st-fail{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06);}
+.din-dot{font-size:9px;flex-shrink:0;color:var(--muted);}
+.din-row-name{font-size:11px;font-weight:600;flex:1;}
+.din-row-gpio{font-size:9px;color:var(--muted);font-family:'Fira Code',monospace;}
+.din-row-val{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(255,255,255,.05);min-width:54px;text-align:center;}
+/* ── DOUT cards ── */
 .dout-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .3s;}
 .dout-card.dout-on{border-color:rgba(53,200,255,.45);background:rgba(53,200,255,.03);}
 .din-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
@@ -244,9 +269,47 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .rel-save-err{color:var(--danger);font-size:11px;display:none;}
 .rel-save-err.show{display:block;margin-top:8px;}
 
+/* OS SALVAS TABS */
+.os-tab{padding:7px 16px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr);font-family:'Archivo',sans-serif;}
+.os-tab.active{color:var(--sky);border-bottom-color:var(--sky);}
+.os-tab:hover:not(.active){color:var(--text);}
+.os-empty{text-align:center;padding:28px 10px;color:var(--muted);font-size:12px;font-style:italic;}
+
 .fw-mdl{max-width:680px;border-color:rgba(53,200,255,.25);}
 .fw-mdl pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:13px;overflow:auto;max-height:360px;font-family:'Fira Code',monospace;font-size:10px;line-height:1.7;color:#ccc;margin-bottom:16px;}
+
+/* CLICHÊ MANAGEMENT */
+.cliche-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:13px;margin-bottom:20px;}
+.cliche-card{background:var(--bg3);border:1px solid var(--border);border-left:3px solid transparent;border-radius:var(--radius);padding:15px;display:flex;flex-direction:column;gap:9px;transition:border-color .25s;}
+.cliche-card.vu-ok{border-left-color:var(--ok);}
+.cliche-card.vu-warn{border-left-color:var(--warn);}
+.cliche-card.vu-crit{border-left-color:var(--danger);}
+.cliche-name{font-family:'Archivo Black',sans-serif;font-size:14px;line-height:1.2;}
+.cliche-meta{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);}
+.cliche-meta b{color:var(--text);font-weight:600;}
+.cliche-bar-w{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:3px 0;}
+.cliche-bar-fill{height:100%;border-radius:3px;transition:width .5s,background .4s;}
+.cliche-pct{font-family:'Archivo Black',sans-serif;font-size:20px;line-height:1;}
+.cliche-footer{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:2px;}
+.st-ok-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:var(--ok);cursor:default;}
+.st-warn-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:var(--warn);cursor:pointer;transition:var(--tr);}
+.st-warn-btn:hover{background:rgba(245,158,11,.2);}
+.st-crit-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);color:var(--danger);cursor:pointer;animation:bl 1.5s infinite;transition:background var(--tr);}
+.st-crit-btn:hover{background:rgba(239,68,68,.2);}
+.btn-edit-sm{background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:var(--radius-sm);font-size:10px;cursor:pointer;transition:var(--tr);flex-shrink:0;}
+.btn-edit-sm:hover{border-color:var(--gold);color:var(--gold);}
+.cliche-chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px;}
+.cliche-chart-wrap h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:12px;}
+/* Edit form */
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.edit-grid{grid-template-columns:1fr;}}
+.edit-inp{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:8px 11px;outline:none;width:100%;transition:var(--tr);}
+.edit-inp:focus{border-color:var(--gold);}
+.edit-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;display:block;}
+/* Pedido toast */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;font-size:12px;z-index:999;animation:fu .3s ease;display:none;}
+.toast.show{display:block;}
 
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 @keyframes fi{from{opacity:0;}to{opacity:1;}}
@@ -254,9 +317,56 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   margin-bottom:13px;display:flex;align-items:center;gap:9px;}
 .slbl::after{content:'';flex:1;height:1px;background:var(--border);}
 .footer{text-align:center;padding:24px 0 40px;font-size:11px;color:var(--muted);}
+
+/* ── MOBILE ─────────────────────────────────────────── */
+@media(max-width:680px){
+  /* Header: permite múltiplas linhas */
+  .hdr-in{height:auto;min-height:50px;padding:8px 0;flex-wrap:wrap;row-gap:5px;}
+  .hdr-in>div:first-child{flex:1 1 auto;}
+  .hdr-in>div:last-child{flex-wrap:wrap;gap:4px;}
+  /* Strip: esconde divisórias verticais */
+  .idiv{display:none;}
+  .strip-in{gap:8px 10px;}
+  /* Campos da strip: 2 colunas */
+  .ifield{flex:1 1 140px;}
+  /* Campo de OP ocupa linha inteira */
+  .ifield-op{flex:1 1 100%;}
+  .ifield-op .iinput{min-width:0;flex:1;}
+  .ifield-op>div{flex-wrap:wrap;gap:5px;}
+  /* Linha de parada: botão Gestão quebra abaixo */
+  .ifield-stop>div{flex-wrap:wrap;gap:5px;}
+  .ifield-stop .btn-gold{flex:1 1 100%;margin-left:0!important;justify-content:center;}
+  /* Timer menor */
+  .timer{font-size:17px;}
+}
+@media(max-width:400px){
+  .hdr-title{display:none;}
+  .ifield{flex:1 1 100%;}
+}
+
+/* ── THREECOL ───────────────────────────────────────────── */
+.threecol{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+@media(max-width:1060px){.threecol{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.threecol{grid-template-columns:1fr;}}
+
+/* Progresso da OP */
+.prog-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.prog-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px;}
+
+/* Speed history */
+.spdhist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;}
+.spdhist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.spdhist-head h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+
+/* Stop countdown badge */
+.stop-cd{display:none;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);
+  color:var(--warn);animation:bl 1s infinite;margin-left:8px;}
+.stop-cd.show{display:inline-flex;}
 </style>
 </head>
 <body>
+<div class="toast" id="toast"></div>
 
 <!-- HEADER -->
 <header class="hdr">
@@ -270,8 +380,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <button class="btn btn-ghost" onclick="toggleConfig()">&#9881; Config</button>
       <button class="btn btn-gold" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
       <button class="btn btn-ghost" onclick="openFw()">&#60;/&#62; FW</button>
+      <button class="btn btn-ghost" onclick="openOSSalvas()">&#128203; OS Salvas</button>
       <button class="btn btn-green" onclick="openRelatorio()">&#128196; Relat&#243;rio</button>
-      <button class="btn btn-danger" onclick="resetCounter()">&#8635; Zerar</button>
+      <button class="btn btn-danger" onclick="requireAdminPass('Zerar Contador','Isso apaga a posição acumulada do encoder. Confirme com a senha de administrador.',resetCounter)">&#8635; Zerar</button>
     </div>
   </div>
 </header>
@@ -288,10 +399,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ival" id="clockTime">--:--:--</span>
     </div>
     <div class="idiv"></div>
-    <div class="ifield">
+    <div class="ifield ifield-op">
       <span class="ilbl">N&#186; Ordem de Produ&#231;&#227;o</span>
-      <div style="display:flex;gap:5px;align-items:center;">
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
         <input class="iinput" id="opInput" placeholder="ex: OP-2024-001" maxlength="30">
+        <input class="iinput" id="opMetaMInp" type="number" min="0" step="0.1" placeholder="Meta (m)" style="width:90px;" title="Quantidade em metros da OP">
         <button class="btn btn-ok" id="opBtn" onclick="startOP()" style="padding:5px 10px;font-size:11px;">&#9654; Iniciar</button>
         <button class="btn btn-danger" id="finBtn" onclick="closeOP()" style="padding:5px 10px;font-size:11px;display:none;">&#9632; Finalizar OP</button>
       </div>
@@ -325,9 +437,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="ilbl">&#9201; Tempo de Produ&#231;&#227;o</span>
       <span class="timer" id="prodTimer" style="color:var(--muted)">00:00:00</span>
     </div>
-    <div class="ifield">
+    <div class="ifield ifield-stop">
       <span class="ilbl">&#9208; Tempo de Parada</span>
-      <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="timer" id="stopTimer" style="color:var(--muted)">00:00:00</span>
+        <span class="stop-cd" id="stopCd">&#9201; <span id="stopCdSec">20</span>s</span>
+        <button class="btn btn-gold" style="padding:6px 15px;font-size:11px;margin-left:10px;" onclick="requireAdminPass('Gest&#227;o de Clich&#234;s','Digite a senha de administrador para acessar.',openCliches)">&#128200; Gest&#227;o de Clich&#234;s</button>
+      </div>
     </div>
   </div>
 </div>
@@ -354,6 +470,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
   </div>
 
+  <!-- HTTPS MIXED-CONTENT BANNER -->
+  <div class="banner banner-https" id="httpsBanner" style="display:none;">
+    <div class="bico" style="color:#ffd166;font-size:20px;">&#9888;</div>
+    <div class="btxt" style="flex:1;">
+      <strong style="color:#ffd166;">P&#225;gina HTTPS &#8212; conex&#227;o local bloqueada pelo navegador</strong>
+      <small style="display:block;margin-top:5px;line-height:1.5;">
+        Navegadores bloqueiam <code>ws://</code> e <code>http://</code> de p&#225;ginas seguras (HTTPS) para IPs locais.<br>
+        <b>Solu&#231;&#227;o:</b> baixe o arquivo e abra diretamente no celular (sem HTTPS):
+      </small>
+    </div>
+    <div class="bact" style="display:flex;flex-direction:column;gap:5px;min-width:126px;">
+      <a id="dlDashBtn" href="index.html" download="esp32-dashboard.html" class="btn btn-gold" style="padding:5px 10px;font-size:11px;text-decoration:none;text-align:center;">&#11015; Baixar HTML</a>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="startPolling()">&#8635; Tentar HTTP</button>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="document.getElementById('httpsBanner').style.display='none'">&#10005; Fechar</button>
+    </div>
+  </div>
+
   <!-- ALERT BANNER -->
   <div class="banner banner-alert" id="alertBanner">
     <div class="bico">&#9888;</div>
@@ -377,10 +510,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="fgrp"><label>IP do ESP32</label><input class="fctl" id="cfgIp" value="192.168.1.100"><span class="fhint">Endere&#231;o IP na rede local</span></div>
       <div class="fgrp"><label>Porta HTTP</label><input class="fctl" id="cfgPort" value="80"><span class="fhint">Endpoint /data</span></div>
       <div class="fgrp"><label>Porta WebSocket</label><input class="fctl" id="cfgWsPort" value="81"><span class="fhint">ws://IP:porta/ws</span></div>
-      <div class="fgrp"><label>Di&#226;metro da Polia (mm)</label><input class="fctl" id="cfgDiam" value="100"><span class="fhint">&#960; &times; d &#247; PPR = m/pulso</span></div>
+      <div class="fgrp"><label>Di&#226;metro da Polia (mm)</label><input class="fctl" id="cfgDiam" value="200"><span class="fhint">&#960; &times; d &#247; PPR = m/pulso &nbsp;|&nbsp; Padr&#227;o: 200 mm</span></div>
       <div class="fgrp"><label>PPR (pulsos/rev)</label><input class="fctl" id="cfgPpr" value="360"></div>
       <div class="fgrp"><label>Timeout Alerta (s)</label><input class="fctl" id="cfgTimeout" value="60"></div>
       <div class="fgrp"><label>Senha Admin</label><input class="fctl" id="cfgAdminPass" type="password" value="1234"><span class="fhint">Liberar Produ&#231;&#227;o</span></div>
+      <hr class="cfg-hr">
+      <div class="fgrp" style="grid-column:1/-1;">
+        <label>Relay URL <span style="color:var(--ok);font-size:10px;font-weight:600;">(acesso mobile &#8212; qualquer rede)</span></label>
+        <input class="fctl" id="cfgRelayUrl" placeholder="wss://abc.trycloudflare.com  ou  ws://localhost:3001" style="width:100%;">
+        <span class="fhint">Deixe vazio para conectar direto ao ESP32 (mesma rede). Com relay, funciona de qualquer dispositivo.</span>
+      </div>
       <hr class="cfg-hr">
       <div class="fgrp"><label>Supabase URL</label><input class="fctl" id="cfgSbUrl" placeholder="https://xxx.supabase.co"><span class="fhint">Settings &rarr; API</span></div>
       <div class="fgrp"><label>Supabase Anon Key</label><input class="fctl" id="cfgSbKey" placeholder="eyJhbGci..."></div>
@@ -394,14 +533,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <div class="slbl">Leituras em Tempo Real</div>
   <div class="kpi-grid">
     <div class="kcard">
-      <div class="klbl">Posi&#231;&#227;o Total</div>
+      <div class="klbl">Posi&#231;&#227;o Encoder</div>
       <div class="kval" id="valPos" style="color:var(--sky)">0.000<span class="kunit">m</span></div>
       <div class="ksub" id="valPulses">0 pulsos</div>
       <div class="kglow" style="background:var(--sky)"></div>
     </div>
     <div class="kcard">
       <div class="klbl">Velocidade</div>
-      <div class="kval" id="valSpd" style="color:var(--ok)">0<span class="kunit">m/min</span></div>
+      <div class="kval" id="valSpd" style="color:var(--ok)">0.00<span class="kunit">m/min</span></div>
       <div class="ksub" id="valSpdMin">0.000 m/s</div>
       <div class="kglow" style="background:var(--ok)"></div>
     </div>
@@ -412,21 +551,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="kglow" style="background:var(--gold)"></div>
     </div>
     <div class="kcard">
-      <div class="klbl">Dire&#231;&#227;o</div>
-      <div id="valDir"><span id="dirBadge" class="dir-badge dir-stop">&#8212; Parado</span></div>
-      <div class="ksub" id="valDirSub">Aguardando</div>
-      <div class="kglow" style="background:var(--orange)"></div>
+      <div class="klbl">Quantidade Produzida</div>
+      <div class="kval" id="valQtdProd" style="color:var(--ok)">0.000<span class="kunit">m</span></div>
+      <div class="ksub" id="valQtdSub">OP n&#227;o iniciada</div>
+      <div class="kglow" style="background:var(--ok)"></div>
     </div>
     <div class="kcard" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
       <div class="klbl" style="width:100%;text-align:left;">Status</div>
       <div class="kval" id="valSt" style="font-size:15px;color:var(--muted);width:100%;text-align:left;">&#9679; Offline</div>
-      <div id="dinSinalImg" style="width:52px;display:block;margin:8px auto 4px;">
-        <div style="width:52px;background:#181818;border:1px solid #3a3a3a;border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:inset 0 2px 8px rgba(0,0,0,.6);">
-          <div id="sinalRed"    style="width:26px;height:26px;border-radius:50%;background:#4a2020;border:1px solid #6a3030;transition:background .3s,box-shadow .3s;"></div>
-          <div id="sinalYellow" style="width:26px;height:26px;border-radius:50%;background:#3a2e10;border:1px solid #5a4820;transition:background .3s,box-shadow .3s;"></div>
-          <div id="sinalGreen"  style="width:26px;height:26px;border-radius:50%;background:#1a3a1a;border:1px solid #2a5a2a;transition:background .3s,box-shadow .3s;"></div>
-        </div>
-      </div>
+      <img id="dinSinalImg" src="/off.png" alt="Sinaleiro" style="width:62px;height:auto;object-fit:contain;filter:drop-shadow(0 2px 10px rgba(0,0,0,.4));transition:filter .4s;margin:8px 0 4px;">
       <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">M&#225;quina Desligada</div>
       <div class="ksub" id="valLast" style="width:100%;text-align:left;">&#218;ltima leitura: --</div>
       <div class="kglow" style="background:var(--danger)"></div>
@@ -436,23 +569,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <!-- DIGITAL I/O -->
   <div class="slbl">Entradas &amp; Sa&#237;das Digitais</div>
   <div class="dio-grid">
-    <div class="din-card" id="dinCard1">
-      <div class="din-lbl">DIN 1 &mdash; Produzindo</div>
-      <div class="din-val" id="dinVal1" style="color:var(--muted)">Inativo</div>
-      <div class="din-sub" id="dinSub1">GPIO 34 &middot; 0</div>
-      <div class="kglow" style="background:var(--ok)"></div>
-    </div>
-    <div class="din-card" id="dinCard2">
-      <div class="din-lbl">DIN 2 &mdash; Setup</div>
-      <div class="din-val" id="dinVal2" style="color:var(--muted)">Inativo</div>
-      <div class="din-sub" id="dinSub2">GPIO 35 &middot; 0</div>
-      <div class="kglow" style="background:var(--warn)"></div>
-    </div>
-    <div class="din-card" id="dinCard3">
-      <div class="din-lbl">DIN 3 &mdash; Falha</div>
-      <div class="din-val" id="dinVal3" style="color:var(--muted)">Ok</div>
-      <div class="din-sub" id="dinSub3">GPIO 36 &middot; 0</div>
-      <div class="kglow" style="background:var(--danger)"></div>
+    <!-- DIN — entradas digitais -->
+    <div class="din-unified-card">
+      <div class="din-unified-header">&#9679; Entradas Digitais</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="din-row" id="dinRow1">
+          <span class="din-dot" id="dinDot1">&#9679;</span>
+          <span class="din-row-name">DIN 1 &mdash; Produzindo</span>
+          <span class="din-row-gpio">GPIO 34</span>
+          <span class="din-row-val" id="dinRowVal1">Inativo</span>
+        </div>
+        <div class="din-row" id="dinRow2">
+          <span class="din-dot" id="dinDot2">&#9679;</span>
+          <span class="din-row-name">DIN 2 &mdash; Setup</span>
+          <span class="din-row-gpio">GPIO 35</span>
+          <span class="din-row-val" id="dinRowVal2">Inativo</span>
+        </div>
+        <div class="din-row" id="dinRow3">
+          <span class="din-dot" id="dinDot3">&#9679;</span>
+          <span class="din-row-name">DIN 3 &mdash; Falha</span>
+          <span class="din-row-gpio">GPIO 36</span>
+          <span class="din-row-val" id="dinRowVal3">Ok</span>
+        </div>
+      </div>
     </div>
     <div class="dout-card" id="doutCard1">
       <div class="din-lbl">DOUT 1 &mdash; Supervisor</div>
@@ -470,9 +609,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
   </div>
 
-  <!-- VIDA ÚTIL + EFFICIENCY -->
-  <div class="slbl">Vida &#218;til &amp; Efici&#234;ncia</div>
-  <div class="twocol">
+  <!-- SPEED HISTORY -->
+  <div class="slbl">Hist&#243;rico de Velocidade &amp; Posi&#231;&#227;o Acumulada</div>
+  <div class="spdhist-card">
+    <div class="spdhist-head">
+      <h4>&#218;ltimos 60 segundos &#8212; Verde: Velocidade (m/min) &nbsp;|&nbsp; Azul: Posi&#231;&#227;o acumulada (m)</h4>
+    </div>
+    <canvas id="chartSpd" height="68"></canvas>
+  </div>
+
+  <!-- VIDA ÚTIL + PROGRESSO + EFFICIENCY -->
+  <div class="slbl">Vida &#218;til &amp; Progresso &amp; Efici&#234;ncia</div>
+  <div class="threecol">
     <div class="vu-card">
       <div class="vu-head">
         <h4>Consumo da Vida &#218;til</h4>
@@ -501,6 +649,36 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
         </div>
       </div>
     </div>
+
+    <!-- PROGRESSO DA OP -->
+    <div class="prog-card">
+      <div class="prog-head">Progresso da OP &#8212; Meta em Metros</div>
+      <div class="eff-inner">
+        <div class="eff-donut" style="width:148px;height:148px;">
+          <canvas id="chartProg"></canvas>
+          <div class="eff-donut-ctr">
+            <span class="eff-dpct" id="progPct" style="color:var(--sky)">0%</span>
+            <span class="eff-dsub">da meta</span>
+          </div>
+        </div>
+        <div class="eff-right">
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--sky)"></span><span>Produzido</span></div>
+            <span class="eff-pct" id="progPosM" style="color:var(--sky)">0.000 m</span>
+          </div>
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--muted)"></span><span>Meta</span></div>
+            <span class="eff-pct" id="progMetaM" style="color:var(--muted)">&#8212; m</span>
+          </div>
+          <div class="eff-row">
+            <div class="eff-row-left"><span class="eff-dot" style="background:var(--gold)"></span><span>Restante</span></div>
+            <span class="eff-pct" id="progRemM" style="color:var(--gold)">&#8212; m</span>
+          </div>
+          <hr class="eff-sep">
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Defina a meta em metros no campo<br>&#34;Meta (m)&#34; ao lado da OP.</div>
+        </div>
+      </div>
+    </div><!-- /prog-card -->
 
     <div class="eff-card">
       <div class="eff-head">Efici&#234;ncia &#8212; Meta 8 horas de produ&#231;&#227;o</div>
@@ -605,7 +783,50 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
         <div class="pass-err" id="passErr">Senha incorreta. Tente novamente.</div>
       </div>
     </div>
-    <div class="mdl-acts" style="margin-top:14px;"><button class="btn btn-ghost" onclick="closeM('mSuper')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- OS SALVAS MODAL -->
+<div class="moverlay" id="mOS">
+  <div class="mdl" style="max-width:860px;width:100%;max-height:88vh;overflow-y:auto;border-color:rgba(53,200,255,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:9px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mdl-icon" style="background:rgba(53,200,255,.08);width:42px;height:42px;font-size:20px;margin-bottom:0;">&#128203;</div>
+        <h2 style="margin-bottom:0;">Ordens de Servi&#231;o Salvas</h2>
+      </div>
+      <button class="btn btn-ghost" style="padding:5px 11px;font-size:11px;" onclick="loadCurrentOSTab()">&#8635; Atualizar</button>
+    </div>
+    <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border);">
+      <button class="os-tab active" id="tabOrdens" onclick="switchOSTab('ordens')">Ordens de Produ&#231;&#227;o</button>
+      <button class="os-tab" id="tabRelatorios" onclick="switchOSTab('relatorios')">Relat&#243;rios Salvos</button>
+    </div>
+    <div id="osTabOrdens" style="overflow-x:auto;">
+      <table class="ltbl">
+        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data In&#237;cio</th><th>Produ&#231;&#227;o</th><th>Parada</th><th>Metros</th><th>Status</th><th></th></tr></thead>
+        <tbody id="osBody"><tr><td colspan="8" class="os-empty">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div id="osTabRelatorios" style="display:none;overflow-x:auto;">
+      <table class="ltbl">
+        <thead><tr><th>N&#186; OP</th><th>Clich&#234;</th><th>Data Gera&#231;&#227;o</th><th>Produ&#231;&#227;o</th><th>Efici&#234;ncia</th><th>Metros</th><th>Disponib.</th><th></th></tr></thead>
+        <tbody id="relSavedBody"><tr><td colspan="8" class="os-empty">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeM('mOS')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETALHE OS / RELATÓRIO SALVO -->
+<div class="moverlay" id="mOSDetail">
+  <div class="mdl rel-mdl" style="border-color:rgba(53,200,255,.25);">
+    <div class="mdl-icon" id="detailIcon" style="background:rgba(53,200,255,.08);">&#128203;</div>
+    <h2 id="detailTitle">Detalhes</h2>
+    <div id="detailContent"></div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeM('mOSDetail')">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -620,6 +841,97 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <span class="rel-save-ok" id="relSaveOk">&#10003; Salvo no Supabase!</span>
       <button class="btn btn-sky" id="relSaveBtn" onclick="saveRelatorio()">&#128190; Salvar no Supabase</button>
       <button class="btn btn-ghost" onclick="closeM('mRel')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLICHÊ MANAGEMENT MODAL -->
+<div class="moverlay" id="mCliches">
+  <div class="mdl" style="max-width:1160px;width:100%;max-height:92vh;overflow-y:auto;border-color:rgba(255,209,102,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:9px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="mdl-icon" style="background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.2);width:44px;height:44px;font-size:22px;margin-bottom:0;">&#128200;</div>
+        <div><h2 style="margin-bottom:2px;">Gest&#227;o de Clich&#234;s</h2><div style="font-size:11px;color:var(--muted);">Vida &#250;til &middot; Estoque &middot; Dados do fabricante</div></div>
+      </div>
+      <button class="btn btn-ghost" style="padding:5px 11px;font-size:11px;" onclick="openCliches()">&#8635; Atualizar</button>
+    </div>
+    <div class="cliche-chart-wrap">
+      <h4>&#128202; Consumo da Vida &#218;til por Clich&#234; (%)</h4>
+      <div style="position:relative;height:260px;"><canvas id="chartCliches"></canvas></div>
+    </div>
+    <div class="cliche-grid" id="clicheGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando...</div>
+    </div>
+    <div class="mdl-acts">
+      <button class="btn btn-ghost" onclick="closeM('mCliches')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLICHÊ EDIT MODAL -->
+<div class="moverlay" id="mClicheEdit">
+  <div class="mdl" style="max-width:520px;border-color:rgba(255,209,102,.3);">
+    <div class="mdl-icon" style="background:rgba(255,209,102,.08);">&#9999;</div>
+    <h2 id="editClicheTitle">Editar Clich&#234;</h2>
+    <input type="hidden" id="editClicheId" value="1">
+    <div class="edit-grid" style="margin-bottom:12px;">
+      <div><label class="edit-lbl">Nome do Clich&#234;</label><input class="edit-inp" id="editNome" placeholder="Clich&#234; 1"></div>
+      <div><label class="edit-lbl">Modelo</label><input class="edit-inp" id="editModelo" placeholder="ex: CL-360-A"></div>
+      <div><label class="edit-lbl">Fabricante</label><input class="edit-inp" id="editFabricante" placeholder="ex: Flexo Ind."></div>
+      <div><label class="edit-lbl">Medidas</label><input class="edit-inp" id="editMedidas" placeholder="ex: 300x200mm"></div>
+      <div><label class="edit-lbl">Data de Compra</label><input class="edit-inp" id="editDataCompra" type="date"></div>
+      <div><label class="edit-lbl">Qtd em Estoque</label><input class="edit-inp" id="editEstoque" type="number" min="0" value="0"></div>
+      <div><label class="edit-lbl">Vida &#218;til (m)</label><input class="edit-inp" id="editVidaUtil" type="number" min="1" step="0.001" value="1000"></div>
+      <div><label class="edit-lbl">Consumido (m)</label><input class="edit-inp" id="editConsumido" type="number" min="0" step="0.001" value="0" title="Consumo acumulado hist&#243;rico"></div>
+    </div>
+    <!-- Reposição de estoque (oculto até clicar no botão) -->
+    <div id="repostSection" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid rgba(74,222,128,.3);">
+      <div style="font-size:11px;color:var(--ok);font-weight:700;margin-bottom:8px;">&#8635; Reposição de Estoque</div>
+      <label class="edit-lbl">Data da Reposição</label>
+      <input class="edit-inp" id="repostData" type="date" style="margin-bottom:8px;width:100%;">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Ao confirmar, o consumo (%) do clichê será zerado e a data de aquisição atualizada.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ok" style="font-size:11px;padding:5px 12px;" onclick="confirmarReposicao()">&#10003; Confirmar</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="document.getElementById('repostSection').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+    <div class="mdl-acts">
+      <button class="btn btn-sky" onclick="saveClicheEdit()">&#10003; Salvar</button>
+      <button class="btn btn-ok" onclick="abrirReposicao()" style="background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);color:var(--ok);">&#8635; Reposi&#231;&#227;o de Estoque</button>
+      <button class="btn btn-ghost" onclick="closeM('mClicheEdit')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PASSWORD MODAL -->
+<div class="moverlay" id="mAdminPass">
+  <div class="mdl" style="max-width:380px;border-color:rgba(255,209,102,.35);">
+    <div class="mdl-icon" style="background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.2);">&#128273;</div>
+    <h2 id="adminPassTitle">Acesso Restrito</h2>
+    <p id="adminPassDesc" style="margin-bottom:14px;">Digite a senha de administrador para continuar.</p>
+    <input class="pass-inp" id="adminPassInp" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;" maxlength="32"
+      onkeydown="if(event.key==='Enter') confirmAdminPass()" style="margin-bottom:8px;">
+    <div class="pass-err" id="adminPassErr">Senha incorreta. Tente novamente.</div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-sky" onclick="confirmAdminPass()">&#10003; Confirmar</button>
+      <button class="btn btn-ghost" onclick="closeM('mAdminPass')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBSTITUIR CLICHÊ MODAL -->
+<div class="moverlay" id="mSubCliche">
+  <div class="mdl" style="max-width:420px;border-color:rgba(255,107,53,.45);">
+    <div class="mdl-icon" style="background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.25);font-size:28px;">&#128295;</div>
+    <h2 style="color:var(--orange)">Substituir Clich&#234;</h2>
+    <p id="mSubClicheDesc" style="margin-bottom:14px;">A vida &#250;til do clich&#234; atingiu 100%. Troque o clich&#234; antes de continuar.</p>
+    <div class="mdl-info">
+      <div class="mdl-row"><span>Clich&#234;</span><span id="mSubClicheNome">&#8212;</span></div>
+      <div class="mdl-row"><span>Consumido</span><span id="mSubClicheConsumido">&#8212;</span></div>
+      <div class="mdl-row"><span>Ocorr&#234;ncia</span><span id="mSubClicheCount" style="color:var(--warn);font-weight:700;">1&#170;</span></div>
+    </div>
+    <div class="mdl-acts" style="margin-top:16px;">
+      <button class="btn btn-ok" onclick="confirmarSubstituicao()" style="font-size:13px;padding:9px 20px;">&#10003; OK &#8212; Clich&#234; Trocado</button>
     </div>
   </div>
 </div>
@@ -640,35 +952,61 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 <script>
 /* ══ CONFIG ══ */
-let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:100, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234' };
+let cfg = { ip:'192.168.1.100', port:80, wsPort:81, diam:200, ppr:360, timeout:60, sbUrl:'', sbKey:'', adminPass:'1234', relayUrl:'' };
 try {
   const s = JSON.parse(localStorage.getItem('enc_cfg')||'{}');
   Object.assign(cfg, s);
   const map = {
     cfgIp:'ip', cfgPort:'port', cfgWsPort:'wsPort', cfgDiam:'diam',
-    cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey', cfgAdminPass:'adminPass'
+    cfgPpr:'ppr', cfgTimeout:'timeout', cfgSbUrl:'sbUrl', cfgSbKey:'sbKey', cfgAdminPass:'adminPass',
+    cfgRelayUrl:'relayUrl'
   };
   Object.entries(map).forEach(([id,k]) => { const el=document.getElementById(id); if(el&&cfg[k]!==undefined) el.value=cfg[k]; });
 } catch(_) {}
 
 /* ══ SUPABASE ══ */
 let sb = null;
+let supaChannel = null;
 function initSb() {
-  if (!cfg.sbUrl || !cfg.sbKey) return;
-  try { sb = supabase.createClient(cfg.sbUrl, cfg.sbKey); } catch(_) {}
+  if (!cfg.sbUrl || !cfg.sbKey) { sb = null; return; }
+  try { sb = supabase.createClient(cfg.sbUrl, cfg.sbKey); } catch(_) { sb = null; }
 }
 initSb();
+
+/* ══ SUPABASE REALTIME (telemetria do ESP32 — funciona em qualquer rede) ══ */
+function subscribeSupabase(){
+  if(!sb){ return; }
+  if(supaChannel){ sb.removeChannel(supaChannel); supaChannel=null; }
+  supaChannel=sb.channel('esp32_telemetry_ch')
+    .on('postgres_changes',{event:'*',schema:'public',table:'esp32_telemetry',filter:'id=eq.main'},
+      payload=>{
+        if(payload.new){
+          handleData(payload.new);
+          if(!ws||ws.readyState!==WebSocket.OPEN) setConn('ok','Online via Supabase');
+        }
+      })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){ log('i','Supabase Realtime conectado'); fetchLatestTelemetry(); }
+      else if(status==='CHANNEL_ERROR') log('a','Supabase Realtime erro — verifique URL e Key');
+    });
+}
+async function fetchLatestTelemetry(){
+  if(!sb) return;
+  try{
+    const {data}=await sb.from('esp32_telemetry').select('*').eq('id','main').single();
+    if(data) handleData(data);
+  }catch(_){}
+}
 
 /* ══ ENCODER STATE ══ */
 let ws=null, demoMode=false, demoIv=null;
 let totalPulses=0, demoPAcc=0, lastSPulses=0, lastSTime=Date.now();
 let curSpd=0, curDir=0, lastRdTs=null, connState='off';
-let wsFailCount=0, supaChannel=null;
 
 /* ══ PRODUCTION STATE ══ */
 let opNum='', opActive=false, opId=null;
 let clicheN=1;
-let cliches = Array.from({length:10},(_,i)=>({id:i+1,vidaUtilM:1000,consumidoM:0}));
+let cliches = Array.from({length:10},(_,i)=>({id:i+1,nome:`Clichê ${i+1}`,vidaUtilM:1000,consumidoM:0,fabricante:'',data_compra:'',qtd_estoque:0,modelo:'',medidas:''}));
 let prodSec=0, stopSec=0, isProd=false;
 let stopType='', stopEvId=null, stopStartTs=null;
 let alertFired=false, alertDism=false, idleTimer=null;
@@ -678,6 +1016,19 @@ let stopHistory = [];
 let din = [0, 0, 0];
 let dout = [0, 0];
 let relatorioData = null;
+let opMetaM = 0;
+let speedHistory = [];
+let posHistory = [];
+let chartSpd = null;
+let chartProg = null;
+let stopCountdownTimer = null;
+let stopCountdownSec = 0;
+let opBasePulses = 0;
+let wsFailCount = 0;
+let pollIv = null;
+let vuAlertCount = 0;
+let lastVuAlertM = 0;
+let vuAlertActive = false;
 
 const SUPERVISORS = [
   {name:'Carlos Silva',  role:'Supervisor Turno A',          phone:'5511999990001',avatar:'CS',color:'#35c8ff'},
@@ -688,7 +1039,9 @@ const SUPERVISORS = [
 /* ══ HELPERS ══ */
 function p2m(p){ return (p/cfg.ppr)*(Math.PI*cfg.diam/1000); }
 function hms(s){ s=Math.max(0,Math.round(s)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-function vuCol(p){ return p>=90?'#ef4444':p>=70?'#f59e0b':'#4ade80'; }
+function vuCol(p){ return p>=80?'#ef4444':p>=60?'#f59e0b':'#4ade80'; }
+function progCol(p){ return p>=86?'#4ade80':p>=36?'#35c8ff':'#ef4444'; }
+function opSesM(){ return p2m(Math.abs(totalPulses - opBasePulses)); }
 function typeColor(tipo){
   const map={'Manutenção':'#ef4444','Setup':'#f59e0b','Falta de Material':'#ffd166','Refeição':'#35c8ff','Reunião':'#35c8ff','Falta Mão de Obra':'#ff6b35'};
   return map[tipo]||'var(--muted)';
@@ -709,6 +1062,13 @@ setInterval(()=>{
     tickTimers(); tickEff();
   }
   if(!isProd && stopStartTs && stopType) renderStopHistory();
+  /* history para gráfico */
+  speedHistory.push(curSpd*60);
+  if(speedHistory.length>60) speedHistory.shift();
+  posHistory.push(opSesM());
+  if(posHistory.length>60) posHistory.shift();
+  if(chartSpd) updateSpdChart();
+  if(chartProg) updateProdProgress();
 },1000);
 
 function tickClock(){
@@ -727,10 +1087,24 @@ function tickTimers(){
 function onStop(){
   if(!opActive) return;
   stopStartTs=new Date();
-  document.getElementById('stopBanner').classList.add('show');
-  log('s','Encoder parado');
+  log('s','Encoder parado — aguardando 20s');
+  stopCountdownSec=20;
+  const cdEl=document.getElementById('stopCd');
+  const cdSec=document.getElementById('stopCdSec');
+  cdEl.classList.add('show'); cdSec.textContent=stopCountdownSec;
+  stopCountdownTimer=setInterval(()=>{
+    stopCountdownSec--;
+    cdSec.textContent=stopCountdownSec;
+    if(stopCountdownSec<=0){
+      clearInterval(stopCountdownTimer); stopCountdownTimer=null;
+      cdEl.classList.remove('show');
+      document.getElementById('stopBanner').classList.add('show');
+    }
+  },1000);
 }
 function onResume(){
+  if(stopCountdownTimer){ clearInterval(stopCountdownTimer); stopCountdownTimer=null; }
+  document.getElementById('stopCd').classList.remove('show');
   document.getElementById('stopBanner').classList.remove('show');
   document.getElementById('stopSel').value='';
   document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('sel'));
@@ -752,8 +1126,10 @@ function selectStop(tipo){
   stopType=tipo;
   document.getElementById('stopSel').value=tipo;
   document.querySelectorAll('.sbtn').forEach(b=>{ b.classList.toggle('sel', b.textContent.includes(tipo.split(' ')[0])); });
+  document.getElementById('stopBanner').classList.remove('show');
   createStopEv(tipo); log('s',`Parada: ${tipo}`);
   renderStopHistory();
+  setTimeout(openSupervisor, 120);
 }
 function onStopSelChange(){ const v=document.getElementById('stopSel').value; if(v) selectStop(v); }
 
@@ -807,24 +1183,33 @@ async function startOP(){
   if(opActive) return;
   const num=document.getElementById('opInput').value.trim();
   if(!num){ document.getElementById('opInput').focus(); return; }
+  opMetaM=parseFloat(document.getElementById('opMetaMInp').value)||0;
   opNum=num; opActive=true; prodSec=0; stopSec=0; stopHistory=[];
+  opBasePulses=totalPulses; demoPAcc=0; speedHistory=[]; posHistory=[];
+  vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false;
   document.getElementById('opBtn').style.display='none';
   document.getElementById('finBtn').style.display='';
   document.getElementById('opInput').disabled=true;
+  document.getElementById('opMetaMInp').disabled=true;
   document.getElementById('clicheSelect').disabled=true;
+  updateProdProgress();
   renderStopHistory();
   log('i',`OP ${opNum} iniciada &middot; Clichê ${clicheN}`);
   if(sb){ try{ const {data}=await sb.from('ordens').insert({numero:opNum,cliche_id:clicheN,data_inicio:new Date().toISOString()}).select().single(); if(data) opId=data.id; }catch(_){} }
 }
 async function closeOP(){
   if(!opActive) return;
+  /* Cancela countdown de parada se ativo */
+  if(stopCountdownTimer){ clearInterval(stopCountdownTimer); stopCountdownTimer=null; }
+  document.getElementById('stopCd').classList.remove('show');
+  document.getElementById('stopBanner').classList.remove('show');
   if(!isProd && stopStartTs){
     const dur=Math.round((Date.now()-stopStartTs.getTime())/1000);
     if(stopType){ stopHistory.push({tipo:stopType,inicio:stopStartTs,fim:new Date(),duracao_s:dur}); }
     await closeStopEv(dur); stopStartTs=null; stopType='';
   }
   opActive=false;
-  const posM=p2m(Math.abs(totalPulses));
+  const posM=opSesM();
   cliches[clicheN-1].consumidoM += posM;
   if(sb){
     try{ await sb.from('cliches').upsert({id:clicheN,nome:`Clichê ${clicheN}`,vida_util_m:cliches[clicheN-1].vidaUtilM,consumido_m:cliches[clicheN-1].consumidoM}); }catch(_){}
@@ -834,21 +1219,37 @@ async function closeOP(){
   document.getElementById('opBtn').style.display='';
   document.getElementById('finBtn').style.display='none';
   document.getElementById('opInput').disabled=false;
+  document.getElementById('opMetaMInp').disabled=false;
   document.getElementById('clicheSelect').disabled=false;
   renderStopHistory();
   opId=null;
+  /* Reseta base de pulsos para zerar Quantidade Produzida */
+  opBasePulses=totalPulses; speedHistory=[]; posHistory=[];
+  updateProdProgress();
 }
 
 /* ══ CLICHÊ ══ */
 async function onClicheChange(){
   if(opActive) return;
   clicheN=parseInt(document.getElementById('clicheSelect').value);
+  vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false;
   await loadCliche(clicheN); updateVU(); log('i',`Clichê ${clicheN} selecionado`);
 }
 async function loadCliche(id){
   if(!sb) return;
   try{ const {data}=await sb.from('cliches').select('*').eq('id',id).single();
-    if(data){ cliches[id-1].vidaUtilM=parseFloat(data.vida_util_m)||1000; cliches[id-1].consumidoM=parseFloat(data.consumido_m)||0; document.getElementById('vuInp').value=cliches[id-1].vidaUtilM; }
+    if(data){
+      const c=cliches[id-1];
+      c.vidaUtilM=parseFloat(data.vida_util_m)||1000;
+      c.consumidoM=parseFloat(data.consumido_m)||0;
+      c.nome=data.nome||`Clichê ${id}`;
+      c.fabricante=data.fabricante||'';
+      c.data_compra=data.data_compra||'';
+      c.qtd_estoque=parseInt(data.qtd_estoque)||0;
+      c.modelo=data.modelo||'';
+      c.medidas=data.medidas||'';
+      document.getElementById('vuInp').value=c.vidaUtilM;
+    }
   }catch(_){}
 }
 function applyVU(){
@@ -865,7 +1266,7 @@ const chartVU=new Chart(ctxVU,{type:'doughnut',data:{datasets:[{data:[0,100],bac
 
 function updateVU(){
   const c=cliches[clicheN-1];
-  const sesM=p2m(Math.abs(totalPulses));
+  const sesM=opSesM();
   const tot=c.consumidoM+sesM;
   const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
   const rem=Math.max(c.vidaUtilM-tot,0);
@@ -879,12 +1280,100 @@ function updateVU(){
   chartVU.data.datasets[0].data=[pct,Math.max(100-pct,0)];
   chartVU.data.datasets[0].backgroundColor=[col,'#1e1e1e'];
   chartVU.update('none');
+  checkVuAlert(pct, tot);
+}
+
+function checkVuAlert(pct, tot){
+  if(!opActive || vuAlertActive) return;
+  if(pct < 100) return;
+  if(vuAlertCount === 0 || (tot - lastVuAlertM) >= 100){
+    vuAlertActive = true;
+    vuAlertCount++;
+    lastVuAlertM = tot;
+    const c = cliches[clicheN-1];
+    const countLbl = ['1ª','2ª','3ª'][Math.min(vuAlertCount-1,2)];
+    setDout(1,1);
+    log('a',`Clichê ${clicheN} — vida útil 100% (${countLbl} ocorrência)`);
+    if(vuAlertCount >= 3){
+      requireAdminPass(
+        `Substituir Clichê — 3ª Ocorrência`,
+        `Vida útil do ${c.nome} esgotada pela 3ª vez. Somente o supervisor pode liberar a produção.`,
+        confirmarSubstituicao
+      );
+    } else {
+      document.getElementById('mSubClicheNome').textContent = c.nome;
+      document.getElementById('mSubClicheConsumido').textContent = tot.toFixed(3)+' m';
+      document.getElementById('mSubClicheCount').textContent = countLbl+' ocorrência';
+      document.getElementById('mSubClicheDesc').textContent =
+        `${c.nome} atingiu 100% da vida útil (${countLbl} ocorrência). Troque o clichê antes de continuar.`;
+      document.getElementById('mSubCliche').classList.add('show');
+    }
+  }
+}
+
+function confirmarSubstituicao(){
+  setDout(1,0);
+  closeM('mSubCliche');
+  const prev = vuAlertCount;
+  if(vuAlertCount >= 3) vuAlertCount = 0;
+  vuAlertActive = false;
+  log('i',`Substituição confirmada — clichê ${clicheN} (ocorrência ${prev})`);
 }
 
 /* ══ EFFICIENCY CHART ══ */
 const JORNADA=28800;
 const ctxEff=document.getElementById('chartEff').getContext('2d');
 const chartEff=new Chart(ctxEff,{type:'doughnut',data:{labels:['Produção','Parada','Disponível'],datasets:[{data:[0,0,100],backgroundColor:['#4ade80','#ef4444','#262626'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:true,cutout:'71%',animation:{duration:350},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}});
+
+/* ── PROGRESSO DA OP (doughnut) ─────────────────────── */
+chartProg=new Chart(document.getElementById('chartProg').getContext('2d'),{
+  type:'doughnut',
+  data:{datasets:[{data:[0,100],backgroundColor:['#35c8ff','#1e1e1e'],borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:true,cutout:'73%',animation:{duration:450},plugins:{legend:{display:false},tooltip:{enabled:false}},events:[]}
+});
+
+/* ── SPEED HISTORY (line) ───────────────────────────── */
+chartSpd=new Chart(document.getElementById('chartSpd').getContext('2d'),{
+  type:'line',
+  data:{
+    labels:Array(60).fill(''),
+    datasets:[
+      {label:'Velocidade (m/min)',data:Array(60).fill(0),borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.07)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'ySpd'},
+      {label:'Posição (m)',data:Array(60).fill(0),borderColor:'#35c8ff',backgroundColor:'rgba(53,200,255,.03)',fill:false,tension:.3,pointRadius:0,borderWidth:1.5,yAxisID:'yPos'}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:true,
+    animation:{duration:0},
+    scales:{
+      x:{display:false},
+      ySpd:{position:'left',grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4ade80',font:{size:9}},title:{display:true,text:'m/min',color:'#4ade80',font:{size:9}}},
+      yPos:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#35c8ff',font:{size:9}},title:{display:true,text:'m',color:'#35c8ff',font:{size:9}}}
+    },
+    plugins:{legend:{display:true,labels:{color:'#888',font:{size:9},boxWidth:10,padding:8}},tooltip:{enabled:false}}
+  }
+});
+
+function updateSpdChart(){
+  chartSpd.data.datasets[0].data=[...speedHistory];
+  chartSpd.data.datasets[1].data=[...posHistory];
+  chartSpd.update('none');
+}
+
+function updateProdProgress(){
+  const posM=opSesM();
+  const meta=opMetaM||0;
+  const pct=meta>0?Math.min((posM/meta)*100,100):0;
+  const col=progCol(pct);
+  document.getElementById('progPct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('progPct').style.color=col;
+  document.getElementById('progPosM').textContent=posM.toFixed(3)+' m';
+  document.getElementById('progMetaM').textContent=meta>0?meta.toFixed(1)+' m':'— m';
+  document.getElementById('progRemM').textContent=meta>0?Math.max(0,meta-posM).toFixed(3)+' m':'— m';
+  chartProg.data.datasets[0].data=[pct,Math.max(0,100-pct)];
+  chartProg.data.datasets[0].backgroundColor[0]=col;
+  chartProg.update('none');
+}
 
 function tickEff(){
   const pp=Math.min((prodSec/JORNADA)*100,100);
@@ -921,104 +1410,157 @@ function setDout(pin,val){
   updateDIO();
 }
 function updateDIO(){
-  // ── DIN cards ──
+  // DIN — sinaleiro único (prioridade: Falha > Setup > Produzindo > off)
   const dinCfg=[
-    {label:'Produzindo',cls:'st-ok', onColor:'var(--ok)',     offLabel:'Inativo', gpio:34},
-    {label:'Setup',     cls:'st-warn',onColor:'var(--warn)',  offLabel:'Inativo', gpio:35},
-    {label:'Falha',     cls:'st-fail',onColor:'var(--danger)',offLabel:'Ok',      gpio:36},
+    {onImg:'/green.png',  cls:'st-ok',   onColor:'var(--ok)',     onLabel:'Produzindo', offLabel:'Inativo',  glowColor:'rgba(74,222,128,.7)'},
+    {onImg:'/yellow.png', cls:'st-warn',  onColor:'var(--warn)',   onLabel:'Setup',      offLabel:'Inativo',  glowColor:'rgba(245,158,11,.7)'},
+    {onImg:'/red.png',    cls:'st-fail',  onColor:'var(--danger)', onLabel:'FALHA',      offLabel:'Ok',       glowColor:'rgba(239,68,68,.7)'},
   ];
-  for(let i=0;i<3;i++){
-    const c=document.getElementById(`dinCard${i+1}`);
-    const v=document.getElementById(`dinVal${i+1}`);
-    const s=document.getElementById(`dinSub${i+1}`);
-    if(!c) continue;
-    const on=din[i];
-    c.className=`din-card${on?' '+dinCfg[i].cls:''}`;
-    v.textContent=on?dinCfg[i].label:dinCfg[i].offLabel;
-    v.style.color=on?dinCfg[i].onColor:'var(--muted)';
-    s.textContent=`GPIO ${dinCfg[i].gpio} · ${on?1:0}`;
+  // Determina imagem do sinaleiro (maior prioridade = DIN3)
+  let activeIdx = din[2] ? 2 : din[1] ? 1 : din[0] ? 0 : -1;
+  const sinalImg   = document.getElementById('dinSinalImg');
+  const sinalLabel = document.getElementById('dinSinalLabel');
+  if(activeIdx >= 0){
+    const cfg2 = dinCfg[activeIdx];
+    sinalImg.src = cfg2.onImg;
+    sinalImg.style.filter = `drop-shadow(0 2px 18px ${cfg2.glowColor})`;
+    sinalImg.className = 'lamp-blink';
+    sinalLabel.textContent = cfg2.onLabel;
+    sinalLabel.style.color = cfg2.onColor;
+  } else {
+    sinalImg.src = '/off.png';
+    sinalImg.style.filter = 'drop-shadow(0 2px 10px rgba(0,0,0,.4))';
+    sinalImg.className = '';
+    sinalLabel.textContent = 'Máquina Desligada';
+    sinalLabel.style.color = 'var(--muted)';
   }
-  // ── DOUT cards ──
+  // Linhas de status individuais
+  for(let i=0;i<3;i++){
+    const row  = document.getElementById(`dinRow${i+1}`);
+    const dot  = document.getElementById(`dinDot${i+1}`);
+    const val  = document.getElementById(`dinRowVal${i+1}`);
+    const on   = din[i];
+    row.className = `din-row${on?' '+dinCfg[i].cls:''}`;
+    dot.style.color = on ? dinCfg[i].onColor : 'var(--muted)';
+    val.textContent = on ? dinCfg[i].onLabel : dinCfg[i].offLabel;
+    val.style.color = on ? dinCfg[i].onColor : (i===2?'var(--ok)':'var(--muted)');
+  }
+  // DOUT cards
   for(let i=0;i<2;i++){
     const on=dout[i];
     const card=document.getElementById(`doutCard${i+1}`);
     const val=document.getElementById(`doutVal${i+1}`);
     const btn=document.getElementById(`doutBtn${i+1}`);
-    if(!card) continue;
     card.className=`dout-card${on?' dout-on':''}`;
     val.textContent=on?'Ligada':'Desligada';
     val.style.color=on?'var(--sky)':'var(--muted)';
     btn.className=`dout-toggle ${on?'dout-on-btn':'dout-off'}`;
     btn.innerHTML=on?'&#9726; Desligar':'&#9654; Acionar';
   }
-  // ── Sinaleiro (Status card) ──
-  const rEl=document.getElementById('sinalRed');
-  const yEl=document.getElementById('sinalYellow');
-  const gEl=document.getElementById('sinalGreen');
-  const lEl=document.getElementById('dinSinalLabel');
-  if(!rEl) return;
-  rEl.style.background='#4a2020'; rEl.style.boxShadow='none'; rEl.className='';
-  yEl.style.background='#3a2e10'; yEl.style.boxShadow='none'; yEl.className='';
-  gEl.style.background='#1a3a1a'; gEl.style.boxShadow='none'; gEl.className='';
-  if(din[2]){
-    rEl.style.background='#ef4444'; rEl.style.boxShadow='0 0 18px rgba(239,68,68,.9)'; rEl.className='lamp-blink';
-    lEl.textContent='FALHA'; lEl.style.color='var(--danger)';
-  } else if(din[1]){
-    yEl.style.background='#f59e0b'; yEl.style.boxShadow='0 0 18px rgba(245,158,11,.9)'; yEl.className='lamp-blink';
-    lEl.textContent='Setup'; lEl.style.color='var(--warn)';
-  } else if(din[0]){
-    gEl.style.background='#4ade80'; gEl.style.boxShadow='0 0 18px rgba(74,222,128,.9)'; gEl.className='lamp-blink';
-    lEl.textContent='Produzindo'; lEl.style.color='var(--ok)';
+}
+
+/* ══ RELAY STATUS MESSAGE ══ */
+function handleRelayMsg(r){
+  if(r.esp32_connected){
+    setConn('ok','Online via Relay');
+    document.getElementById('httpsBanner').style.display='none';
+    log('i',`ESP32 conectado ao relay (${r.esp32_url||''})`);
   } else {
-    lEl.textContent='Máquina Desligada'; lEl.style.color='var(--muted)';
+    setConn('warn','Relay: aguardando ESP32…');
+    log('a',`Relay conectado — ESP32 offline (${r.esp32_url||''})`);
   }
 }
 
-/* ══ CONEXÃO ══ */
+/* ══ HTTP POLLING (fallback quando HTTPS bloqueia ws://) ══ */
+function startPolling(){
+  if(pollIv) return;
+  setConn('warn','Polling HTTP…');
+  log('i',`HTTP polling → http://${cfg.ip}:${cfg.port}/data`);
+  pollIv=setInterval(async ()=>{
+    try{
+      const r=await fetch(`http://${cfg.ip}:${cfg.port}/data`,{cache:'no-store'});
+      if(r.ok){
+        const d=await r.json();
+        wsFailCount=0;
+        handleData(d);
+        if(connState!=='ok') setConn('ok','Online (HTTP)');
+      }
+    }catch(_){
+      if(connState==='ok') setConn('fail','Polling falhou');
+    }
+  },500);
+}
+function stopPolling(){
+  if(pollIv){ clearInterval(pollIv); pollIv=null; }
+}
+
+/* ══ WEBSOCKET ══ */
 function connect(){
+  stopPolling();
   if(ws){ ws.close(); ws=null; }
+
+  /* ── Supabase Realtime — acesso de qualquer rede/dispositivo (celular via HTTPS) ── */
   subscribeSupabase();
-  if(location.protocol==='https:'){
-    if(!sb) setConn('fail','Configure Supabase URL e Key');
-    else setConn('warn','Aguardando Supabase…');
+
+  const isHttpsPage = location.protocol==='https:';
+  const isLocalIp   = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
+
+  /* Em página HTTPS, ws:// para IP local é bloqueado pelo browser.
+     Se o Supabase estiver configurado, usamos só o Realtime (sem relay/polling). */
+  if(isHttpsPage && isLocalIp){
+    if(sb){
+      setConn('warn','Aguardando Supabase…');
+    } else if(!cfg.relayUrl){
+      setConn('fail','Configure Supabase URL e Key');
+      const bn=document.getElementById('httpsBanner'); if(bn) bn.style.display='flex';
+      log('a','HTTPS bloqueia ws:// — configure Supabase URL e Key (Config) para acesso remoto');
+      return;
+    }
+    if(!cfg.relayUrl) return;
+  }
+
+  /* ── Via Relay (opcional — qualquer dispositivo, qualquer rede) ── */
+  if(cfg.relayUrl){
+    setConn('warn','Conectando ao Relay…');
+    try{
+      ws=new WebSocket(cfg.relayUrl);
+      ws.onopen=()=>{ wsFailCount=0; log('i','Relay WebSocket conectado'); };
+      ws.onmessage=e=>{
+        try{
+          const d=JSON.parse(e.data);
+          if(d.__relay){ handleRelayMsg(d); return; }
+          handleData(d);
+        }catch(_){}
+      };
+      ws.onerror=()=>{ wsFailCount++; setConn('fail','Erro Relay'); };
+      ws.onclose=()=>{
+        setConn('off','Relay desconectado');
+        ws=null;
+        const delay=wsFailCount>=5?30000:Math.min(4000*Math.pow(1.5,wsFailCount),30000);
+        setTimeout(()=>{ if(!ws&&!pollIv) connect(); }, delay);
+      };
+    }catch(err){ wsFailCount++; setConn('fail','Falha Relay'); log('a','Falha Relay: '+err.message); }
     return;
   }
+
+  /* ── Direto ao ESP32 (mesma rede local, página HTTP ou IP público) ── */
   setConn('warn','Conectando...');
   try{
     ws=new WebSocket(`ws://${cfg.ip}:${cfg.wsPort}/ws`);
-    ws.onopen=()=>{ wsFailCount=0; setConn('ok','Online (LAN)'); log('i','WebSocket LAN conectado'); };
+    ws.onopen=()=>{ setConn('ok','Online (LAN)'); wsFailCount=0; log('i','WebSocket LAN conectado'); };
     ws.onmessage=e=>{ try{ handleData(JSON.parse(e.data)); }catch(_){} };
-    ws.onerror=()=>{ wsFailCount++; setConn('fail','Erro WS'); };
+    ws.onerror=()=>{ wsFailCount++; if(!supaChannel) setConn('fail','Erro WS'); };
     ws.onclose=()=>{
-      ws=null; setConn('off','Desconectado');
-      if(!supaChannel){ const d=Math.min(4000*Math.pow(1.5,wsFailCount),30000); setTimeout(()=>{ if(!ws) connect(); },d); }
+      ws=null;
+      if(supaChannel){ return; }   // Supabase Realtime cobre os dados; não fica reconectando LAN
+      setConn('off','Desconectado');
+      const delay=wsFailCount>=5?30000:Math.min(4000*Math.pow(1.5,wsFailCount),30000);
+      if(wsFailCount===3){
+        log('a',`Sem conexão com ${cfg.ip}:${cfg.wsPort} — verifique se o celular está na mesma rede WiFi do ESP32`);
+      }
+      setTimeout(()=>{ if(!ws&&!pollIv) connect(); }, delay);
     };
-  }catch(err){ wsFailCount++; setConn('fail','Falha'); log('a','Falha: '+err.message); }
-}
-
-function subscribeSupabase(){
-  if(!sb) return;
-  if(supaChannel){ sb.removeChannel(supaChannel); supaChannel=null; }
-  supaChannel=sb.channel('esp32_telemetry_ch')
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'esp32_telemetry',filter:'id=eq.main'},
-      payload=>{
-        if(payload.new){
-          handleData(payload.new);
-          if(!ws||ws.readyState!==WebSocket.OPEN) setConn('ok','Online via Supabase');
-        }
-      })
-    .subscribe(status=>{
-      if(status==='SUBSCRIBED'){ log('i','Supabase Realtime conectado'); fetchLatestTelemetry(); }
-      else if(status==='CHANNEL_ERROR') log('a','Supabase Realtime erro — verifique URL e Key');
-    });
-}
-
-async function fetchLatestTelemetry(){
-  if(!sb) return;
-  try{
-    const {data}=await sb.from('esp32_telemetry').select('*').eq('id','main').single();
-    if(data) handleData(data);
-  }catch(_){}
+  }catch(err){ wsFailCount++; setConn('fail','Falha'); log('a','Falha WS: '+err.message); }
 }
 
 /* ══ DATA HANDLER ══ */
@@ -1027,8 +1569,7 @@ function handleData(d){
   const delta=(d.pulses||0)-lastSPulses;
   totalPulses=d.pulses||totalPulses;
   curDir=d.direction||(delta>0?1:delta<0?-1:0);
-  if(dt>0&&dt<5) curSpd=p2m(Math.abs(delta))/dt;
-  else if(d.speed_mpm!==undefined) curSpd=d.speed_mpm/60;
+  if(dt>0) curSpd=p2m(Math.abs(delta))/dt;
   lastSPulses=d.pulses||totalPulses; lastSTime=now; lastRdTs=now;
   din[0]=(d.din1||0)?1:0;
   din[1]=(d.din2||0)?1:0;
@@ -1040,22 +1581,26 @@ function handleData(d){
 
 /* ══ UI ══ */
 function updateUI(){
-  const posM=p2m(Math.abs(totalPulses));
+  const absM=p2m(Math.abs(totalPulses));
+  const sesM=opSesM();
   const rpm=curSpd/(Math.PI*cfg.diam/1000)*60;
   const freq=curSpd/(Math.PI*cfg.diam/1000);
-  document.getElementById('valPos').innerHTML=posM.toFixed(3)+'<span class="kunit">m</span>';
+  /* Slot 1 — Posição Encoder (absoluta desde último reset) */
+  document.getElementById('valPos').innerHTML=absM.toFixed(3)+'<span class="kunit">m</span>';
   document.getElementById('valPulses').textContent=totalPulses.toLocaleString('pt-BR')+' pulsos';
+  /* Slot 2 — Velocidade */
   document.getElementById('valSpd').innerHTML=Math.round(curSpd*60)+'<span class="kunit">m/min</span>';
   document.getElementById('valSpdMin').textContent=curSpd.toFixed(3)+' m/s';
+  /* Slot 3 — Rotação */
   document.getElementById('valRpm').innerHTML=rpm.toFixed(1)+'<span class="kunit">RPM</span>';
   document.getElementById('valFreq').textContent=freq.toFixed(2)+' Hz';
-  const db=document.getElementById('dirBadge');
-  if(curSpd<0.001){ db.className='dir-badge dir-stop'; db.innerHTML='&#8212; Parado'; document.getElementById('valDirSub').textContent='Sem movimento'; }
-  else if(curDir>=0){ db.className='dir-badge dir-fwd'; db.innerHTML='&#8594; Avanço'; document.getElementById('valDirSub').textContent='Sentido horário'; }
-  else{ db.className='dir-badge dir-rev'; db.innerHTML='&#8592; Retorno'; document.getElementById('valDirSub').textContent='Anti-horário'; }
+  /* Slot 4 — Quantidade Produzida na OP (sessão) */
+  document.getElementById('valQtdProd').innerHTML=sesM.toFixed(3)+'<span class="kunit">m</span>';
+  document.getElementById('valQtdSub').textContent=opActive?`OP ${opNum}`:'OP não iniciada';
   document.getElementById('valSt').innerHTML='&#9679; Online'; document.getElementById('valSt').style.color='var(--ok)';
   document.getElementById('valLast').textContent='Última: '+new Date().toLocaleTimeString('pt-BR');
   updateVU();
+  updateProdProgress();
 }
 
 /* ══ IDLE ALERT ══ */
@@ -1068,7 +1613,7 @@ function fireAlert(){
   if(alertDism) return;
   alertFired=true;
   const ts=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
-  document.getElementById('alertSub').textContent=`Última: ${ts} · Pos: ${p2m(Math.abs(totalPulses)).toFixed(3)} m`;
+  document.getElementById('alertSub').textContent=`Última: ${ts} · Pos: ${opSesM().toFixed(3)} m`;
   document.getElementById('alertBanner').classList.add('show');
   log('a',`ALERTA: sem leitura por ${cfg.timeout}s`);
   document.getElementById('valSt').innerHTML='&#9888; Inativo'; document.getElementById('valSt').style.color='var(--danger)';
@@ -1104,11 +1649,11 @@ function openSupervisor(){
   const idleStr=idle>=60?`${Math.floor(idle/60)}min ${idle%60}s`:`${idle}s`;
   document.getElementById('mIdle').textContent=idleStr;
   document.getElementById('mLast').textContent=lastRdTs?new Date(lastRdTs).toLocaleTimeString('pt-BR'):'--';
-  document.getElementById('mPos').textContent=p2m(Math.abs(totalPulses)).toFixed(3)+' m';
+  document.getElementById('mPos').textContent=opSesM().toFixed(3)+' m';
   document.getElementById('mOP').textContent=opNum||'—';
   document.getElementById('mCl').textContent='Clichê '+clicheN;
   document.getElementById('mIp').textContent=cfg.ip;
-  const msg=encodeURIComponent(`⚠️ *ALERTA ENCODER*\n\nEncoder parado há ${idleStr}.\nOP: ${opNum||'—'} | Clichê: ${clicheN}\nPosição: ${p2m(Math.abs(totalPulses)).toFixed(3)} m\nESP32: ${cfg.ip}\n\nAção necessária.`);
+  const msg=encodeURIComponent(`⚠️ *ALERTA ENCODER*\n\nEncoder parado há ${idleStr}.\nOP: ${opNum||'—'} | Clichê: ${clicheN}\nPosição: ${opSesM().toFixed(3)} m\nESP32: ${cfg.ip}\n\nAção necessária.`);
   document.getElementById('svList').innerHTML=SUPERVISORS.map(s=>`
     <div class="sv-item">
       <div class="sv-left">
@@ -1152,7 +1697,7 @@ function confirmPass(){
 
 /* ══ RELATÓRIO ══ */
 function openRelatorio(){
-  const posM=p2m(Math.abs(totalPulses));
+  const posM=opSesM();
   const pp=Math.min((prodSec/JORNADA)*100,100);
   const sp=Math.min((stopSec/JORNADA)*100,100);
   const tot=prodSec+stopSec;
@@ -1239,6 +1784,393 @@ async function saveRelatorio(){
   }
 }
 
+/* ══ ADMIN PASS GATE ══ */
+let _adminCb = null;
+function requireAdminPass(title, desc, cb){
+  _adminCb = cb;
+  document.getElementById('adminPassTitle').textContent = title;
+  document.getElementById('adminPassDesc').textContent = desc;
+  document.getElementById('adminPassInp').value = '';
+  document.getElementById('adminPassErr').classList.remove('show');
+  document.getElementById('mAdminPass').classList.add('show');
+  setTimeout(()=>document.getElementById('adminPassInp').focus(), 120);
+}
+function confirmAdminPass(){
+  const val = document.getElementById('adminPassInp').value;
+  if(val === cfg.adminPass){
+    closeM('mAdminPass');
+    document.getElementById('adminPassInp').value = '';
+    if(_adminCb){ _adminCb(); _adminCb = null; }
+  } else {
+    document.getElementById('adminPassErr').classList.add('show');
+    document.getElementById('adminPassInp').value = '';
+    document.getElementById('adminPassInp').focus();
+    setTimeout(()=>document.getElementById('adminPassErr').classList.remove('show'), 2500);
+  }
+}
+
+/* ══ CLICHÊ MANAGEMENT ══ */
+let chartCliches = null;
+
+async function openCliches(){
+  document.getElementById('mCliches').classList.add('show');
+  document.getElementById('clicheGrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando...</div>';
+  await loadAllCliches();
+  renderClicheGrid();
+  updateClicheChart();
+}
+
+async function loadAllCliches(){
+  if(!sb) return;
+  try{
+    const {data}=await sb.from('cliches').select('*').order('id',{ascending:true});
+    if(data) data.forEach(d=>{
+      const c=cliches[d.id-1]; if(!c) return;
+      c.vidaUtilM=parseFloat(d.vida_util_m)||1000;
+      c.consumidoM=parseFloat(d.consumido_m)||0;
+      c.nome=d.nome||`Clichê ${d.id}`;
+      c.fabricante=d.fabricante||'';
+      c.data_compra=d.data_compra||'';
+      c.qtd_estoque=parseInt(d.qtd_estoque)||0;
+      c.modelo=d.modelo||'';
+      c.medidas=d.medidas||'';
+    });
+  }catch(_){}
+}
+function updateClicheSelect(){
+  const sel=document.getElementById('clicheSelect');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=cliches.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  sel.value=cur;
+}
+
+function renderClicheGrid(){
+  const div=document.getElementById('clicheGrid');
+  div.innerHTML=cliches.map(c=>{
+    const sesM=(clicheN===c.id&&opActive)?opSesM():0;
+    const tot=c.consumidoM+sesM;
+    const pct=c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
+    const rem=Math.max(c.vidaUtilM-tot,0);
+    const col=pct>=80?'var(--danger)':pct>=60?'var(--warn)':'var(--ok)';
+    const cls=pct>=80?'vu-crit':pct>=60?'vu-warn':'vu-ok';
+    let statusBtn;
+    if(pct>=80) statusBtn=`<button class="st-crit-btn" onclick="pedidoCompra(${c.id})">&#128308; Compra Urgente</button>`;
+    else if(pct>=60) statusBtn=`<button class="st-warn-btn" onclick="pedidoCompra(${c.id})">&#9888; Fazer Pedido</button>`;
+    else statusBtn=`<span class="st-ok-btn">&#10003; Estoque Controlado</span>`;
+    return `<div class="cliche-card ${cls}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+        <div>
+          <div class="cliche-name">${c.nome||`Clichê ${c.id}`}</div>
+          ${c.modelo?`<div style="font-size:10px;color:var(--muted);margin-top:1px;">${c.modelo}</div>`:''}
+        </div>
+        <button class="btn-edit-sm" onclick="openClicheEdit(${c.id})">&#9998; Editar</button>
+      </div>
+      <div class="cliche-meta">
+        ${c.fabricante?`<span>Fabricante: <b>${c.fabricante}</b></span>`:''}
+        ${c.medidas?`<span>Medidas: <b>${c.medidas}</b></span>`:''}
+        ${c.data_compra?`<span>Compra: <b>${new Date(c.data_compra+'T12:00').toLocaleDateString('pt-BR')}</b></span>`:''}
+        <span>Estoque: <b style="color:${c.qtd_estoque>0?'var(--ok)':'var(--danger)'}">${c.qtd_estoque} unid.</b></span>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
+          <span class="cliche-pct" style="color:${col}">${pct.toFixed(1)}%</span>
+          <span style="font-size:10px;color:var(--muted)">consumido</span>
+        </div>
+        <div class="cliche-bar-w"><div class="cliche-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
+          <span>${tot.toFixed(1)} m usados</span>
+          <span>${rem.toFixed(1)} m restam &middot; ${c.vidaUtilM.toFixed(0)} m total</span>
+        </div>
+      </div>
+      <div class="cliche-footer">${statusBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateClicheChart(){
+  const labels=cliches.map(c=>c.nome||`Clichê ${c.id}`);
+  const values=cliches.map(c=>{
+    const sesM=(clicheN===c.id&&opActive)?opSesM():0;
+    const tot=c.consumidoM+sesM;
+    return c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0;
+  });
+  const colors=values.map(v=>v>=80?'#ef4444':v>=60?'#f59e0b':'#4ade80');
+  const ctx=document.getElementById('chartCliches').getContext('2d');
+  if(!chartCliches){
+    chartCliches=new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[{label:'% Consumido',data:values,backgroundColor:colors,borderRadius:4,barThickness:18}]},
+      options:{
+        indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.x.toFixed(1)}%`},backgroundColor:'#161616',borderColor:'#2e2e2e',borderWidth:1,titleColor:'#f2f2f2',bodyColor:'#888'}},
+        scales:{
+          x:{min:0,max:100,grid:{color:'#2e2e2e'},ticks:{color:'#888',callback:v=>v+'%'},border:{color:'#2e2e2e'}},
+          y:{grid:{display:false},ticks:{color:'#f2f2f2',font:{size:11}},border:{color:'#2e2e2e'}}
+        }
+      }
+    });
+  } else {
+    chartCliches.data.labels=labels;
+    chartCliches.data.datasets[0].data=values;
+    chartCliches.data.datasets[0].backgroundColor=colors;
+    chartCliches.update('none');
+  }
+}
+
+function openClicheEdit(id){
+  const c=cliches[id-1];
+  document.getElementById('editClicheId').value=id;
+  document.getElementById('editClicheTitle').textContent=`Editar: ${c.nome||`Clichê ${id}`}`;
+  document.getElementById('editNome').value=c.nome||`Clichê ${id}`;
+  document.getElementById('editFabricante').value=c.fabricante||'';
+  document.getElementById('editModelo').value=c.modelo||'';
+  document.getElementById('editMedidas').value=c.medidas||'';
+  document.getElementById('editDataCompra').value=c.data_compra||'';
+  document.getElementById('editEstoque').value=c.qtd_estoque||0;
+  document.getElementById('editVidaUtil').value=c.vidaUtilM||1000;
+  document.getElementById('editConsumido').value=c.consumidoM||0;
+  document.getElementById('repostSection').style.display='none';
+  document.getElementById('repostData').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mClicheEdit').classList.add('show');
+}
+function abrirReposicao(){
+  const sec=document.getElementById('repostSection');
+  sec.style.display=sec.style.display==='none'?'block':'none';
+}
+async function confirmarReposicao(){
+  const id=parseInt(document.getElementById('editClicheId').value);
+  const c=cliches[id-1]; if(!c) return;
+  const data=document.getElementById('repostData').value||new Date().toISOString().split('T')[0];
+  c.consumidoM=0;
+  c.data_compra=data;
+  document.getElementById('editConsumido').value=0;
+  document.getElementById('editDataCompra').value=data;
+  if(sb){
+    try{
+      await sb.from('cliches').upsert({
+        id,nome:c.nome,vida_util_m:c.vidaUtilM,consumido_m:0,
+        fabricante:c.fabricante,modelo:c.modelo,medidas:c.medidas,
+        data_compra:data||null,qtd_estoque:c.qtd_estoque
+      });
+    }catch(e){ showToast('Erro: '+e.message,'danger'); return; }
+  }
+  document.getElementById('repostSection').style.display='none';
+  if(clicheN===id){ vuAlertCount=0; lastVuAlertM=0; vuAlertActive=false; updateVU(); }
+  renderClicheGrid(); updateClicheChart();
+  log('i',`Reposição de estoque: ${c.nome} — consumo zerado (${data})`);
+  showToast(`✓ ${c.nome} reposto — consumo zerado`,'ok');
+}
+
+async function saveClicheEdit(){
+  const id=parseInt(document.getElementById('editClicheId').value);
+  const c=cliches[id-1]; if(!c) return;
+  c.nome=document.getElementById('editNome').value.trim()||`Clichê ${id}`;
+  c.fabricante=document.getElementById('editFabricante').value.trim();
+  c.modelo=document.getElementById('editModelo').value.trim();
+  c.medidas=document.getElementById('editMedidas').value.trim();
+  c.data_compra=document.getElementById('editDataCompra').value;
+  c.qtd_estoque=parseInt(document.getElementById('editEstoque').value)||0;
+  c.vidaUtilM=parseFloat(document.getElementById('editVidaUtil').value)||1000;
+  c.consumidoM=parseFloat(document.getElementById('editConsumido').value)||0;
+  const sel=document.getElementById('clicheSelect');
+  if(sel.options[id-1]) sel.options[id-1].text=c.nome;
+  if(sb){
+    try{
+      await sb.from('cliches').upsert({
+        id,nome:c.nome,vida_util_m:c.vidaUtilM,consumido_m:c.consumidoM,
+        fabricante:c.fabricante,modelo:c.modelo,medidas:c.medidas,
+        data_compra:c.data_compra||null,qtd_estoque:c.qtd_estoque
+      });
+    }catch(e){showToast('Erro ao salvar: '+e.message,'danger'); return;}
+  }
+  closeM('mClicheEdit');
+  renderClicheGrid(); updateClicheChart();
+  if(clicheN===id) updateVU();
+  log('i',`Clichê ${id} atualizado`);
+  showToast(`✓ ${c.nome} salvo`,'ok');
+}
+
+function pedidoCompra(id){
+  const c=cliches[id-1];
+  const sesM=(clicheN===id&&opActive)?opSesM():0;
+  const tot=c.consumidoM+sesM;
+  const pctStr=(c.vidaUtilM>0?Math.min((tot/c.vidaUtilM)*100,100):0).toFixed(1);
+  const urgente=parseFloat(pctStr)>=80;
+  const msg=`${urgente?'🔴 COMPRA URGENTE':'⚠️ FAZER PEDIDO'}\n\nClichê: ${c.nome}\nModelo: ${c.modelo||'—'}\nFabricante: ${c.fabricante||'—'}\nMedidas: ${c.medidas||'—'}\nEstoque atual: ${c.qtd_estoque} unid.\nVida útil consumida: ${pctStr}%\n\nFavor providenciar reposição.`;
+  navigator.clipboard.writeText(msg).catch(()=>{});
+  log('i',`Pedido de compra registrado: ${c.nome} (${pctStr}% consumido)`);
+  showToast(`${urgente?'🔴':'⚠'} Pedido copiado para área de transferência`,'warn');
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  const cols={ok:'var(--ok)',warn:'var(--warn)',danger:'var(--danger)'};
+  t.innerHTML=`<span style="color:${cols[type]||cols.ok}">${msg}</span>`;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+/* ══ OS SALVAS ══ */
+let currentOSTab='ordens';
+let osOrdens=[], osRelatorios=[];
+
+async function openOSSalvas(){
+  document.getElementById('mOS').classList.add('show');
+  switchOSTab('ordens');
+}
+function switchOSTab(tab){
+  currentOSTab=tab;
+  document.getElementById('osTabOrdens').style.display=tab==='ordens'?'block':'none';
+  document.getElementById('osTabRelatorios').style.display=tab==='relatorios'?'block':'none';
+  document.getElementById('tabOrdens').className='os-tab'+(tab==='ordens'?' active':'');
+  document.getElementById('tabRelatorios').className='os-tab'+(tab==='relatorios'?' active':'');
+  if(tab==='ordens') loadOSSalvas(); else loadRelatoriosSalvos();
+}
+function loadCurrentOSTab(){ if(currentOSTab==='ordens') loadOSSalvas(); else loadRelatoriosSalvos(); }
+
+async function loadOSSalvas(){
+  const tbody=document.getElementById('osBody');
+  tbody.innerHTML='<tr><td colspan="8" class="os-empty">Carregando...</td></tr>';
+  if(!sb){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
+  try{
+    const {data,error}=await sb.from('ordens').select('*, cliches(nome)').order('data_inicio',{ascending:false}).limit(60);
+    if(error) throw error;
+    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Nenhuma ordem encontrada.</td></tr>'; return; }
+    osOrdens=data;
+    tbody.innerHTML=data.map((o,i)=>`
+      <tr>
+        <td style="color:var(--sky);font-weight:700">${o.numero}</td>
+        <td>${o.cliches?.nome||`Clich&#234; ${o.cliche_id}`}</td>
+        <td>${new Date(o.data_inicio).toLocaleString('pt-BR')}</td>
+        <td style="color:var(--ok)">${hms(o.tempo_producao_s||0)}</td>
+        <td style="color:var(--danger)">${hms(o.tempo_parada_s||0)}</td>
+        <td>${(+(o.posicao_total_m||0)).toFixed(3)} m</td>
+        <td style="color:${o.status==='fechada'?'var(--muted)':'var(--ok)'}">${o.status==='fechada'?'&#10003; Fechada':'&#9679; Aberta'}</td>
+        <td><button class="btn btn-ghost" style="padding:3px 9px;font-size:10px;" onclick="openOrdemSalva(${i})">&#128065; Abrir</button></td>
+      </tr>`).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="8" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+async function loadRelatoriosSalvos(){
+  const tbody=document.getElementById('relSavedBody');
+  tbody.innerHTML='<tr><td colspan="8" class="os-empty">Carregando...</td></tr>';
+  if(!sb){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Configure Supabase em Config primeiro.</td></tr>'; return; }
+  try{
+    const {data,error}=await sb.from('relatorios').select('*').order('data_geracao',{ascending:false}).limit(60);
+    if(error) throw error;
+    if(!data||data.length===0){ tbody.innerHTML='<tr><td colspan="8" class="os-empty">Nenhum relat&#243;rio salvo.</td></tr>'; return; }
+    osRelatorios=data;
+    tbody.innerHTML=data.map((r,i)=>`
+      <tr>
+        <td style="color:var(--sky);font-weight:700">${r.numero_op||'&#8212;'}</td>
+        <td>Clich&#234; ${r.cliche_id||'&#8212;'}</td>
+        <td>${new Date(r.data_geracao).toLocaleString('pt-BR')}</td>
+        <td style="color:var(--ok)">${hms(r.tempo_producao_s||0)}</td>
+        <td style="color:${(+(r.eficiencia_pct||0))>=70?'var(--ok)':'var(--warn)'}">${(+(r.eficiencia_pct||0)).toFixed(1)}%</td>
+        <td>${(+(r.posicao_total_m||0)).toFixed(3)} m</td>
+        <td style="color:var(--sky)">${(+(r.disponibilidade_pct||0)).toFixed(1)}%</td>
+        <td><button class="btn btn-ghost" style="padding:3px 9px;font-size:10px;" onclick="openRelatorioSalvo(${i})">&#128065; Abrir</button></td>
+      </tr>`).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="8" class="os-empty" style="color:var(--danger)">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+async function openOrdemSalva(i){
+  const o=osOrdens[i]; if(!o) return;
+  document.getElementById('detailIcon').textContent='&#128203;';
+  document.getElementById('detailTitle').textContent=`Ordem: ${o.numero}`;
+  document.getElementById('detailContent').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">Carregando paradas...</div>';
+  document.getElementById('mOSDetail').classList.add('show');
+  let paradasHtml='';
+  if(sb){
+    try{
+      const {data}=await sb.from('paradas').select('*').eq('ordem_id',o.id).order('inicio',{ascending:true});
+      if(data&&data.length>0){
+        paradasHtml=`<div class="rel-section" style="margin-top:14px;">
+          <h5>Paradas Registradas (${data.length})</h5>
+          <table class="rtbl">
+            <thead><tr><th>Tipo</th><th>In&#237;cio</th><th>Dura&#231;&#227;o</th></tr></thead>
+            <tbody>${data.map(p=>`<tr>
+              <td style="color:${typeColor(p.tipo)};font-weight:700">${p.tipo}</td>
+              <td>${new Date(p.inicio).toLocaleTimeString('pt-BR')}</td>
+              <td>${hms(p.duracao_s||0)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      }
+    }catch(_){}
+  }
+  document.getElementById('detailContent').innerHTML=`
+    <div class="rel-section">
+      <h5>Ordem de Produ&#231;&#227;o</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">N&#186; OP</div><div class="rel-item-val">${o.numero}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Clich&#234;</div><div class="rel-item-val">${o.cliches?.nome||`Clich&#234; ${o.cliche_id}`}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data In&#237;cio</div><div class="rel-item-val" style="font-size:12px">${new Date(o.data_inicio).toLocaleString('pt-BR')}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data Fim</div><div class="rel-item-val" style="font-size:12px">${o.data_fim?new Date(o.data_fim).toLocaleString('pt-BR'):'&#8212;'}</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Tempos &amp; Produ&#231;&#227;o</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Produ&#231;&#227;o</div><div class="rel-item-val" style="color:var(--ok)">${hms(o.tempo_producao_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Parada</div><div class="rel-item-val" style="color:var(--danger)">${hms(o.tempo_parada_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Metros Prod.</div><div class="rel-item-val">${(+(o.posicao_total_m||0)).toFixed(3)} m</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Status</div><div class="rel-item-val" style="color:${o.status==='fechada'?'var(--muted)':'var(--ok)'}">${o.status==='fechada'?'&#10003; Fechada':'&#9679; Aberta'}</div></div>
+      </div>
+    </div>
+    ${paradasHtml}`;
+}
+
+function openRelatorioSalvo(i){
+  const r=osRelatorios[i]; if(!r) return;
+  const pp=+(r.eficiencia_pct||0), disp=+(r.disponibilidade_pct||0);
+  const paradas=r.paradas||[], dados=r.dados||{};
+  const summary={};
+  paradas.forEach(p=>{ if(!summary[p.tipo]) summary[p.tipo]={count:0,total_s:0}; summary[p.tipo].count++; summary[p.tipo].total_s+=(p.duracao_s||0); });
+  const stopRows=Object.entries(summary).map(([tipo,s])=>`
+    <tr><td style="color:${typeColor(tipo)}">${tipo}</td><td style="text-align:center">${s.count}</td><td>${hms(s.total_s)}</td></tr>`).join('');
+  document.getElementById('detailIcon').textContent='&#128196;';
+  document.getElementById('detailTitle').textContent=`Relat&#243;rio: ${r.numero_op||'&#8212;'}`;
+  document.getElementById('detailContent').innerHTML=`
+    <div class="rel-section">
+      <h5>Ordem de Produ&#231;&#227;o</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">N&#186; OP</div><div class="rel-item-val">${r.numero_op||'&#8212;'}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Clich&#234;</div><div class="rel-item-val">Clich&#234; ${r.cliche_id||'&#8212;'}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Data Gera&#231;&#227;o</div><div class="rel-item-val" style="font-size:12px">${new Date(r.data_geracao).toLocaleString('pt-BR')}</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Tempos &amp; Efici&#234;ncia</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Produ&#231;&#227;o</div><div class="rel-item-val" style="color:var(--ok)">${hms(r.tempo_producao_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Parada</div><div class="rel-item-val" style="color:var(--danger)">${hms(r.tempo_parada_s||0)}</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Efici&#234;ncia (8h)</div><div class="rel-item-val" style="color:var(--ok)">${pp.toFixed(1)}%</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Disponibilidade</div><div class="rel-item-val" style="color:var(--sky)">${disp.toFixed(1)}%</div></div>
+      </div>
+    </div>
+    <div class="rel-section" style="margin-top:14px;">
+      <h5>Produ&#231;&#227;o &amp; Vida &#218;til</h5>
+      <div class="rel-grid">
+        <div class="rel-item"><div class="rel-item-lbl">Metros Produzidos</div><div class="rel-item-val">${(+(r.posicao_total_m||0)).toFixed(3)} m</div></div>
+        <div class="rel-item"><div class="rel-item-lbl">Vida &#218;til Consumida</div><div class="rel-item-val" style="color:${vuCol(dados.vida_util_pct||0)}">${(+(dados.vida_util_pct||0)).toFixed(1)}%</div></div>
+      </div>
+    </div>
+    ${stopRows?`<div class="rel-section" style="margin-top:14px;">
+      <h5>Paradas por Tipo</h5>
+      <table class="rtbl">
+        <thead><tr><th>Tipo</th><th style="text-align:center">Qtd</th><th>Tempo Total</th></tr></thead>
+        <tbody>${stopRows}</tbody>
+      </table>
+    </div>`:''}`;
+  document.getElementById('mOSDetail').classList.add('show');
+}
+
 /* ══ LOG ══ */
 function log(type,detail){
   const tbody=document.getElementById('logBody');
@@ -1246,7 +2178,7 @@ function log(type,detail){
   const cls={a:'lt-a',r:'lt-r',s:'lt-s',i:'lt-i'}[type]||'lt-i';
   const lbl={a:'&#9888; Alerta',r:'&#9679; Leitura',s:'&#9208; Parada',i:'&#9675; Info'}[type]||'&#9675; Info';
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'—'}</td><td>Clichê ${clicheN}</td><td>${p2m(Math.abs(totalPulses)).toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
+  tr.innerHTML=`<td>${ts}</td><td class="${cls}">${lbl}</td><td>${opNum||'—'}</td><td>Clichê ${clicheN}</td><td>${opSesM().toFixed(3)}</td><td>${curSpd.toFixed(3)}</td><td>${detail}</td>`;
   tbody.prepend(tr);
   if(tbody.rows.length>60) tbody.deleteRow(tbody.rows.length-1);
 }
@@ -1267,51 +2199,128 @@ function applyConfig(){
   cfg.ppr=parseInt(document.getElementById('cfgPpr').value)||360;
   cfg.timeout=parseInt(document.getElementById('cfgTimeout').value)||60;
   cfg.adminPass=document.getElementById('cfgAdminPass').value||'1234';
+  cfg.relayUrl=document.getElementById('cfgRelayUrl').value.trim();
   cfg.sbUrl=document.getElementById('cfgSbUrl').value.trim();
   cfg.sbKey=document.getElementById('cfgSbKey').value.trim();
   localStorage.setItem('enc_cfg',JSON.stringify(cfg));
   document.getElementById('cfgPanel').style.display='none';
-  initSb(); log('i',`Config: IP=${cfg.ip} Ø=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
+  initSb();
+  if(sb) loadAllCliches().then(()=>{ updateClicheSelect(); updateVU(); });
+  log('i',`Config: IP=${cfg.ip} Ø=${cfg.diam}mm PPR=${cfg.ppr}`); connect();
 }
 function resetCounter(){
-  totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0;
+  totalPulses=0; demoPAcc=0; lastSPulses=0; curSpd=0; curDir=0; opBasePulses=0;
   updateUI(); updateVU(); log('i','Contador zerado');
 }
 function closeM(id){ document.getElementById(id).classList.remove('show'); }
-document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('show'); }));
+document.querySelectorAll('.moverlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el && el.id!=='mSuper' && el.id!=='mSubCliche') el.classList.remove('show'); }));
 
 /* ══ FIRMWARE ══ */
-const FW=`// ESP32 – Encoder Incremental PNP 360ppr + Entradas/Saídas Digitais
-// Encoder A → GPIO 18  |  Canal B → GPIO 19  |  5V / GND
-// DIN1 (Produzindo) → GPIO 34  |  DIN2 (Setup) → GPIO 35  |  DIN3 (Falha) → GPIO 36
-// DOUT1 (Supervisor) → GPIO 25  |  DOUT2 (Geral) → GPIO 26
-// HTTP: http://<IP>/data  |  WebSocket: ws://<IP>:81/ws
+const FW=`/*
+ * ═══════════════════════════════════════════════════════════
+ *  ESP32 Encoder Dashboard — Firmware v2.3
+ * ═══════════════════════════════════════════════════════════
+ *
+ *  ENCODER PNP 360ppr
+ *    Canal A    → GPIO 18  (INPUT_PULLUP)
+ *    Canal B    → GPIO 19  (INPUT_PULLUP)
+ *    Alimentação→ 5V / GND
+ *
+ *  POLIA
+ *    Diâmetro   → 200 mm  (altere PULLEY_DIAM_MM se necessário)
+ *    PPR        → 360     (altere PPR se o encoder for diferente)
+ *    m/pulso    → π × 200 / (360 × 1000) ≈ 0.001745 m
+ *
+ *  ENTRADAS DIGITAIS  (botões físicos PNP: pressionado=1, solto=0)
+ *    DIN1  Produzindo → GPIO 34  (input-only, sem pull-up)
+ *    DIN2  Setup      → GPIO 35  (input-only, sem pull-up)
+ *    DIN3  Falha      → GPIO 36  (input-only, sem pull-up)
+ *
+ *  SAÍDAS DIGITAIS
+ *    DOUT1 Supervisor → GPIO 25
+ *    DOUT2 Geral      → GPIO 26
+ *
+ *  COMUNICAÇÃO LOCAL
+ *    HTTP REST  → http://<IP>/data    porta 80
+ *    WebSocket  → ws://<IP>:81/ws     porta 81
+ *    Broadcast JSON a cada 200 ms
+ *
+ *  SUPABASE (acesso de qualquer dispositivo/rede via Vercel)
+ *    Preencha SUPA_URL e SUPA_KEY com os dados do projeto Supabase.
+ *    O ESP32 faz HTTP POST a cada 500 ms atualizando a linha 'main'
+ *    na tabela esp32_telemetry. O dashboard assina via Realtime.
+ *    Deixe SUPA_URL vazio ("") para desabilitar.
+ *
+ *  BIBLIOTECAS NECESSÁRIAS  (instale via Library Manager)
+ *    • WebSockets  by Markus Sattler   (WebSocketsServer)
+ *    • ArduinoJson by Benoit Blanchon  (versão 6.x)
+ *    WiFi, WebServer, HTTPClient, WiFiClientSecure já vêm no core
+ *
+ *  COMANDO WebSocket para controlar saídas (dashboard → ESP32):
+ *    {"cmd":"setout","pin":1,"val":1}  → DOUT1 LIGADO
+ *    {"cmd":"setout","pin":2,"val":0}  → DOUT2 DESLIGADO
+ *
+ *  JSON broadcast / POST (ESP32 → dashboard a cada 200/500 ms):
+ *    {
+ *      "id":"main",
+ *      "pulses":1234,     "direction":1,
+ *      "position_m":2.15, "speed_mpm":12.4,
+ *      "din1":0,          "din2":0,  "din3":0,
+ *      "dout1":0,         "dout2":0,
+ *      "esp32_ts":12345
+ *    }
+ * ═══════════════════════════════════════════════════════════
+ */
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
-const char* SSID     = "SUA_REDE";
-const char* PASSWORD = "SUA_SENHA";
+// ─── CONFIGURAÇÃO DE REDE ───────────────────────────────────
+const char* SSID     = "SUA_REDE_WIFI";   // ← altere aqui
+const char* PASSWORD = "SUA_SENHA_WIFI";  // ← altere aqui
 
+// ─── SUPABASE (deixe vazio para desabilitar) ────────────────
+// Exemplo: "https://zcevjbtzucwpmioiqtis.supabase.co"
+#define SUPA_URL  ""   // ← cole aqui o URL do projeto Supabase
+#define SUPA_KEY  ""   // ← cole aqui a Anon Key do Supabase
+
+// ─── POLIA / ENCODER ───────────────────────────────────────
+#define PULLEY_DIAM_MM  200.0f   // ← diâmetro da polia em mm
+#define PPR             360      // ← pulsos por revolução do encoder
+
+#define M_PER_PULSE  (PI * PULLEY_DIAM_MM / (PPR * 1000.0f))
+
+// ─── PINOS ─────────────────────────────────────────────────
 #define PIN_A  18
 #define PIN_B  19
-#define DIN1   34   // input-only, sem pull-up interno
+#define DIN1   34
 #define DIN2   35
 #define DIN3   36
 #define DOUT1  25
 #define DOUT2  26
 
+// ─── VARIÁVEIS GLOBAIS ─────────────────────────────────────
 volatile long pulseCount = 0;
 volatile int  direction  = 1;
 bool dout1State = false;
 bool dout2State = false;
 
+unsigned long lastSpeedTs     = 0;
+long          lastSpeedPulses = 0;
+float         speedMpm        = 0.0f;
+
+bool supaEnabled = false;
+unsigned long lastSupaPost = 0;
+
 WebServer        server(80);
 WebSocketsServer wsServer(81);
 
+// ─── INTERRUPÇÃO DO ENCODER ────────────────────────────────
 void IRAM_ATTR onEncoderA() {
   bool a = digitalRead(PIN_A);
   bool b = digitalRead(PIN_B);
@@ -1319,67 +2328,145 @@ void IRAM_ATTR onEncoderA() {
   pulseCount += direction;
 }
 
+// ─── PROCESSAR COMANDO SETOUT ──────────────────────────────
+void processSetout(uint8_t* payload, size_t length) {
+  StaticJsonDocument<128> cmd;
+  if (deserializeJson(cmd, payload, length) != DeserializationError::Ok) return;
+  const char* c = cmd["cmd"];
+  if (!c || strcmp(c, "setout") != 0) return;
+  int pin = cmd["pin"] | 0;
+  int val = cmd["val"] | 0;
+  if (pin == 1) { dout1State = (val != 0); digitalWrite(DOUT1, dout1State ? HIGH : LOW); Serial.printf("DOUT1=%d\\n", dout1State); }
+  if (pin == 2) { dout2State = (val != 0); digitalWrite(DOUT2, dout2State ? HIGH : LOW); Serial.printf("DOUT2=%d\\n", dout2State); }
+}
+
+// ─── HANDLER WEBSOCKET LOCAL ───────────────────────────────
 void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-  if (type == WStype_TEXT) {
-    StaticJsonDocument<128> cmd;
-    if (deserializeJson(cmd, payload, length) == DeserializationError::Ok) {
-      const char* c = cmd["cmd"];
-      if (c && strcmp(c, "setout") == 0) {
-        int pin = cmd["pin"] | 0;
-        int val = cmd["val"] | 0;
-        if (pin == 1) { dout1State = val; digitalWrite(DOUT1, val ? HIGH : LOW); }
-        if (pin == 2) { dout2State = val; digitalWrite(DOUT2, val ? HIGH : LOW); }
-      }
-    }
+  if (type == WStype_TEXT) processSetout(payload, length);
+}
+
+// ─── CALCULAR VELOCIDADE (m/min) ───────────────────────────
+void updateSpeed() {
+  unsigned long now = millis();
+  unsigned long dt  = now - lastSpeedTs;
+  if (dt >= 500) {
+    long dp = pulseCount - lastSpeedPulses;
+    speedMpm = (abs(dp) * M_PER_PULSE) / (dt / 60000.0f);
+    lastSpeedPulses = pulseCount;
+    lastSpeedTs     = now;
   }
 }
 
-String buildJson() {
-  StaticJsonDocument<256> doc;
-  doc["pulses"]    = pulseCount;
-  doc["direction"] = direction;
-  doc["din1"]      = digitalRead(DIN1);
-  doc["din2"]      = digitalRead(DIN2);
-  doc["din3"]      = digitalRead(DIN3);
-  doc["dout1"]     = dout1State ? 1 : 0;
-  doc["dout2"]     = dout2State ? 1 : 0;
-  doc["timestamp"] = millis();
-  String out; serializeJson(doc, out);
+// ─── MONTAR JSON ───────────────────────────────────────────
+String buildJson(bool includeId) {
+  StaticJsonDocument<384> doc;
+  if (includeId) doc["id"] = "main";   // necessário para upsert no Supabase
+  doc["pulses"]     = pulseCount;
+  doc["direction"]  = direction;
+  doc["position_m"] = (float)(pulseCount * M_PER_PULSE);
+  doc["speed_mpm"]  = speedMpm;
+  doc["din1"]       = digitalRead(DIN1);
+  doc["din2"]       = digitalRead(DIN2);
+  doc["din3"]       = digitalRead(DIN3);
+  doc["dout1"]      = dout1State ? 1 : 0;
+  doc["dout2"]      = dout2State ? 1 : 0;
+  doc["esp32_ts"]   = millis();
+  String out;
+  serializeJson(doc, out);
   return out;
 }
 
+// ─── POST PARA SUPABASE ────────────────────────────────────
+void postToSupabase() {
+  WiFiClientSecure client;
+  client.setInsecure();                   // Supabase já tem cert válido; setInsecure evita bundle de CA
+
+  HTTPClient http;
+  String url = String(SUPA_URL) + "/rest/v1/esp32_telemetry";
+  if (!http.begin(client, url)) { http.end(); return; }
+
+  http.addHeader("Content-Type",  "application/json");
+  http.addHeader("apikey",        SUPA_KEY);
+  http.addHeader("Authorization", String("Bearer ") + SUPA_KEY);
+  http.addHeader("Prefer",        "resolution=merge-duplicates,return=minimal");
+
+  String body = buildJson(true);
+  int code = http.POST(body);
+  http.end();
+
+  if (code > 0) Serial.printf("[Supa] POST %d\\n", code);
+  else          Serial.printf("[Supa] Erro %d\\n", code);
+}
+
+// ─── SETUP ─────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
+  delay(200);
+  Serial.println("\\n=== ESP32 Encoder Dashboard v2.3 ===");
+  Serial.printf("Polia: %.0f mm | PPR: %d | %.6f m/pulso\\n",
+                PULLEY_DIAM_MM, PPR, M_PER_PULSE);
+
   pinMode(PIN_A, INPUT_PULLUP);
   pinMode(PIN_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_A), onEncoderA, CHANGE);
+
   pinMode(DIN1, INPUT);
   pinMode(DIN2, INPUT);
   pinMode(DIN3, INPUT);
+
   pinMode(DOUT1, OUTPUT); digitalWrite(DOUT1, LOW);
   pinMode(DOUT2, OUTPUT); digitalWrite(DOUT2, LOW);
+
+  Serial.print("Conectando WiFi");
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print("."); }
-  Serial.println("\\nIP: " + WiFi.localIP().toString());
+  Serial.println();
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+
   server.on("/data", HTTP_GET, []() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "application/json", buildJson());
+    server.send(200, "application/json", buildJson(false));
   });
   server.begin();
+
   wsServer.begin();
   wsServer.onEvent(onWsEvent);
-  Serial.println("HTTP :80  WS :81");
+
+  supaEnabled = (strlen(SUPA_URL) > 0 && strlen(SUPA_KEY) > 0);
+  if (supaEnabled) Serial.println("[Supa] Habilitado — POST a cada 500 ms");
+  else             Serial.println("[Supa] Desabilitado (SUPA_URL vazio)");
+
+  lastSpeedTs  = millis();
+  lastSupaPost = millis();
+
+  Serial.println("HTTP  :80  → http://" + WiFi.localIP().toString() + "/data");
+  Serial.println("WS    :81  → ws://"   + WiFi.localIP().toString() + ":81/ws");
+  Serial.println("=====================================");
 }
 
+// ─── LOOP ──────────────────────────────────────────────────
 unsigned long lastBcast = 0;
+
 void loop() {
   server.handleClient();
   wsServer.loop();
+  updateSpeed();
+
+  // Broadcast local (LAN WebSocket) a cada 200 ms
   if (millis() - lastBcast >= 200) {
     lastBcast = millis();
-    wsServer.broadcastTXT(buildJson());
+    String jsonLocal = buildJson(false);
+    wsServer.broadcastTXT(jsonLocal);
   }
-}`;
+
+  // POST para Supabase a cada 500 ms (HTTPS é mais lento que WS local)
+  if (supaEnabled && millis() - lastSupaPost >= 500) {
+    lastSupaPost = millis();
+    postToSupabase();
+  }
+}
+`;
 function openFw(){ document.getElementById('fwCode').textContent=FW; document.getElementById('mFw').classList.add('show'); }
 function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document.querySelector('#mFw .btn-sky'); b.textContent='&#10003; Copiado!'; setTimeout(()=>{ b.textContent='&#128203; Copiar'; },2000); }); }
 
@@ -1387,7 +2474,10 @@ function copyFw(){ navigator.clipboard.writeText(FW).then(()=>{ const b=document
 tickClock(); updateVU(); tickEff(); updateDIO();
 log('i','Dashboard iniciado · aguardando conexão');
 resetIdle();
+/* Auto-connect ao abrir a página */
 connect();
+/* Auto-carrega clichês do Supabase ao abrir (se já configurado) */
+if(sb) loadAllCliches().then(()=>{ updateClicheSelect(); updateVU(); });
 </script>
 </body>
 </html>
