@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Bíblico Pentecostal · ESP32</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#262626;
+  --border:#2e2e2e;--text:#f2f2f2;--muted:#888;
+  --sky:#35c8ff;--ok:#4ade80;--gold:#ffd166;--orange:#ff6b35;--purple:#a78bfa;
+  --warn:#f59e0b;--danger:#ef4444;
+  --radius:14px;--radius-sm:8px;--tr:.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:
+  radial-gradient(1200px 600px at 80% -10%,rgba(53,200,255,.07),transparent),
+  radial-gradient(900px 500px at -10% 10%,rgba(167,139,250,.06),transparent),
+  var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
+
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
+.hdr-in{max-width:1320px;margin:0 auto;height:60px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(13px,1.8vw,17px);display:flex;align-items:center;gap:10px;}
+.hdr-title span{color:var(--gold);}
+.tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
+  padding:2px 8px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25);border-radius:4px;color:var(--gold);}
+
+.strip{background:var(--bg3);border-bottom:1px solid var(--border);padding:9px clamp(16px,4vw,44px);}
+.strip-in{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ifield{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+.ilbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+.idiv{width:1px;height:30px;background:var(--border);flex-shrink:0;}
+.iinput,.iselect{background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:6px 9px;outline:none;transition:var(--tr);}
+.iinput{width:150px;}.iselect{cursor:pointer;font-family:'Archivo',sans-serif;}
+.iinput:focus,.iselect:focus{border-color:var(--sky);}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
+.chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
+.chip-warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
+.chip-fail{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
+.chip-off{color:var(--muted);border-color:var(--border);background:var(--bg3);}
+.dot{width:6px;height:6px;border-radius:50%;}
+.dot-ok{background:var(--ok);box-shadow:0 0 5px var(--ok);}
+.dot-warn{background:var(--warn);box-shadow:0 0 5px var(--warn);animation:bl 1s infinite;}
+.dot-fail{background:var(--danger);box-shadow:0 0 5px var(--danger);animation:bl .5s infinite;}
+.dot-off{background:var(--muted);}
+@keyframes bl{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 15px;border-radius:var(--radius-sm);
+  font-family:'Archivo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--tr);border:1px solid;background:transparent;}
+.btn-ghost{border-color:var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--sky);color:var(--sky);}
+.btn-sky{background:var(--sky);border-color:var(--sky);color:#000;font-weight:700;}
+.btn-sky:hover{filter:brightness(1.1);}
+.btn-gold{background:var(--gold);border-color:var(--gold);color:#000;font-weight:700;}
+.btn-gold:hover{filter:brightness(1.08);}
+.btn-ok{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4);color:var(--ok);}
+.btn-ok:hover{background:rgba(74,222,128,.2);}
+.btn-danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:var(--danger);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-lg{padding:13px 26px;font-size:15px;}
+
+.body{max-width:1320px;margin:0 auto;padding:22px clamp(16px,4vw,44px);}
+.grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+@media(max-width:920px){.grid{grid-template-columns:1fr;}}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.card-t{font-family:'Archivo Black',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+
+/* ── Setup ── */
+.setup-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;}
+.lvl-tabs{display:inline-flex;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;gap:3px;}
+.lvl-tab{padding:7px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);transition:var(--tr);border:none;background:transparent;}
+.lvl-tab.on[data-l="basico"]{background:rgba(74,222,128,.16);color:var(--ok);}
+.lvl-tab.on[data-l="medio"]{background:rgba(255,209,102,.16);color:var(--gold);}
+.lvl-tab.on[data-l="avancado"]{background:rgba(239,68,68,.16);color:var(--danger);}
+.players-edit{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px;}
+.pe-row{display:flex;align-items:center;gap:6px;}
+.pe-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0;}
+.pe-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:5px 8px;outline:none;min-width:0;}
+.pe-input:focus{border-color:var(--sky);}
+.pe-input.off{opacity:.35;}
+
+/* ── Stage ── */
+.stage{min-height:380px;display:flex;flex-direction:column;}
+.lvl-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 12px;border-radius:20px;}
+.lvl-basico{background:rgba(74,222,128,.14);color:var(--ok);}
+.lvl-medio{background:rgba(255,209,102,.14);color:var(--gold);}
+.lvl-avancado{background:rgba(239,68,68,.14);color:var(--danger);}
+
+.draw-zone{text-align:center;padding:30px 10px;}
+.draw-name{font-family:'Archivo Black',sans-serif;font-size:clamp(26px,6vw,52px);line-height:1.1;margin:8px 0 18px;}
+.draw-hint{color:var(--muted);font-size:13px;}
+
+.q-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.q-player{display:flex;align-items:center;gap:8px;font-weight:700;}
+.q-pdot{width:14px;height:14px;border-radius:50%;}
+.q-text{font-family:'Archivo',sans-serif;font-weight:700;font-size:clamp(18px,2.6vw,26px);line-height:1.35;margin-bottom:18px;}
+
+.opts{display:grid;gap:10px;}
+.opt{display:flex;align-items:center;gap:14px;text-align:left;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:13px 16px;cursor:pointer;transition:var(--tr);font-size:16px;color:var(--text);width:100%;}
+.opt:hover:not(:disabled){border-color:var(--sky);background:var(--bg4);}
+.opt:disabled{cursor:default;}
+.opt-n{width:34px;height:34px;border-radius:8px;background:var(--bg4);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-family:'Archivo Black',sans-serif;font-size:16px;flex-shrink:0;}
+.opt.correct{border-color:var(--ok);background:rgba(74,222,128,.12);}
+.opt.correct .opt-n{background:var(--ok);color:#000;border-color:var(--ok);}
+.opt.wrong{border-color:var(--danger);background:rgba(239,68,68,.12);}
+.opt.wrong .opt-n{background:var(--danger);color:#fff;border-color:var(--danger);}
+
+/* ── Timer ── */
+.timer-wrap{display:flex;align-items:center;gap:12px;}
+.timer-num{font-family:'Archivo Black',sans-serif;font-size:30px;min-width:54px;text-align:center;}
+.timer-bar{flex:1;height:10px;background:var(--bg4);border-radius:6px;overflow:hidden;}
+.timer-fill{height:100%;width:100%;background:linear-gradient(90deg,var(--ok),var(--gold));transition:width 1s linear,background .3s;border-radius:6px;}
+
+/* ── Result overlay ── */
+.result{margin-top:20px;border-radius:var(--radius);padding:22px;text-align:center;animation:fu .35s ease;display:none;}
+.result.show{display:block;}
+.result.win{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.4);}
+.result.lose{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);}
+.result-emoji{font-size:46px;}
+.result-title{font-family:'Archivo Black',sans-serif;font-size:26px;margin:4px 0;}
+.result.win .result-title{color:var(--ok);}
+.result.lose .result-title{color:var(--danger);}
+.result-sub{color:var(--text);font-size:15px;}
+.castigo{margin-top:12px;background:rgba(0,0,0,.25);border:1px dashed rgba(239,68,68,.4);border-radius:var(--radius-sm);padding:12px 16px;font-size:15px;}
+.castigo b{color:var(--danger);}
+.ref{margin-top:10px;color:var(--muted);font-family:'Fira Code',monospace;font-size:12px;}
+@keyframes fu{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+@keyframes pop{0%{transform:scale(.7);}60%{transform:scale(1.12);}100%{transform:scale(1);}}
+
+/* ── Scoreboard ── */
+.score-list{display:flex;flex-direction:column;gap:8px;}
+.score-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;transition:var(--tr);}
+.score-row.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;}
+.score-rank{font-family:'Archivo Black',sans-serif;font-size:13px;color:var(--muted);width:20px;}
+.score-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.score-name{flex:1;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.score-pts{font-family:'Archivo Black',sans-serif;font-size:16px;color:var(--gold);}
+.score-acc{font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;}
+
+/* ── Log ── */
+.log{font-family:'Fira Code',monospace;font-size:11.5px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.log-i{color:var(--muted);}.log-ok{color:var(--ok);}.log-warn{color:var(--warn);}.log-err{color:var(--danger);}
+
+.banner{display:none;align-items:flex-start;gap:12px;padding:13px 18px;border-radius:var(--radius);margin-bottom:18px;}
+.banner.show{display:flex;}
+.banner-https{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.35);}
+.bico{font-size:22px;flex-shrink:0;}
+.btxt strong{display:block;font-family:'Archivo Black',sans-serif;font-size:14px;}
+.btxt small{color:var(--muted);font-size:12px;}
+
+.kbd{font-family:'Fira Code',monospace;background:var(--bg4);border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font-size:11px;}
+.muted{color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="hdr"><div class="hdr-in">
+  <div class="hdr-title">✝️ Quiz Bíblico <span>Pentecostal</span> <span class="tag">ESP32</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="chip chip-off" id="connChip"><span class="dot dot-off" id="connDot"></span><span id="connTxt">ESP32 Offline</span></span>
+    <span class="chip chip-off" id="sbChip"><span class="dot dot-off"></span><span id="sbTxt">Local</span></span>
+  </div>
+</div></header>
+
+<div class="strip"><div class="strip-in">
+  <div class="ifield"><span class="ilbl">Relay / WS URL</span>
+    <input class="iinput" id="cfgRelay" placeholder="wss://… (opcional)"></div>
+  <div class="ifield"><span class="ilbl">IP do ESP32</span>
+    <input class="iinput" id="cfgIp" placeholder="192.168.1.100" style="width:120px"></div>
+  <button class="btn btn-sky" id="btnConnect">🔌 Conectar ESP32</button>
+  <div class="idiv"></div>
+  <div class="ifield"><span class="ilbl">Supabase URL</span>
+    <input class="iinput" id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
+  <div class="ifield"><span class="ilbl">Supabase anon key</span>
+    <input class="iinput" id="cfgSbKey" placeholder="eyJ…" type="password"></div>
+  <button class="btn btn-ghost" id="btnSaveSb">💾 Salvar</button>
+</div></div>
+
+<div class="body">
+
+  <div class="banner banner-https" id="httpsBanner"><div class="bico">🔒</div><div class="btxt">
+    <strong>Conexão ws:// bloqueada nesta página HTTPS</strong>
+    <small>Para usar o ESP32 na rede local, rode o <b>relay</b> e cole a URL <b>wss://</b> acima, ou abra este HTML salvo no computador.</small>
+  </div></div>
+
+  <!-- ── SETUP ── -->
+  <div class="card" id="setupCard">
+    <div class="card-h"><div class="card-t">⚙️ Configuração da Partida</div></div>
+    <div class="setup-row">
+      <div class="ifield"><span class="ilbl">Nível</span>
+        <div class="lvl-tabs" id="lvlTabs">
+          <button class="lvl-tab on" data-l="basico">Básico</button>
+          <button class="lvl-tab" data-l="medio">Médio</button>
+          <button class="lvl-tab" data-l="avancado">Avançado</button>
+        </div>
+      </div>
+      <div class="ifield"><span class="ilbl">Nº de jogadores</span>
+        <select class="iselect" id="numPlayers">
+          <option>2</option><option>3</option><option selected>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+      </div>
+      <div class="ifield"><span class="ilbl">Tempo p/ responder (s)</span>
+        <input class="iinput" id="cfgTime" type="number" min="5" max="120" value="30" style="width:90px"></div>
+    </div>
+    <div class="players-edit" id="playersEdit"></div>
+  </div>
+
+  <div class="grid">
+    <!-- ── STAGE ── -->
+    <div>
+      <div class="card stage" id="stageCard">
+        <!-- estado inicial / sorteio -->
+        <div id="drawZone" class="draw-zone">
+          <div class="draw-hint">Pronto para começar</div>
+          <div class="draw-name" id="drawName" style="color:var(--gold)">Quiz Bíblico</div>
+          <button class="btn btn-gold btn-lg" id="btnDraw">🎲 Sortear Jogador</button>
+          <div class="draw-hint" style="margin-top:14px">O sorteio aciona a saída do jogador no ESP32</div>
+        </div>
+
+        <!-- pergunta -->
+        <div id="qZone" style="display:none">
+          <div class="q-meta">
+            <div class="q-player"><span class="q-pdot" id="qPdot"></span><span id="qPname">—</span></div>
+            <span class="lvl-badge" id="qLvl">Básico</span>
+          </div>
+          <div class="q-text" id="qText">—</div>
+          <div class="opts" id="qOpts"></div>
+          <div class="timer-wrap" style="margin-top:18px">
+            <div class="timer-num" id="timerNum">30</div>
+            <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+          </div>
+
+          <div class="result" id="result">
+            <div class="result-emoji" id="resEmoji">🎉</div>
+            <div class="result-title" id="resTitle">Parabéns!</div>
+            <div class="result-sub" id="resSub"></div>
+            <div class="castigo" id="resCastigo" style="display:none"></div>
+            <div class="ref" id="resRef"></div>
+            <button class="btn btn-sky btn-lg" id="btnNext" style="margin-top:16px">➡️ Próxima Rodada</button>
+          </div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:12px;text-align:center">
+        Atalhos: <span class="kbd">1</span>–<span class="kbd">5</span> respondem · <span class="kbd">S</span> sorteia · <span class="kbd">Espaço</span> próxima
+      </p>
+    </div>
+
+    <!-- ── SIDEBAR ── -->
+    <div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">🏆 Placar</div>
+          <button class="btn btn-ghost" id="btnReset" style="padding:5px 10px">Zerar</button></div>
+        <div class="score-list" id="scoreList"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">📋 Eventos</div></div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════ CONFIG / ESTADO ══════════════ */
+let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30,
+  names:['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5','Jogador 6','Jogador 7','Jogador 8'] };
+const COLORS=['#35c8ff','#4ade80','#ffd166','#ff6b35','#a78bfa','#f472b6','#22d3ee','#fb7185'];
+const PTS={basico:10,medio:20,avancado:30};
+const LVL_PT={basico:'Básico',medio:'Médio',avancado:'Avançado'};
+
+let scores={}, currentPlayer=0, currentQ=null, answered=true, timeLeft=0, timerIv=null, qStart=0;
+let usedIds=new Set(), partidaId=null;
+let questions=[], castigos=[];
+
+(function loadCfg(){
+  try{ Object.assign(cfg, JSON.parse(localStorage.getItem('quiz_cfg')||'{}')); }catch(_){}
+})();
+
+/* ══════════════ DADOS LOCAIS (fallback sem Supabase) ══════════════ */
+const FALLBACK_Q=[
+ {nivel:'basico',pergunta:'Quem construiu a arca por ordem de Deus?',opcoes:['Moisés','Noé','Abraão','Davi','Josué'],correta:2,referencia:'Gênesis 6:14'},
+ {nivel:'basico',pergunta:'Por quantos dias e noites choveu durante o dilúvio?',opcoes:['7','12','40','100','365'],correta:3,referencia:'Gênesis 7:12'},
+ {nivel:'basico',pergunta:'Qual profeta foi engolido por um grande peixe?',opcoes:['Elias','Eliseu','Jonas','Daniel','Isaías'],correta:3,referencia:'Jonas 1:17'},
+ {nivel:'basico',pergunta:'Em qual cidade Jesus nasceu?',opcoes:['Nazaré','Jerusalém','Belém','Cafarnaum','Betânia'],correta:3,referencia:'Mateus 2:1'},
+ {nivel:'basico',pergunta:'Quem matou o gigante Golias com uma funda?',opcoes:['Saul','Davi','Sansão','Jônatas','Gideão'],correta:2,referencia:'1 Samuel 17:50'},
+ {nivel:'basico',pergunta:'Qual mar foi dividido para Israel atravessar a seco?',opcoes:['Mar da Galileia','Mar Morto','Mar Mediterrâneo','Mar Vermelho','Mar de Tiberíades'],correta:4,referencia:'Êxodo 14:21'},
+ {nivel:'basico',pergunta:'Quem foi lançado na cova dos leões e saiu ileso?',opcoes:['Daniel','Sadraque','José','Jeremias','Mardoqueu'],correta:1,referencia:'Daniel 6:22'},
+ {nivel:'basico',pergunta:'Qual é o último livro da Bíblia?',opcoes:['Judas','Malaquias','Apocalipse','Atos','Hebreus'],correta:3,referencia:'Apocalipse 1:1'},
+ {nivel:'medio',pergunta:'Quantos livros tem a Bíblia (AT + NT)?',opcoes:['27','39','50','66','73'],correta:4,referencia:'Cânon bíblico'},
+ {nivel:'medio',pergunta:'No dia de Pentecostes, o que desceu sobre os discípulos?',opcoes:['Uma nuvem','Línguas de fogo (Espírito Santo)','Um anjo','Maná','Uma estrela'],correta:2,referencia:'Atos 2:3-4'},
+ {nivel:'medio',pergunta:'Qual foi o primeiro milagre de Jesus?',opcoes:['Curar um cego','Multiplicar pães','Transformar água em vinho','Andar sobre as águas','Ressuscitar Lázaro'],correta:3,referencia:'João 2:1-11'},
+ {nivel:'medio',pergunta:'Quantos frutos do Espírito Paulo cita em Gálatas?',opcoes:['3','7','9','10','12'],correta:3,referencia:'Gálatas 5:22-23'},
+ {nivel:'medio',pergunta:'Qual apóstolo negou Jesus três vezes?',opcoes:['João','Pedro','André','Tomé','Bartolomeu'],correta:2,referencia:'Lucas 22:61'},
+ {nivel:'medio',pergunta:'Quem sucedeu Moisés na liderança de Israel?',opcoes:['Arão','Calebe','Josué','Gideão','Samuel'],correta:3,referencia:'Josué 1:1-2'},
+ {nivel:'medio',pergunta:'Por quantos anos Israel peregrinou no deserto?',opcoes:['7','12','40','70','100'],correta:3,referencia:'Números 14:33'},
+ {nivel:'medio',pergunta:'Qual era a profissão de Mateus antes de seguir Jesus?',opcoes:['Pescador','Carpinteiro','Cobrador de impostos','Médico','Pastor'],correta:3,referencia:'Mateus 9:9'},
+ {nivel:'avancado',pergunta:'Qual profeta foi levado ao céu numa carruagem de fogo?',opcoes:['Eliseu','Enoque','Elias','Isaías','Ezequiel'],correta:3,referencia:'2 Reis 2:11'},
+ {nivel:'avancado',pergunta:'Em que cidade os seguidores de Jesus foram chamados "cristãos" pela 1ª vez?',opcoes:['Jerusalém','Roma','Antioquia','Éfeso','Corinto'],correta:3,referencia:'Atos 11:26'},
+ {nivel:'avancado',pergunta:'Qual livro do AT não menciona explicitamente o nome de Deus?',opcoes:['Rute','Ester','Eclesiastes','Cantares','Provérbios'],correta:2,referencia:'Livro de Ester'},
+ {nivel:'avancado',pergunta:'Quantos capítulos tem o livro de Salmos?',opcoes:['100','119','120','150','176'],correta:4,referencia:'Salmos'},
+ {nivel:'avancado',pergunta:'Quem substituiu Judas Iscariotes entre os doze apóstolos?',opcoes:['Paulo','Barnabé','Estêvão','Matias','Silas'],correta:4,referencia:'Atos 1:26'},
+ {nivel:'avancado',pergunta:'Qual rei viu a escrita na parede ("Mene, Mene, Tequel e Parsim")?',opcoes:['Nabucodonosor','Belsazar','Dario','Ciro','Senaqueribe'],correta:2,referencia:'Daniel 5:25'},
+ {nivel:'avancado',pergunta:'Quantos dons espirituais Paulo lista em 1 Coríntios 12?',opcoes:['5','7','9','10','12'],correta:3,referencia:'1 Coríntios 12:8-10'},
+ {nivel:'avancado',pergunta:'Quantas pessoas foram salvas na arca de Noé?',opcoes:['2','4','6','8','12'],correta:4,referencia:'1 Pedro 3:20'},
+];
+const FALLBACK_C=[
+ 'Recite o Salmo 23 de cor para toda a turma.','Cante um louvor à escolha da plateia.',
+ 'Cite, em ordem, 5 livros do Novo Testamento.','Diga o nome de pelo menos 6 dos 12 apóstolos.',
+ 'Cite os 9 frutos do Espírito (Gálatas 5:22-23).','Ore em voz alta agradecendo por 3 bênçãos.',
+ 'Recite pelo menos 5 dos Dez Mandamentos.','Cite os 5 livros do Pentateuco.',
+ 'Faça uma mímica de uma história bíblica para os outros adivinharem.','Decore e recite João 3:16.',
+ 'Diga 3 nomes ou títulos de Deus encontrados na Bíblia.','Cite 3 milagres realizados por Jesus.'];
+
+/* ══════════════ SUPABASE ══════════════ */
+let sb=null;
+async function initSupabase(){
+  questions=FALLBACK_Q.map((q,i)=>({...q,id:'local-'+i}));
+  castigos=FALLBACK_C.slice();
+  if(cfg.sbUrl && cfg.sbKey){
+    try{
+      sb=supabase.createClient(cfg.sbUrl,cfg.sbKey);
+      const {data:qs,error:e1}=await sb.from('quiz_perguntas').select('*').eq('ativa',true);
+      if(!e1 && qs && qs.length){
+        questions=qs.map(q=>({id:q.id,nivel:q.nivel,pergunta:q.pergunta,
+          opcoes:typeof q.opcoes==='string'?JSON.parse(q.opcoes):q.opcoes,
+          correta:q.correta,referencia:q.referencia||''}));
+        log('ok',`Supabase: ${questions.length} perguntas carregadas`);
+      }
+      const {data:cs}=await sb.from('quiz_castigos').select('texto').eq('ativo',true);
+      if(cs && cs.length) castigos=cs.map(c=>c.texto);
+      setSb('ok','Supabase');
+    }catch(err){ setSb('fail','Erro Supabase'); log('err','Supabase: '+err.message); }
+  } else {
+    setSb('off','Local'); log('i','Modo local — '+questions.length+' perguntas embutidas');
+  }
+}
+function setSb(s,t){
+  const c=document.getElementById('sbChip');
+  c.className='chip chip-'+s;
+  c.querySelector('.dot').className='dot dot-'+s;
+  document.getElementById('sbTxt').textContent=t;
+}
+
+/* ══════════════ WEBSOCKET ESP32 ══════════════ */
+let ws=null, wsFail=0;
+function setConn(s,t){
+  const c=document.getElementById('connChip');
+  c.className='chip chip-'+s;
+  document.getElementById('connDot').className='dot dot-'+s;
+  document.getElementById('connTxt').textContent=t;
+}
+function connect(){
+  if(ws){ ws.close(); ws=null; }
+  if(cfg.relay){
+    setConn('warn','Conectando ao Relay…');
+    try{
+      ws=new WebSocket(cfg.relay);
+      ws.onopen=()=>{ wsFail=0; setConn('ok','Online (Relay)'); log('ok','Relay conectado'); };
+      ws.onmessage=e=>{ try{const d=JSON.parse(e.data); if(d.__relay)return; handleEsp(d);}catch(_){} };
+      ws.onerror=()=>{ wsFail++; setConn('fail','Erro Relay'); };
+      ws.onclose=()=>{ setConn('off','Relay desconectado'); ws=null;
+        setTimeout(()=>{ if(!ws)connect(); }, Math.min(4000*Math.pow(1.5,wsFail),30000)); };
+    }catch(err){ setConn('fail','Falha Relay'); }
+    return;
+  }
+  const isHttps=location.protocol==='https:';
+  const isLocal=/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
+  if(isHttps && isLocal){
+    setConn('fail','HTTPS bloqueia ws://');
+    document.getElementById('httpsBanner').classList.add('show');
+    log('warn','HTTPS impede ws:// — use um Relay (wss://) ou abra o HTML salvo localmente');
+    return;
+  }
+  setConn('warn','Conectando…');
+  try{
+    ws=new WebSocket(`ws://${cfg.ip}:81/ws`);
+    ws.onopen=()=>{ wsFail=0; setConn('ok','Online'); log('ok','ESP32 conectado'); };
+    ws.onmessage=e=>{ try{ handleEsp(JSON.parse(e.data)); }catch(_){} };
+    ws.onerror=()=>{ wsFail++; setConn('fail','Erro WS'); };
+    ws.onclose=()=>{ setConn('off','Desconectado'); ws=null;
+      setTimeout(()=>{ if(!ws)connect(); }, Math.min(4000*Math.pow(1.5,wsFail),30000)); };
+  }catch(err){ setConn('fail','Falha'); }
+}
+function sendCmd(o){ if(ws && ws.readyState===1) ws.send(JSON.stringify(o)); }
+function handleEsp(d){
+  // botão físico pressionado no ESP32
+  if(d.event==='button' && d.btn>=1 && d.btn<=5) answer(d.btn);
+}
+
+/* ══════════════ ÁUDIO (standalone) ══════════════ */
+let actx=null;
+function tone(freq,dur,when=0,type='sine',vol=.25){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=type;o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
+    const t=actx.currentTime+when;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.start(t);o.stop(t+dur+.02);
+  }catch(_){}
+}
+function somAcerto(){ [523,659,784,1047].forEach((f,i)=>tone(f,.18,i*.12,'triangle',.3)); }
+function somErro(){ tone(330,.2,0,'sawtooth',.25);tone(262,.2,.18,'sawtooth',.25);tone(180,.4,.36,'sawtooth',.25); }
+function tick(){ tone(1200,.05,0,'square',.08); }
+
+/* ══════════════ LOG ══════════════ */
+function log(t,m){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className='log-'+(t==='ok'?'ok':t==='warn'?'warn':t==='err'?'err':'i');
+  d.textContent=`${new Date().toLocaleTimeString('pt-BR')} ${m}`;
+  el.prepend(d);
+  while(el.children.length>60) el.lastChild.remove();
+}
+
+/* ══════════════ SETUP UI ══════════════ */
+function activeCount(){ return cfg.num; }
+function renderPlayersEdit(){
+  const wrap=document.getElementById('playersEdit'); wrap.innerHTML='';
+  for(let i=0;i<8;i++){
+    const on=i<cfg.num;
+    const row=document.createElement('div'); row.className='pe-row';
+    row.innerHTML=`<div class="pe-num" style="background:${COLORS[i]}">${i+1}</div>
+      <input class="pe-input ${on?'':'off'}" data-i="${i}" value="${cfg.names[i]}" ${on?'':'disabled'}>`;
+    wrap.appendChild(row);
+  }
+  wrap.querySelectorAll('.pe-input').forEach(inp=>{
+    inp.oninput=()=>{ cfg.names[+inp.dataset.i]=inp.value; saveCfg(); renderScores(); };
+  });
+}
+function setLevel(l){
+  cfg.level=l; saveCfg();
+  document.querySelectorAll('.lvl-tab').forEach(t=>t.classList.toggle('on',t.dataset.l===l));
+}
+function saveCfg(){ localStorage.setItem('quiz_cfg',JSON.stringify(cfg)); }
+
+/* ══════════════ PLACAR ══════════════ */
+function ensureScores(){
+  for(let i=1;i<=cfg.num;i++) if(!(i in scores)) scores[i]={pts:0,hit:0,total:0};
+}
+function renderScores(){
+  ensureScores();
+  const list=document.getElementById('scoreList'); list.innerHTML='';
+  const arr=[];
+  for(let i=1;i<=cfg.num;i++) arr.push({id:i,...scores[i]});
+  arr.sort((a,b)=>b.pts-a.pts);
+  arr.forEach((p,idx)=>{
+    const row=document.createElement('div');
+    row.className='score-row'+(p.id===currentPlayer?' active':'');
+    const acc=p.total?Math.round(p.hit/p.total*100):0;
+    row.innerHTML=`<div class="score-rank">${idx+1}º</div>
+      <div class="score-dot" style="background:${COLORS[p.id-1]}"></div>
+      <div class="score-name">${cfg.names[p.id-1]}</div>
+      <div style="text-align:right"><div class="score-pts">${p.pts}</div>
+      <div class="score-acc">${p.hit}/${p.total} · ${acc}%</div></div>`;
+    list.appendChild(row);
+  });
+}
+
+/* ══════════════ JOGO ══════════════ */
+function drawPlayer(){
+  const n=cfg.num;
+  currentPlayer=Math.floor(Math.random()*n)+1;
+  sendCmd({cmd:'sorteio',player:currentPlayer});   // aciona saída do ESP32
+  log('i',`🎲 Sorteado: ${cfg.names[currentPlayer-1]} (saída ${currentPlayer})`);
+  // animação de sorteio
+  const nameEl=document.getElementById('drawName');
+  let spins=0;const total=14+Math.floor(Math.random()*6);
+  const iv=setInterval(()=>{
+    const r=Math.floor(Math.random()*n)+1;
+    nameEl.textContent=cfg.names[r-1]; nameEl.style.color=COLORS[r-1];
+    tick(); spins++;
+    if(spins>=total){
+      clearInterval(iv);
+      nameEl.textContent=cfg.names[currentPlayer-1]; nameEl.style.color=COLORS[currentPlayer-1];
+      tone(880,.25,0,'triangle',.3);
+      setTimeout(showQuestion,700);
+    }
+  },90);
+  document.getElementById('btnDraw').disabled=true;
+  renderScores();
+}
+
+function pickQuestion(){
+  let pool=questions.filter(q=>q.nivel===cfg.level && !usedIds.has(q.id));
+  if(!pool.length){ // recicla
+    questions.filter(q=>q.nivel===cfg.level).forEach(q=>usedIds.delete(q.id));
+    pool=questions.filter(q=>q.nivel===cfg.level);
+  }
+  if(!pool.length) return null;
+  const q=pool[Math.floor(Math.random()*pool.length)];
+  usedIds.add(q.id);
+  return q;
+}
+
+function showQuestion(){
+  currentQ=pickQuestion();
+  if(!currentQ){ log('err','Sem perguntas para este nível'); return; }
+  document.getElementById('drawZone').style.display='none';
+  document.getElementById('qZone').style.display='block';
+  document.getElementById('result').classList.remove('show');
+
+  document.getElementById('qPname').textContent=cfg.names[currentPlayer-1];
+  document.getElementById('qPdot').style.background=COLORS[currentPlayer-1];
+  const lvlEl=document.getElementById('qLvl');
+  lvlEl.textContent=LVL_PT[cfg.level]; lvlEl.className='lvl-badge lvl-'+cfg.level;
+  document.getElementById('qText').textContent=currentQ.pergunta;
+
+  const opts=document.getElementById('qOpts'); opts.innerHTML='';
+  currentQ.opcoes.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt'; b.dataset.n=i+1;
+    b.innerHTML=`<span class="opt-n">${i+1}</span><span>${o}</span>`;
+    b.onclick=()=>answer(i+1);
+    opts.appendChild(b);
+  });
+
+  answered=false; startTimer();
+}
+
+function startTimer(){
+  timeLeft=cfg.time; qStart=Date.now();
+  updateTimer();
+  clearInterval(timerIv);
+  timerIv=setInterval(()=>{
+    timeLeft--; updateTimer();
+    if(timeLeft<=5 && timeLeft>0) tone(1500,.06,0,'square',.12);
+    if(timeLeft<=0){ clearInterval(timerIv); answer(0); }
+  },1000);
+}
+function updateTimer(){
+  document.getElementById('timerNum').textContent=Math.max(0,timeLeft);
+  const pct=Math.max(0,timeLeft/cfg.time*100);
+  const fill=document.getElementById('timerFill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct>50?'linear-gradient(90deg,var(--ok),var(--gold))'
+    :pct>20?'var(--gold)':'var(--danger)';
+}
+
+function answer(n){            // n = 1..5, ou 0 = tempo esgotado
+  if(answered) return;
+  answered=true; clearInterval(timerIv);
+  const elapsed=(Date.now()-qStart)/1000;
+  const correct=(n===currentQ.correta);
+  const opts=[...document.querySelectorAll('.opt')];
+  opts.forEach(o=>{
+    o.disabled=true;
+    const on=+o.dataset.n;
+    if(on===currentQ.correta) o.classList.add('correct');
+    else if(on===n) o.classList.add('wrong');
+  });
+
+  let pts=0;
+  if(correct){ pts=PTS[cfg.level]+Math.max(0,Math.round(timeLeft)); }
+  scores[currentPlayer].total++;
+  if(correct){ scores[currentPlayer].hit++; scores[currentPlayer].pts+=pts; }
+  renderScores();
+
+  // ESP32 buzzer
+  sendCmd({cmd:'resultado',ok:correct});
+
+  const res=document.getElementById('result');
+  res.className='result show '+(correct?'win':'lose');
+  document.getElementById('resEmoji').textContent=correct?'🎉':'😬';
+  if(correct){
+    document.getElementById('resEmoji').style.animation='pop .4s ease';
+    document.getElementById('resTitle').textContent='Parabéns!';
+    document.getElementById('resSub').innerHTML=`<b>${cfg.names[currentPlayer-1]}</b> acertou! +${pts} pontos`;
+    document.getElementById('resCastigo').style.display='none';
+    somAcerto();
+    log('ok',`✅ ${cfg.names[currentPlayer-1]} acertou (+${pts} pts)`);
+  } else {
+    document.getElementById('resTitle').textContent= n===0?'Tempo esgotado!':'Resposta errada!';
+    const certa=currentQ.opcoes[currentQ.correta-1];
+    document.getElementById('resSub').innerHTML=`A resposta certa era <b>${currentQ.correta}. ${certa}</b>`;
+    const cast=castigos[Math.floor(Math.random()*castigos.length)];
+    const cEl=document.getElementById('resCastigo');
+    cEl.style.display='block';
+    cEl.innerHTML=`<b>⚡ Castigo bíblico:</b> ${cast}`;
+    somErro();
+    log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — castigo: ${cast}`);
+  }
+  document.getElementById('resRef').textContent=currentQ.referencia?'📖 '+currentQ.referencia:'';
+
+  saveResposta(correct,n,elapsed,pts);
+}
+
+async function saveResposta(correct,n,elapsed,pts){
+  if(!sb) return;
+  try{
+    if(!partidaId){
+      const {data}=await sb.from('quiz_partidas')
+        .insert({nivel:cfg.level,qtd_jogadores:cfg.num}).select('id').single();
+      if(data) partidaId=data.id;
+    }
+    await sb.from('quiz_respostas').insert({
+      partida_id:partidaId,
+      pergunta_id:String(currentQ.id).startsWith('local-')?null:currentQ.id,
+      jogador_id:currentPlayer, jogador_nome:cfg.names[currentPlayer-1],
+      nivel:cfg.level, resposta:n, correto:correct,
+      tempo_s:Math.round(elapsed*10)/10, pontos:pts });
+  }catch(err){ log('err','Salvar resposta: '+err.message); }
+}
+
+function nextRound(){
+  sendCmd({cmd:'alloff'});
+  currentQ=null; currentPlayer=0; answered=true;
+  document.getElementById('qZone').style.display='none';
+  document.getElementById('drawZone').style.display='block';
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('drawName').textContent='Quiz Bíblico';
+  document.getElementById('drawName').style.color='var(--gold)';
+  document.getElementById('btnDraw').disabled=false;
+  renderScores();
+}
+
+function resetGame(){
+  scores={}; usedIds.clear(); partidaId=null;
+  nextRound(); renderScores();
+  log('i','Placar zerado');
+}
+
+/* ══════════════ EVENTOS ══════════════ */
+document.getElementById('lvlTabs').onclick=e=>{ if(e.target.dataset.l) setLevel(e.target.dataset.l); };
+document.getElementById('numPlayers').onchange=e=>{
+  cfg.num=+e.target.value; saveCfg(); renderPlayersEdit(); renderScores(); };
+document.getElementById('cfgTime').onchange=e=>{ cfg.time=Math.max(5,+e.target.value||30); saveCfg(); };
+document.getElementById('btnDraw').onclick=drawPlayer;
+document.getElementById('btnNext').onclick=nextRound;
+document.getElementById('btnReset').onclick=resetGame;
+
+document.getElementById('btnConnect').onclick=()=>{
+  cfg.relay=document.getElementById('cfgRelay').value.trim();
+  cfg.ip=document.getElementById('cfgIp').value.trim()||'192.168.1.100';
+  saveCfg(); connect();
+};
+document.getElementById('btnSaveSb').onclick=async()=>{
+  cfg.sbUrl=document.getElementById('cfgSbUrl').value.trim();
+  cfg.sbKey=document.getElementById('cfgSbKey').value.trim();
+  saveCfg(); await initSupabase();
+};
+
+document.addEventListener('keydown',e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(e.key>='1'&&e.key<='5'){ if(!answered) answer(+e.key); }
+  else if(e.key.toLowerCase()==='s'){ if(answered && !document.getElementById('btnDraw').disabled
+      && document.getElementById('drawZone').style.display!=='none') drawPlayer(); }
+  else if(e.key===' '){ e.preventDefault();
+    if(document.getElementById('result').classList.contains('show')) nextRound(); }
+});
+
+/* ══════════════ INIT ══════════════ */
+function init(){
+  document.getElementById('cfgRelay').value=cfg.relay||'';
+  document.getElementById('cfgIp').value=cfg.ip||'';
+  document.getElementById('cfgSbUrl').value=cfg.sbUrl||'';
+  document.getElementById('cfgSbKey').value=cfg.sbKey||'';
+  document.getElementById('cfgTime').value=cfg.time;
+  document.getElementById('numPlayers').value=cfg.num;
+  setLevel(cfg.level);
+  renderPlayersEdit(); renderScores();
+  initSupabase();
+  if(cfg.relay||cfg.ip) connect();
+  log('i','Pronto. Configure o ESP32/Supabase ou jogue em modo local.');
+}
+init();
+</script>
+</body>
+</html>
