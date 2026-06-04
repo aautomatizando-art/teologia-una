@@ -398,8 +398,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     </div>
     <div class="kcard">
       <div class="klbl">Velocidade</div>
-      <div class="kval" id="valSpd" style="color:var(--ok)">0.000<span class="kunit">m/s</span></div>
-      <div class="ksub" id="valSpdMin">0.00 m/min</div>
+      <div class="kval" id="valSpd" style="color:var(--ok)">0<span class="kunit">m/min</span></div>
+      <div class="ksub" id="valSpdMin">0.000 m/s</div>
       <div class="kglow" style="background:var(--ok)"></div>
     </div>
     <div class="kcard">
@@ -975,8 +975,8 @@ function updateUI(){
   const freq=curSpd/(Math.PI*cfg.diam/1000);
   document.getElementById('valPos').innerHTML=posM.toFixed(3)+'<span class="kunit">m</span>';
   document.getElementById('valPulses').textContent=totalPulses.toLocaleString('pt-BR')+' pulsos';
-  document.getElementById('valSpd').innerHTML=curSpd.toFixed(3)+'<span class="kunit">m/s</span>';
-  document.getElementById('valSpdMin').textContent=(curSpd*60).toFixed(2)+' m/min';
+  document.getElementById('valSpd').innerHTML=Math.round(curSpd*60)+'<span class="kunit">m/min</span>';
+  document.getElementById('valSpdMin').textContent=curSpd.toFixed(3)+' m/s';
   document.getElementById('valRpm').innerHTML=rpm.toFixed(1)+'<span class="kunit">RPM</span>';
   document.getElementById('valFreq').textContent=freq.toFixed(2)+' Hz';
   const db=document.getElementById('dirBadge');
