@@ -660,9 +660,26 @@ function handleEsp(d){
 
 /* ══════════════ ÁUDIO (standalone) ══════════════ */
 let actx=null;
+function unlockAudio(){
+  if(actx) return;
+  try{
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    // toca silêncio para destravar o contexto no mobile
+    const buf=actx.createBuffer(1,1,22050);
+    const src=actx.createBufferSource();
+    src.buffer=buf; src.connect(actx.destination); src.start(0);
+    if(actx.state==='suspended') actx.resume();
+  }catch(_){}
+}
+// desbloqueio no primeiro gesto do usuário
+['touchstart','touchend','mousedown','keydown'].forEach(ev=>
+  document.addEventListener(ev, unlockAudio, {once:true, passive:true})
+);
+
 function tone(freq,dur,when=0,type='sine',vol=.25){
   try{
-    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended') actx.resume();
     const o=actx.createOscillator(),g=actx.createGain();
     o.type=type;o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
     const t=actx.currentTime+when;
