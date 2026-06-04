@@ -6,7 +6,7 @@
 -- 1. PERGUNTAS ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS quiz_perguntas (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nivel       TEXT NOT NULL CHECK (nivel IN ('basico','medio','avancado')),
+  nivel       TEXT NOT NULL CHECK (nivel IN ('basico','medio','avancado','teologico')),
   pergunta    TEXT NOT NULL,
   opcoes      JSONB NOT NULL,          -- array com 5 alternativas (strings)
   correta     INT  NOT NULL CHECK (correta BETWEEN 1 AND 5),
@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS quiz_perguntas (
   ativa       BOOLEAN DEFAULT TRUE,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Bancos já existentes: amplia o CHECK para aceitar o nível "teologico"
+ALTER TABLE quiz_perguntas DROP CONSTRAINT IF EXISTS quiz_perguntas_nivel_check;
+ALTER TABLE quiz_perguntas ADD  CONSTRAINT quiz_perguntas_nivel_check
+  CHECK (nivel IN ('basico','medio','avancado','teologico'));
 
 -- 2. CASTIGOS BÍBLICOS (penalidades edificantes ao errar) ────
 CREATE TABLE IF NOT EXISTS quiz_castigos (
@@ -217,6 +222,33 @@ INSERT INTO quiz_perguntas (nivel,pergunta,opcoes,correta,referencia) VALUES
 ('avancado','Quantos livros compõem o Pentateuco?',
   '["3","4","5","7","12"]',3,'Gênesis a Deuteronômio');
 
+-- NÍVEL TEOLÓGICO ───────────────────────────────────────────
+INSERT INTO quiz_perguntas (nivel,pergunta,opcoes,correta,referencia) VALUES
+('teologico','Como se chama a doutrina de que Deus é um só em três pessoas: Pai, Filho e Espírito Santo?',
+  '["Unicismo","Trindade","Panteísmo","Deísmo","Modalismo"]',2,'Mateus 28:19'),
+('teologico','Qual termo teológico descreve o ato de Deus declarar justo o pecador mediante a fé?',
+  '["Santificação","Justificação","Glorificação","Reconciliação","Expiação"]',2,'Romanos 5:1'),
+('teologico','Na doutrina pentecostal, o batismo no Espírito Santo é evidenciado inicialmente por qual sinal?',
+  '["Visões","O falar em outras línguas","Curas","Sonhos","Imposição de mãos"]',2,'Atos 2:4'),
+('teologico','Qual ramo da teologia estuda as últimas coisas (o fim dos tempos)?',
+  '["Eclesiologia","Cristologia","Escatologia","Soteriologia","Pneumatologia"]',3,''),
+('teologico','O estudo teológico sobre a pessoa e a obra de Cristo é chamado de:',
+  '["Pneumatologia","Cristologia","Antropologia","Bibliologia","Angelologia"]',2,''),
+('teologico','Como é chamado o ramo da teologia que estuda o Espírito Santo?',
+  '["Pneumatologia","Soteriologia","Eclesiologia","Hamartiologia","Bibliologia"]',1,''),
+('teologico','Qual o nome do processo contínuo de tornar-se santo após a conversão?',
+  '["Justificação","Santificação","Predestinação","Adoção","Expiação"]',2,'1 Tessalonicenses 4:3'),
+('teologico','Como se chama o ramo da teologia que estuda a doutrina do pecado?',
+  '["Soteriologia","Hamartiologia","Escatologia","Eclesiologia","Bibliologia"]',2,''),
+('teologico','Qual termo descreve a vinda de Cristo para buscar a Igreja?',
+  '["Ascensão","Arrebatamento","Transfiguração","Pentecostes","Milênio"]',2,'1 Tessalonicenses 4:16-17'),
+('teologico','O ramo da teologia que trata da doutrina da salvação é a:',
+  '["Soteriologia","Cristologia","Eclesiologia","Escatologia","Pneumatologia"]',1,''),
+('teologico','Qual termo descreve a união das naturezas divina e humana na pessoa de Cristo?',
+  '["Transubstanciação","União hipostática","Kénosis","Teofania","Apostasia"]',2,''),
+('teologico','O dom espiritual de falar em outras línguas é tecnicamente chamado de:',
+  '["Profecia","Glossolalia","Discernimento","Xenoglossia","Interpretação"]',2,'1 Coríntios 12:10');
+
 -- SEED — CASTIGOS BÍBLICOS ──────────────────────────────────
 INSERT INTO quiz_castigos (texto) VALUES
 ('Recite o Salmo 23 de cor para toda a turma.'),
@@ -298,3 +330,9 @@ UPDATE quiz_perguntas SET versiculo='Porque a um, pelo Espírito, é dada a pala
 UPDATE quiz_perguntas SET versiculo='Os quais noutro tempo foram rebeldes, quando a longanimidade de Deus esperava nos dias de Noé, enquanto se preparava a arca; na qual poucas (isto é, oito) almas se salvaram pela água.' WHERE referencia='1 Pedro 3:20';
 UPDATE quiz_perguntas SET versiculo='Revelação de Jesus Cristo, a qual Deus lhe deu, para mostrar aos seus servos as coisas que brevemente devem acontecer; e pelo seu anjo as enviou e as notificou a João, seu servo.' WHERE referencia='Apocalipse 1:1';
 UPDATE quiz_perguntas SET versiculo='Eu, João, que também sou vosso irmão e companheiro na aflição, e no reino, e paciência de Jesus Cristo, estava na ilha chamada Patmos, por causa da palavra de Deus e pelo testemunho de Jesus Cristo.' WHERE referencia='Apocalipse 1:9';
+UPDATE quiz_perguntas SET versiculo='Portanto, ide, ensinai todas as nações, batizando-as em nome do Pai, e do Filho, e do Espírito Santo;' WHERE referencia='Mateus 28:19';
+UPDATE quiz_perguntas SET versiculo='Sendo, pois, justificados pela fé, temos paz com Deus, por nosso Senhor Jesus Cristo;' WHERE referencia='Romanos 5:1';
+UPDATE quiz_perguntas SET versiculo='E todos foram cheios do Espírito Santo e começaram a falar em outras línguas, conforme o Espírito Santo lhes concedia que falassem.' WHERE referencia='Atos 2:4';
+UPDATE quiz_perguntas SET versiculo='Porque esta é a vontade de Deus, a vossa santificação: que vos abstenhais da prostituição;' WHERE referencia='1 Tessalonicenses 4:3';
+UPDATE quiz_perguntas SET versiculo='Porque o mesmo Senhor descerá do céu com alarido, e com voz de arcanjo, e com a trombeta de Deus; e os que morreram em Cristo ressuscitarão primeiro. Depois, nós, os que ficarmos vivos, seremos arrebatados juntamente com eles nas nuvens, a encontrar o Senhor nos ares, e assim estaremos sempre com o Senhor.' WHERE referencia='1 Tessalonicenses 4:16-17';
+UPDATE quiz_perguntas SET versiculo='E a outro, a operação de maravilhas; e a outro, a profecia; e a outro, o dom de discernir os espíritos; e a outro, a variedade de línguas; e a outro, a interpretação das línguas.' WHERE referencia='1 Coríntios 12:10';

@@ -79,6 +79,7 @@ html,body{min-height:100%;background:
 .lvl-tab.on[data-l="basico"]{background:rgba(74,222,128,.16);color:var(--ok);}
 .lvl-tab.on[data-l="medio"]{background:rgba(255,209,102,.16);color:var(--gold);}
 .lvl-tab.on[data-l="avancado"]{background:rgba(239,68,68,.16);color:var(--danger);}
+.lvl-tab.on[data-l="teologico"]{background:rgba(167,139,250,.18);color:var(--purple);}
 .players-edit{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px;}
 .pe-row{display:flex;align-items:center;gap:6px;}
 .pe-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0;}
@@ -92,6 +93,60 @@ html,body{min-height:100%;background:
 .lvl-basico{background:rgba(74,222,128,.14);color:var(--ok);}
 .lvl-medio{background:rgba(255,209,102,.14);color:var(--gold);}
 .lvl-avancado{background:rgba(239,68,68,.14);color:var(--danger);}
+.lvl-teologico{background:rgba(167,139,250,.16);color:var(--purple);}
+
+/* ── Modais / Admin ── */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:200;padding:18px;}
+.modal.show{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;padding:24px;animation:fu .25s ease;}
+.modal-box.sm{max-width:380px;}
+.modal-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.modal-h h3{font-family:'Archivo Black',sans-serif;font-size:17px;}
+.modal-x{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;padding:0 4px;}
+.modal-x:hover{color:var(--text);}
+.fld{margin-bottom:12px;}
+.fld>label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;}
+.fld input,.fld textarea,.fld select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-size:14px;padding:9px 11px;outline:none;font-family:'Archivo',sans-serif;}
+.fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--sky);}
+.fld textarea{resize:vertical;min-height:56px;line-height:1.5;}
+.opt-fld{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.opt-fld .onb{width:30px;height:30px;border-radius:7px;background:var(--bg4);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-family:'Archivo Black',sans-serif;flex-shrink:0;cursor:pointer;font-size:14px;}
+.opt-fld .onb.sel{background:var(--ok);color:#000;border-color:var(--ok);}
+.opt-fld input{flex:1;}
+.row2{display:flex;gap:10px;}.row2>*{flex:1;}
+.qa-list{margin-top:6px;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;padding-right:2px;}
+.qa-item{display:flex;gap:9px;align-items:flex-start;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:13px;}
+.qa-item .qx{flex:1;line-height:1.4;}
+.qa-item .qx small{color:var(--muted);font-family:'Fira Code',monospace;font-size:11px;}
+.qa-del{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:var(--danger);border-radius:6px;cursor:pointer;font-size:14px;padding:2px 9px;flex-shrink:0;}
+.qa-del:hover{background:rgba(239,68,68,.22);}
+.adm-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+.adm-tab{padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;}
+.adm-tab.on{color:var(--sky);border-bottom-color:var(--sky);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--bg4);border:1px solid var(--border);
+  border-radius:10px;padding:12px 20px;z-index:300;font-weight:600;font-size:14px;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:rgba(74,222,128,.5);color:var(--ok);}
+.toast.err{border-color:rgba(239,68,68,.5);color:var(--danger);}
+
+/* ── Esteira (saída de castigo ligada) ── */
+.esteira{display:none;margin:18px auto 0;max-width:470px;text-align:center;}
+.esteira.show{display:block;animation:fu .3s ease;}
+.est-wrap{position:relative;height:56px;margin:0 16px;}
+.est-belt{position:absolute;left:0;right:0;top:15px;height:26px;border-radius:13px;border:2px solid #4a4a4a;overflow:hidden;
+  background:repeating-linear-gradient(60deg,#2b2b2b 0 14px,#191919 14px 28px);background-size:32px 100%;animation:belt .55s linear infinite;}
+@keyframes belt{to{background-position:-32px 0;}}
+.est-roller{position:absolute;top:9px;width:38px;height:38px;border-radius:50%;
+  background:radial-gradient(circle at 34% 34%,#777,#1d1d1d);border:2px solid #555;animation:roll .55s linear infinite;}
+.est-roller::after{content:'';position:absolute;inset:14px;border-radius:50%;background:#111;}
+.est-roller.l{left:-8px;}.est-roller.r{right:-8px;}
+@keyframes roll{to{transform:rotate(360deg);}}
+.est-box{position:absolute;top:6px;font-size:24px;animation:slide 2.1s linear infinite;}
+@keyframes slide{0%{left:2px;}100%{left:calc(100% - 30px);}}
+.est-label{margin-top:10px;color:var(--gold);font-size:12.5px;font-weight:700;letter-spacing:.04em;}
+.est-label .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--danger);box-shadow:0 0 6px var(--danger);animation:bl .5s infinite;margin-right:5px;}
 
 .draw-zone{text-align:center;padding:30px 10px;}
 .draw-name{font-family:'Archivo Black',sans-serif;font-size:clamp(26px,6vw,52px);line-height:1.1;margin:8px 0 18px;}
@@ -197,13 +252,15 @@ html,body{min-height:100%;background:
 
   <!-- ── SETUP ── -->
   <div class="card" id="setupCard">
-    <div class="card-h"><div class="card-t">⚙️ Configuração da Partida</div></div>
+    <div class="card-h"><div class="card-t">⚙️ Configuração da Partida</div>
+      <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button></div>
     <div class="setup-row">
       <div class="ifield"><span class="ilbl">Nível</span>
         <div class="lvl-tabs" id="lvlTabs">
           <button class="lvl-tab on" data-l="basico">Básico</button>
           <button class="lvl-tab" data-l="medio">Médio</button>
           <button class="lvl-tab" data-l="avancado">Avançado</button>
+          <button class="lvl-tab" data-l="teologico">Teológico</button>
         </div>
       </div>
       <div class="ifield"><span class="ilbl">Nº de jogadores</span>
@@ -214,6 +271,8 @@ html,body{min-height:100%;background:
       </div>
       <div class="ifield"><span class="ilbl">Tempo p/ responder (s)</span>
         <input class="iinput" id="cfgTime" type="number" min="5" max="120" value="30" style="width:90px"></div>
+      <div class="ifield"><span class="ilbl">Saída castigo no erro (s)</span>
+        <input class="iinput" id="cfgCastigo" type="number" min="0" max="60" value="5" style="width:90px" title="0 = desligado"></div>
     </div>
     <div class="players-edit" id="playersEdit"></div>
   </div>
@@ -248,6 +307,15 @@ html,body{min-height:100%;background:
             <div class="result-title" id="resTitle">Parabéns!</div>
             <div class="result-sub" id="resSub"></div>
             <div class="castigo" id="resCastigo" style="display:none"></div>
+            <div class="esteira" id="esteira">
+              <div class="est-wrap">
+                <div class="est-roller l"></div>
+                <div class="est-belt"></div>
+                <div class="est-roller r"></div>
+                <div class="est-box">⚡</div>
+              </div>
+              <div class="est-label" id="estLabel"><span class="dot"></span>Saída de castigo ligada…</div>
+            </div>
             <div class="ref" id="resRef"></div>
             <button class="btn btn-gold" id="btnVerse" style="display:none;margin-top:12px">📖 Ler versículo (ARC)</button>
             <div class="vtext" id="resVerse" style="display:none"></div>
@@ -275,13 +343,88 @@ html,body{min-height:100%;background:
   </div>
 </div>
 
+<!-- ── MODAL: senha de administrador ── -->
+<div class="modal" id="mPass"><div class="modal-box sm">
+  <div class="modal-h"><h3>🔐 Acesso do administrador</h3><button class="modal-x" data-close="mPass">×</button></div>
+  <div class="fld"><label>Senha</label><input type="password" id="passInput" placeholder="Digite a senha" autocomplete="off"></div>
+  <div id="passErr" style="display:none;color:var(--danger);font-size:12px;margin-bottom:10px">Senha incorreta.</div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn btn-ghost" data-close="mPass">Cancelar</button>
+    <button class="btn btn-sky" id="passOk">Entrar</button>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:12px">Senha padrão: <b>1234</b> — altere em Gerenciar Perguntas → Configurações.</p>
+</div></div>
+
+<!-- ── MODAL: gerenciar perguntas ── -->
+<div class="modal" id="mAdmin"><div class="modal-box">
+  <div class="modal-h"><h3>📝 Gerenciar Perguntas</h3><button class="modal-x" data-close="mAdmin">×</button></div>
+  <div class="adm-tabs">
+    <button class="adm-tab on" data-at="nova">➕ Nova pergunta</button>
+    <button class="adm-tab" data-at="lista">📋 Cadastradas</button>
+    <button class="adm-tab" data-at="cfg">⚙️ Configurações</button>
+  </div>
+
+  <!-- aba nova -->
+  <div id="atNova">
+    <div class="fld"><label>Nível</label>
+      <select id="adNivel">
+        <option value="basico">🟢 Básico</option>
+        <option value="medio">🟡 Médio</option>
+        <option value="avancado">🔴 Avançado</option>
+        <option value="teologico">🟣 Teológico</option>
+      </select>
+    </div>
+    <div class="fld"><label>Pergunta</label><textarea id="adPergunta" placeholder="Digite a pergunta…"></textarea></div>
+    <div class="fld"><label>Alternativas (clique no número para marcar a correta)</label>
+      <div class="opt-fld"><div class="onb" data-c="1">1</div><input id="adOpt1" placeholder="Alternativa 1"></div>
+      <div class="opt-fld"><div class="onb" data-c="2">2</div><input id="adOpt2" placeholder="Alternativa 2"></div>
+      <div class="opt-fld"><div class="onb" data-c="3">3</div><input id="adOpt3" placeholder="Alternativa 3"></div>
+      <div class="opt-fld"><div class="onb" data-c="4">4</div><input id="adOpt4" placeholder="Alternativa 4"></div>
+      <div class="opt-fld"><div class="onb" data-c="5">5</div><input id="adOpt5" placeholder="Alternativa 5"></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label>Referência (opcional)</label><input id="adRef" placeholder="Ex.: João 3:16"></div>
+    </div>
+    <div class="fld"><label>Versículo ARC (opcional)</label><textarea id="adVers" placeholder="Texto do versículo…"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-ghost" id="adClear">Limpar</button>
+      <button class="btn btn-sky" id="adSave">💾 Salvar pergunta</button>
+    </div>
+    <p class="muted" id="adMode" style="font-size:11px;margin-top:10px"></p>
+  </div>
+
+  <!-- aba lista -->
+  <div id="atLista" style="display:none">
+    <div class="fld"><label>Filtrar por nível</label>
+      <select id="adListNivel">
+        <option value="basico">🟢 Básico</option>
+        <option value="medio">🟡 Médio</option>
+        <option value="avancado">🔴 Avançado</option>
+        <option value="teologico">🟣 Teológico</option>
+      </select>
+    </div>
+    <div class="qa-list" id="adList"></div>
+  </div>
+
+  <!-- aba config -->
+  <div id="atCfg" style="display:none">
+    <div class="fld"><label>Senha do administrador atual</label><input type="password" id="adPassCur" placeholder="Senha atual"></div>
+    <div class="fld"><label>Nova senha</label><input type="password" id="adPassNew" placeholder="Nova senha"></div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn btn-sky" id="adPassSave">Alterar senha</button></div>
+    <p class="muted" style="font-size:11px;margin-top:14px">As perguntas são salvas no <b>Supabase</b> quando configurado; caso contrário, ficam salvas <b>localmente</b> neste navegador.</p>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
 <script>
 /* ══════════════ CONFIG / ESTADO ══════════════ */
-let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30,
+let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30, adminPass:'1234', castigoSec:5,
   names:['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5','Jogador 6','Jogador 7','Jogador 8'] };
 const COLORS=['#35c8ff','#4ade80','#ffd166','#ff6b35','#a78bfa','#f472b6','#22d3ee','#fb7185'];
-const PTS={basico:10,medio:20,avancado:30};
-const LVL_PT={basico:'Básico',medio:'Médio',avancado:'Avançado'};
+const PTS={basico:10,medio:20,avancado:30,teologico:50};
+const LVL_PT={basico:'Básico',medio:'Médio',avancado:'Avançado',teologico:'Teológico'};
+let adminUnlocked=false, adminCorrect=1, pendingAdmin=null;
 
 let scores={}, currentPlayer=0, currentQ=null, answered=true, timeLeft=0, timerIv=null, qStart=0;
 let usedIds=new Set(), partidaId=null;
@@ -341,6 +484,18 @@ const FALLBACK_Q=[
  {nivel:'avancado',pergunta:'Qual era o nome de Paulo antes de sua conversão?',opcoes:['Silas','Saulo','Simão','Estêvão','Sóstenes'],correta:2,referencia:'Atos 9:1-4'},
  {nivel:'avancado',pergunta:'Qual sumo sacerdote presidiu o julgamento que condenou Jesus?',opcoes:['Anás','Caifás','Gamaliel','Nicodemos','Zacarias'],correta:2,referencia:'Mateus 26:57'},
  {nivel:'avancado',pergunta:'Quantos livros compõem o Pentateuco?',opcoes:['3','4','5','7','12'],correta:3,referencia:'Gênesis a Deuteronômio'},
+ {nivel:'teologico',pergunta:'Como se chama a doutrina de que Deus é um só em três pessoas: Pai, Filho e Espírito Santo?',opcoes:['Unicismo','Trindade','Panteísmo','Deísmo','Modalismo'],correta:2,referencia:'Mateus 28:19'},
+ {nivel:'teologico',pergunta:'Qual termo teológico descreve o ato de Deus declarar justo o pecador mediante a fé?',opcoes:['Santificação','Justificação','Glorificação','Reconciliação','Expiação'],correta:2,referencia:'Romanos 5:1'},
+ {nivel:'teologico',pergunta:'Na doutrina pentecostal, o batismo no Espírito Santo é evidenciado inicialmente por qual sinal?',opcoes:['Visões','O falar em outras línguas','Curas','Sonhos','Imposição de mãos'],correta:2,referencia:'Atos 2:4'},
+ {nivel:'teologico',pergunta:'Qual ramo da teologia estuda as últimas coisas (o fim dos tempos)?',opcoes:['Eclesiologia','Cristologia','Escatologia','Soteriologia','Pneumatologia'],correta:3,referencia:''},
+ {nivel:'teologico',pergunta:'O estudo teológico sobre a pessoa e a obra de Cristo é chamado de:',opcoes:['Pneumatologia','Cristologia','Antropologia','Bibliologia','Angelologia'],correta:2,referencia:''},
+ {nivel:'teologico',pergunta:'Como é chamado o ramo da teologia que estuda o Espírito Santo?',opcoes:['Pneumatologia','Soteriologia','Eclesiologia','Hamartiologia','Bibliologia'],correta:1,referencia:''},
+ {nivel:'teologico',pergunta:'Qual o nome do processo contínuo de tornar-se santo após a conversão?',opcoes:['Justificação','Santificação','Predestinação','Adoção','Expiação'],correta:2,referencia:'1 Tessalonicenses 4:3'},
+ {nivel:'teologico',pergunta:'Como se chama o ramo da teologia que estuda a doutrina do pecado?',opcoes:['Soteriologia','Hamartiologia','Escatologia','Eclesiologia','Bibliologia'],correta:2,referencia:''},
+ {nivel:'teologico',pergunta:'Qual termo descreve a vinda de Cristo para buscar a Igreja?',opcoes:['Ascensão','Arrebatamento','Transfiguração','Pentecostes','Milênio'],correta:2,referencia:'1 Tessalonicenses 4:16-17'},
+ {nivel:'teologico',pergunta:'O ramo da teologia que trata da doutrina da salvação é a:',opcoes:['Soteriologia','Cristologia','Eclesiologia','Escatologia','Pneumatologia'],correta:1,referencia:''},
+ {nivel:'teologico',pergunta:'Qual termo descreve a união das naturezas divina e humana na pessoa de Cristo?',opcoes:['Transubstanciação','União hipostática','Kénosis','Teofania','Apostasia'],correta:2,referencia:''},
+ {nivel:'teologico',pergunta:'O dom espiritual de falar em outras línguas é tecnicamente chamado de:',opcoes:['Profecia','Glossolalia','Discernimento','Xenoglossia','Interpretação'],correta:2,referencia:'1 Coríntios 12:10'},
 ];
 const FALLBACK_C=[
  'Recite o Salmo 23 de cor para toda a turma.','Cante um louvor à escolha da plateia.',
@@ -392,12 +547,22 @@ const ARC={
  '1 Pedro 3:20':'Os quais noutro tempo foram rebeldes, quando a longanimidade de Deus esperava nos dias de Noé, enquanto se preparava a arca; na qual poucas (isto é, oito) almas se salvaram pela água.',
  'Apocalipse 1:1':'Revelação de Jesus Cristo, a qual Deus lhe deu, para mostrar aos seus servos as coisas que brevemente devem acontecer; e pelo seu anjo as enviou e as notificou a João, seu servo.',
  'Apocalipse 1:9':'Eu, João, que também sou vosso irmão e companheiro na aflição, e no reino, e paciência de Jesus Cristo, estava na ilha chamada Patmos, por causa da palavra de Deus e pelo testemunho de Jesus Cristo.',
+ 'Mateus 28:19':'Portanto, ide, ensinai todas as nações, batizando-as em nome do Pai, e do Filho, e do Espírito Santo;',
+ 'Romanos 5:1':'Sendo, pois, justificados pela fé, temos paz com Deus, por nosso Senhor Jesus Cristo;',
+ 'Atos 2:4':'E todos foram cheios do Espírito Santo e começaram a falar em outras línguas, conforme o Espírito Santo lhes concedia que falassem.',
+ '1 Tessalonicenses 4:3':'Porque esta é a vontade de Deus, a vossa santificação: que vos abstenhais da prostituição;',
+ '1 Tessalonicenses 4:16-17':'Porque o mesmo Senhor descerá do céu com alarido, e com voz de arcanjo, e com a trombeta de Deus; e os que morreram em Cristo ressuscitarão primeiro. Depois, nós, os que ficarmos vivos, seremos arrebatados juntamente com eles nas nuvens, a encontrar o Senhor nos ares, e assim estaremos sempre com o Senhor.',
+ '1 Coríntios 12:10':'E a outro, a operação de maravilhas; e a outro, a profecia; e a outro, o dom de discernir os espíritos; e a outro, a variedade de línguas; e a outro, a interpretação das línguas.',
 };
+/* perguntas adicionadas localmente pelo administrador (quando sem Supabase) */
+function loadCustomQ(){ try{ return JSON.parse(localStorage.getItem('quiz_custom_q')||'[]'); }catch(_){ return []; } }
+function saveCustomQ(a){ localStorage.setItem('quiz_custom_q',JSON.stringify(a)); }
 
 /* ══════════════ SUPABASE ══════════════ */
 let sb=null;
 async function initSupabase(){
-  questions=FALLBACK_Q.map((q,i)=>({...q,id:'local-'+i,versiculo:ARC[q.referencia]||''}));
+  const custom=loadCustomQ();
+  questions=FALLBACK_Q.concat(custom).map((q,i)=>({...q,id:q.id||'local-'+i,versiculo:q.versiculo||ARC[q.referencia]||''}));
   castigos=FALLBACK_C.slice();
   if(cfg.sbUrl && cfg.sbKey){
     try{
@@ -418,6 +583,7 @@ async function initSupabase(){
     setSb('off','Local'); log('i','Modo local — '+questions.length+' perguntas embutidas');
   }
 }
+function qCount(nivel){ return questions.filter(q=>q.nivel===nivel).length; }
 function setSb(s,t){
   const c=document.getElementById('sbChip');
   c.className='chip chip-'+s;
@@ -469,6 +635,9 @@ function sendCmd(o){ if(ws && ws.readyState===1) ws.send(JSON.stringify(o)); }
 function handleEsp(d){
   // botão físico pressionado no ESP32
   if(d.event==='button' && d.btn>=1 && d.btn<=5) answer(d.btn);
+  // espelha o estado real da saída de castigo (esteira)
+  if(d.castigo===1) document.getElementById('esteira').classList.add('show');
+  else if(d.castigo===0 && !esteiraIv) document.getElementById('esteira').classList.remove('show');
 }
 
 /* ══════════════ ÁUDIO (standalone) ══════════════ */
@@ -663,7 +832,13 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
     cEl.style.display='block';
     cEl.innerHTML=`<b>⚡ Castigo bíblico:</b> ${cast}`;
     somErro();
-    log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — castigo: ${cast}`);
+    if(cfg.castigoSec>0){
+      sendCmd({cmd:'castigo',ms:cfg.castigoSec*1000});   // aciona saída de castigo do ESP32
+      showEsteira(cfg.castigoSec);                       // animação enquanto a saída está ligada
+      log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — saída de castigo por ${cfg.castigoSec}s · ${cast}`);
+    } else {
+      log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — castigo: ${cast}`);
+    }
   }
   const _ref=currentQ.referencia, _v=currentQ.versiculo;
   document.getElementById('resRef').textContent=_ref?'📖 '+_ref:'';
@@ -697,6 +872,7 @@ async function saveResposta(correct,n,elapsed,pts){
 
 function nextRound(){
   sendCmd({cmd:'alloff'});
+  hideEsteira();
   currentQ=null; currentPlayer=0; answered=true;
   document.getElementById('qZone').style.display='none';
   document.getElementById('drawZone').style.display='block';
@@ -713,11 +889,145 @@ function resetGame(){
   log('i','Placar zerado');
 }
 
+/* ══════════════ ADMINISTRAÇÃO ══════════════ */
+let toastIv=null;
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(toastIv); toastIv=setTimeout(()=>t.classList.remove('show'),2800);
+}
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ── Esteira (visível enquanto a saída de castigo está ligada) ── */
+let esteiraIv=null;
+function showEsteira(sec){
+  const el=document.getElementById('esteira'), lbl=document.getElementById('estLabel');
+  el.classList.add('show');
+  let left=Math.max(1,sec|0);
+  const upd=()=>lbl.innerHTML=`<span class="dot"></span>Saída de castigo ligada — ${left}s`;
+  upd();
+  clearInterval(esteiraIv);
+  esteiraIv=setInterval(()=>{ left--; if(left<=0) hideEsteira(); else upd(); },1000);
+}
+function hideEsteira(){ clearInterval(esteiraIv); document.getElementById('esteira').classList.remove('show'); }
+
+function requireAdmin(cb){
+  if(adminUnlocked){ cb(); return; }
+  pendingAdmin=cb;
+  document.getElementById('passInput').value='';
+  document.getElementById('passErr').style.display='none';
+  openModal('mPass');
+  setTimeout(()=>document.getElementById('passInput').focus(),60);
+}
+function tryPass(){
+  const v=document.getElementById('passInput').value;
+  if(v===(cfg.adminPass||'1234')){
+    adminUnlocked=true; closeModal('mPass');
+    const cb=pendingAdmin; pendingAdmin=null; if(cb) cb();
+  } else { document.getElementById('passErr').style.display='block'; }
+}
+
+/* aba ativa do admin */
+function setAdmTab(at){
+  document.querySelectorAll('.adm-tab').forEach(t=>t.classList.toggle('on',t.dataset.at===at));
+  document.getElementById('atNova').style.display =at==='nova' ?'block':'none';
+  document.getElementById('atLista').style.display=at==='lista'?'block':'none';
+  document.getElementById('atCfg').style.display  =at==='cfg'  ?'block':'none';
+  if(at==='lista') renderAdmList();
+}
+function openAdmin(){
+  document.getElementById('adNivel').value=cfg.level;
+  document.getElementById('adListNivel').value=cfg.level;
+  document.getElementById('adMode').textContent = sb
+    ? 'As perguntas serão salvas no Supabase e ficam disponíveis em todos os dispositivos.'
+    : 'Sem Supabase configurado: as perguntas serão salvas localmente neste navegador.';
+  setAdmTab('nova');
+  openModal('mAdmin');
+}
+
+let adCorreta=0;
+function clearAdmForm(){
+  ['adPergunta','adOpt1','adOpt2','adOpt3','adOpt4','adOpt5','adRef','adVers'].forEach(id=>document.getElementById(id).value='');
+  adCorreta=0;
+  document.querySelectorAll('#atNova .onb').forEach(b=>b.classList.remove('sel'));
+}
+async function saveQuestion(){
+  const nivel=document.getElementById('adNivel').value;
+  const pergunta=document.getElementById('adPergunta').value.trim();
+  const opcoes=[1,2,3,4,5].map(i=>document.getElementById('adOpt'+i).value.trim());
+  const referencia=document.getElementById('adRef').value.trim();
+  const versiculo=document.getElementById('adVers').value.trim();
+  if(!pergunta) return toast('Digite a pergunta.','err');
+  if(opcoes.some(o=>!o)) return toast('Preencha as 5 alternativas.','err');
+  if(!adCorreta) return toast('Marque a alternativa correta (clique no número).','err');
+  const novo={nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo};
+
+  if(sb){
+    try{
+      const {data,error}=await sb.from('quiz_perguntas')
+        .insert({nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo,ativa:true})
+        .select('id').single();
+      if(error) throw error;
+      questions.push({...novo,id:data.id});
+      toast('Pergunta salva no Supabase ✓','ok');
+    }catch(err){ return toast('Erro ao salvar: '+err.message,'err'); }
+  } else {
+    const custom=loadCustomQ();
+    const id='custom-'+Date.now();
+    custom.push({...novo,id}); saveCustomQ(custom);
+    questions.push({...novo,id});
+    toast('Pergunta salva localmente ✓','ok');
+  }
+  log('ok',`Nova pergunta (${LVL_PT[nivel]}) cadastrada`);
+  clearAdmForm();
+}
+function renderAdmList(){
+  const nivel=document.getElementById('adListNivel').value;
+  const box=document.getElementById('adList'); box.innerHTML='';
+  const list=questions.filter(q=>q.nivel===nivel);
+  if(!list.length){ box.innerHTML='<p class="muted" style="font-size:13px">Nenhuma pergunta neste nível.</p>'; return; }
+  list.forEach(q=>{
+    const editable=String(q.id).startsWith('custom-')||!String(q.id).startsWith('local-');
+    const item=document.createElement('div'); item.className='qa-item';
+    item.innerHTML=`<div class="qx">${q.pergunta}<br><small>✔ ${q.opcoes[q.correta-1]}${q.referencia?' · '+q.referencia:''}</small></div>`;
+    if(editable){
+      const del=document.createElement('button'); del.className='qa-del'; del.textContent='🗑';
+      del.title='Excluir'; del.onclick=()=>delQuestion(q.id);
+      item.appendChild(del);
+    } else {
+      const tag=document.createElement('span'); tag.className='muted'; tag.style.fontSize='10px'; tag.textContent='embutida';
+      item.appendChild(tag);
+    }
+    box.appendChild(item);
+  });
+}
+async function delQuestion(id){
+  if(!confirm('Excluir esta pergunta?')) return;
+  if(sb && !String(id).startsWith('custom-') && !String(id).startsWith('local-')){
+    try{ const {error}=await sb.from('quiz_perguntas').delete().eq('id',id); if(error) throw error; }
+    catch(err){ return toast('Erro ao excluir: '+err.message,'err'); }
+  } else {
+    saveCustomQ(loadCustomQ().filter(q=>q.id!==id));
+  }
+  questions=questions.filter(q=>q.id!==id);
+  toast('Pergunta excluída','ok'); renderAdmList();
+}
+function changePass(){
+  const cur=document.getElementById('adPassCur').value, nw=document.getElementById('adPassNew').value;
+  if(cur!==(cfg.adminPass||'1234')) return toast('Senha atual incorreta.','err');
+  if(nw.length<3) return toast('A nova senha precisa de ao menos 3 caracteres.','err');
+  cfg.adminPass=nw; saveCfg();
+  document.getElementById('adPassCur').value=''; document.getElementById('adPassNew').value='';
+  toast('Senha alterada ✓','ok');
+}
+
 /* ══════════════ EVENTOS ══════════════ */
 document.getElementById('lvlTabs').onclick=e=>{ if(e.target.dataset.l) setLevel(e.target.dataset.l); };
 document.getElementById('numPlayers').onchange=e=>{
   cfg.num=+e.target.value; saveCfg(); renderPlayersEdit(); renderScores(); };
 document.getElementById('cfgTime').onchange=e=>{ cfg.time=Math.max(5,+e.target.value||30); saveCfg(); };
+document.getElementById('cfgCastigo').onchange=e=>{ cfg.castigoSec=Math.max(0,Math.min(60,+e.target.value||0)); saveCfg(); };
 document.getElementById('btnDraw').onclick=drawPlayer;
 document.getElementById('btnNext').onclick=nextRound;
 document.getElementById('btnReset').onclick=resetGame;
@@ -727,6 +1037,22 @@ document.getElementById('btnVerse').onclick=()=>{
   box.style.display=show?'block':'none';
   btn.textContent=show?'📖 Ocultar versículo':'📖 Ler versículo (ARC)';
 };
+
+/* ── Admin: aberturas, abas, salvar, excluir, senha ── */
+document.getElementById('btnAdmin').onclick=()=>requireAdmin(openAdmin);
+document.getElementById('passOk').onclick=tryPass;
+document.getElementById('passInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryPass(); });
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{ if(e.target===m) m.classList.remove('show'); }));
+document.querySelectorAll('.adm-tab').forEach(t=>t.onclick=()=>setAdmTab(t.dataset.at));
+document.querySelectorAll('#atNova .onb').forEach(b=>b.onclick=()=>{
+  adCorreta=+b.dataset.c;
+  document.querySelectorAll('#atNova .onb').forEach(x=>x.classList.toggle('sel',x===b));
+});
+document.getElementById('adSave').onclick=saveQuestion;
+document.getElementById('adClear').onclick=clearAdmForm;
+document.getElementById('adListNivel').onchange=renderAdmList;
+document.getElementById('adPassSave').onclick=changePass;
 
 document.getElementById('btnConnect').onclick=()=>{
   cfg.relay=document.getElementById('cfgRelay').value.trim();
@@ -755,6 +1081,7 @@ function init(){
   document.getElementById('cfgSbUrl').value=cfg.sbUrl||'';
   document.getElementById('cfgSbKey').value=cfg.sbKey||'';
   document.getElementById('cfgTime').value=cfg.time;
+  document.getElementById('cfgCastigo').value=cfg.castigoSec;
   document.getElementById('numPlayers').value=cfg.num;
   setLevel(cfg.level);
   renderPlayersEdit(); renderScores();

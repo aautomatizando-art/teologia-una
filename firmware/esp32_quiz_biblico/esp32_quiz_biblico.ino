@@ -23,6 +23,7 @@
  *    OUT4 → GPIO 19    OUT8 → GPIO 4
  *
  *  BUZZER          → GPIO 25
+ *  SAÍDA CASTIGO   → GPIO 33   (relé/sirene/lâmpada — ligada por X s ao errar)
  *  LED de status   → GPIO 2  (onboard)
  *
  *  COMUNICAÇÃO
@@ -34,6 +35,7 @@
  *    {"cmd":"alloff"}               → desliga todas as saídas de jogador
  *    {"cmd":"resultado","ok":true}  → toca som de ACERTO (parabéns)
  *    {"cmd":"resultado","ok":false} → toca som de ERRO (castigo)
+ *    {"cmd":"castigo","ms":5000}    → liga a SAÍDA CASTIGO por 5 s (não bloqueante)
  *    {"cmd":"buzzer","ms":200,"freq":880}
  *
  *  EVENTOS  (ESP32 → dashboard)
@@ -60,6 +62,7 @@ const char* PASSWORD = "SUA_SENHA_WIFI";  // ← altere aqui
 const uint8_t BTN[5]    = {13, 12, 14, 27, 15};
 const uint8_t PLAYER[8] = {16, 17, 18, 19, 21, 22, 23, 4};
 #define BUZZER  25
+#define CASTIGO 33
 #define LED_ST  2
 
 // ─── ESTADO ─────────────────────────────────────────────────
@@ -67,6 +70,7 @@ bool          btnState[5]   = {false,false,false,false,false};
 bool          btnLast[5]    = {false,false,false,false,false};
 unsigned long btnDebounce[5]= {0,0,0,0,0};
 int           activePlayer  = 0;          // 0 = nenhum
+unsigned long castigoUntil = 0;           // millis() até quando a saída de castigo fica ligada
 const unsigned long DEBOUNCE_MS = 40;
 
 WebServer        server(80);
@@ -105,6 +109,7 @@ void sendState() {
   JsonArray b = doc.createNestedArray("buttons");
   for (int i = 0; i < 5; i++) b.add(btnState[i] ? 1 : 0);
   doc["player"]    = activePlayer;
+  doc["castigo"]   = (castigoUntil > millis()) ? 1 : 0;
   doc["timestamp"] = millis();
   char buf[256];
   size_t n = serializeJson(doc, buf);
@@ -144,6 +149,13 @@ void onWsEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
     bool ok = cmd["ok"] | false;
     if (ok) somAcerto(); else somErro();
   }
+  else if (strcmp(c, "castigo") == 0) {
+    int ms = cmd["ms"] | 5000;
+    digitalWrite(CASTIGO, HIGH);
+    castigoUntil = millis() + ms;
+    Serial.printf("Saída de castigo LIGADA por %d ms\n", ms);
+    sendState();
+  }
   else if (strcmp(c, "buzzer") == 0) {
     int ms   = cmd["ms"]   | 200;
     int freq = cmd["freq"] | 880;
@@ -171,6 +183,7 @@ void setup() {
   for (int i = 0; i < 5; i++) pinMode(BTN[i], INPUT_PULLUP);
   for (int i = 0; i < 8; i++) { pinMode(PLAYER[i], OUTPUT); digitalWrite(PLAYER[i], LOW); }
   pinMode(BUZZER, OUTPUT);
+  pinMode(CASTIGO, OUTPUT); digitalWrite(CASTIGO, LOW);
   pinMode(LED_ST, OUTPUT);
 
   WiFi.begin(SSID, PASSWORD);
@@ -206,6 +219,14 @@ void loop() {
         Serial.printf("Botão %d\n", i + 1);
       }
     }
+  }
+
+  // desliga a saída de castigo quando o tempo expira (não bloqueante)
+  if (castigoUntil && millis() >= castigoUntil) {
+    digitalWrite(CASTIGO, LOW);
+    castigoUntil = 0;
+    Serial.println("Saída de castigo DESLIGADA");
+    sendState();
   }
 
   // broadcast de estado a cada 200 ms
