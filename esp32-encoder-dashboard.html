@@ -871,36 +871,7 @@ function setDout(pin,val){
   sendWsCmd({cmd:'setout',pin,val});
   updateDIO();
 }
-function updateDIO(){
-  // DIN cards
-  const dinCfg=[
-    {label:'Produzindo',cls:'st-ok',onColor:'var(--ok)',offLabel:'Inativo',gpio:34},
-    {label:'Setup',cls:'st-warn',onColor:'var(--warn)',offLabel:'Inativo',gpio:35},
-    {label:'Falha',cls:'st-fail',onColor:'var(--danger)',offLabel:'Ok',gpio:36},
-  ];
-  for(let i=0;i<3;i++){
-    const c=document.getElementById(`dinCard${i+1}`);
-    const v=document.getElementById(`dinVal${i+1}`);
-    const s=document.getElementById(`dinSub${i+1}`);
-    const on=din[i];
-    c.className=`din-card${on?' '+dinCfg[i].cls:''}`;
-    v.textContent=on?dinCfg[i].label:dinCfg[i].offLabel;
-    v.style.color=on?dinCfg[i].onColor:'var(--muted)';
-    s.textContent=`GPIO ${dinCfg[i].gpio} · ${on?1:0}`;
-  }
-  // DOUT cards
-  for(let i=0;i<2;i++){
-    const on=dout[i];
-    const card=document.getElementById(`doutCard${i+1}`);
-    const val=document.getElementById(`doutVal${i+1}`);
-    const btn=document.getElementById(`doutBtn${i+1}`);
-    card.className=`dout-card${on?' dout-on':''}`;
-    val.textContent=on?'Ligada':'Desligada';
-    val.style.color=on?'var(--sky)':'var(--muted)';
-    btn.className=`dout-toggle ${on?'dout-on-btn':'dout-off'}`;
-    btn.innerHTML=on?'&#9726; Desligar':'&#9654; Acionar';
-  }
-}
+function updateDIO(){}
 
 /* ══ CONEXÃO ══ */
 function connect(){
