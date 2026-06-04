@@ -159,6 +159,63 @@ INSERT INTO quiz_perguntas (nivel,pergunta,opcoes,correta,referencia) VALUES
 ('avancado','Quantas pessoas foram salvas na arca de Noé?',
   '["2","4","6","8","12"]',4,'1 Pedro 3:20');
 
+-- NÍVEL BÁSICO (ampliação) ──────────────────────────────────
+INSERT INTO quiz_perguntas (nivel,pergunta,opcoes,correta,referencia) VALUES
+('basico','Quem foi o primeiro homem criado por Deus?',
+  '["Caim","Adão","Sete","Enoque","Abel"]',2,'Gênesis 2:7'),
+('basico','De qual árvore Adão e Eva não deviam comer?',
+  '["Macieira","Figueira","Da ciência do bem e do mal","Videira","Oliveira"]',3,'Gênesis 2:17'),
+('basico','Quantos filhos de Jacó deram origem às tribos de Israel?',
+  '["7","10","12","14","40"]',3,'Gênesis 35:22-26'),
+('basico','Quem foi vendido pelos irmãos como escravo no Egito?',
+  '["Benjamim","José","Judá","Rúben","Levi"]',2,'Gênesis 37:28'),
+('basico','Quem batizou Jesus no rio Jordão?',
+  '["Pedro","André","João Batista","Tiago","Filipe"]',3,'Mateus 3:13'),
+('basico','Quantos pães Jesus usou para alimentar os cinco mil?',
+  '["2","3","5","7","12"]',3,'João 6:9'),
+('basico','Em que dia da semana Jesus ressuscitou?',
+  '["Sábado","Sexta-feira","Primeiro dia (domingo)","Quinta-feira","Segunda-feira"]',3,'Marcos 16:9'),
+('basico','Qual rei mandou matar os meninos de Belém?',
+  '["Pilatos","Herodes","César","Nero","Faraó"]',2,'Mateus 2:16');
+
+-- NÍVEL MÉDIO (ampliação) ───────────────────────────────────
+INSERT INTO quiz_perguntas (nivel,pergunta,opcoes,correta,referencia) VALUES
+('medio','Quem escreveu a maior parte das epístolas do Novo Testamento?',
+  '["Pedro","João","Paulo","Tiago","Lucas"]',3,'Epístolas paulinas'),
+('medio','Em qual jardim Jesus orou antes de ser preso?',
+  '["Éden","Getsêmani","Gólgota","Siloé","Betesda"]',2,'Mateus 26:36'),
+('medio','Quantas pragas Deus enviou sobre o Egito?',
+  '["3","7","10","12","40"]',3,'Êxodo 7-12'),
+('medio','Qual profeta enfrentou os profetas de Baal no Monte Carmelo?',
+  '["Eliseu","Elias","Isaías","Jeremias","Samuel"]',2,'1 Reis 18:19'),
+('medio','Quem foi a primeira pessoa a ver Jesus ressuscitado?',
+  '["Pedro","Maria Madalena","João","Tomé","Maria, mãe de Jesus"]',2,'João 20:14-16'),
+('medio','Qual cidade caiu depois de Israel marchar 7 dias e tocar trombetas?',
+  '["Ai","Jericó","Babilônia","Nínive","Gibeão"]',2,'Josué 6:20'),
+('medio','Quantos espias Moisés enviou para a Terra Prometida?',
+  '["2","7","10","12","40"]',4,'Números 13:1-16'),
+('medio','Qual apóstolo era médico e escreveu um Evangelho e o livro de Atos?',
+  '["Marcos","Lucas","Mateus","João","Paulo"]',2,'Colossenses 4:14');
+
+-- NÍVEL AVANÇADO (ampliação) ────────────────────────────────
+INSERT INTO quiz_perguntas (nivel,pergunta,opcoes,correta,referencia) VALUES
+('avancado','Quais eram os nomes babilônicos dos três amigos de Daniel?',
+  '["Hananias, Misael e Azarias","Sadraque, Mesaque e Abede-Nego","Gaspar, Melchior e Baltazar","Coré, Datã e Abirão","Pedro, Tiago e João"]',2,'Daniel 1:7'),
+('avancado','Qual rei de Israel construiu o primeiro templo em Jerusalém?',
+  '["Davi","Salomão","Roboão","Ezequias","Josias"]',2,'1 Reis 6:1'),
+('avancado','Quantos anos viveu Matusalém, o homem mais velho da Bíblia?',
+  '["777","900","950","969","1000"]',4,'Gênesis 5:27'),
+('avancado','Qual profeta casou-se com Gômer por ordem de Deus?',
+  '["Amós","Oseias","Joel","Miqueias","Naum"]',2,'Oseias 1:2-3'),
+('avancado','Em qual ilha João recebeu a visão do Apocalipse?',
+  '["Creta","Chipre","Patmos","Malta","Samos"]',3,'Apocalipse 1:9'),
+('avancado','Qual era o nome de Paulo antes de sua conversão?',
+  '["Silas","Saulo","Simão","Estêvão","Sóstenes"]',2,'Atos 9:1-4'),
+('avancado','Qual sumo sacerdote presidiu o julgamento que condenou Jesus?',
+  '["Anás","Caifás","Gamaliel","Nicodemos","Zacarias"]',2,'Mateus 26:57'),
+('avancado','Quantos livros compõem o Pentateuco?',
+  '["3","4","5","7","12"]',3,'Gênesis a Deuteronômio');
+
 -- SEED — CASTIGOS BÍBLICOS ──────────────────────────────────
 INSERT INTO quiz_castigos (texto) VALUES
 ('Recite o Salmo 23 de cor para toda a turma.'),
