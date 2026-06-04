@@ -558,12 +558,16 @@ const ARC={
 /* perguntas adicionadas localmente pelo administrador (quando sem Supabase) */
 function loadCustomQ(){ try{ return JSON.parse(localStorage.getItem('quiz_custom_q')||'[]'); }catch(_){ return []; } }
 function saveCustomQ(a){ localStorage.setItem('quiz_custom_q',JSON.stringify(a)); }
+/* embutidas ocultadas após serem editadas (vira cópia editável) */
+function loadHidden(){ try{ return JSON.parse(localStorage.getItem('quiz_hidden_local')||'[]'); }catch(_){ return []; } }
+function saveHidden(a){ localStorage.setItem('quiz_hidden_local',JSON.stringify(a)); }
 
 /* ══════════════ SUPABASE ══════════════ */
 let sb=null;
 async function initSupabase(){
-  const custom=loadCustomQ();
-  questions=FALLBACK_Q.concat(custom).map((q,i)=>({...q,id:q.id||'local-'+i,versiculo:q.versiculo||ARC[q.referencia]||''}));
+  const custom=loadCustomQ(), hidden=loadHidden();
+  questions=FALLBACK_Q.concat(custom).map((q,i)=>({...q,id:q.id||'local-'+i,versiculo:q.versiculo||ARC[q.referencia]||''}))
+    .filter(q=>!hidden.includes(q.id));
   castigos=FALLBACK_C.slice();
   if(cfg.sbUrl && cfg.sbKey){
     try{
@@ -984,17 +988,34 @@ async function saveQuestion(){
 
   /* ── EDIÇÃO ── */
   if(editingId){
-    const isPersisted = sb && !String(editingId).startsWith('custom-') && !String(editingId).startsWith('local-');
-    if(isPersisted){
-      try{ const {error}=await sb.from('quiz_perguntas').update(dados).eq('id',editingId); if(error) throw error; }
-      catch(err){ return toast('Erro ao atualizar: '+err.message,'err'); }
-    } else if(String(editingId).startsWith('custom-')){
-      saveCustomQ(loadCustomQ().map(q=>q.id===editingId?{...dados,id:editingId}:q));
+    if(String(editingId).startsWith('local-')){
+      // embutida → cria uma cópia editável e oculta a original
+      let newId;
+      if(sb){
+        try{ const {data,error}=await sb.from('quiz_perguntas').insert({...dados,ativa:true}).select('id').single(); if(error) throw error; newId=data.id; }
+        catch(err){ return toast('Erro ao salvar: '+err.message,'err'); }
+      } else {
+        newId='custom-'+Date.now();
+        const c=loadCustomQ(); c.push({...dados,id:newId}); saveCustomQ(c);
+      }
+      const hid=loadHidden(); if(!hid.includes(editingId)){ hid.push(editingId); saveHidden(hid); }
+      questions=questions.filter(q=>q.id!==editingId);
+      questions.push({...dados,id:newId});
+      toast('Cópia editável criada ✓','ok');
+      log('ok',`Pergunta embutida (${LVL_PT[nivel]}) tornou-se editável`);
+    } else {
+      const isPersisted = sb && !String(editingId).startsWith('custom-');
+      if(isPersisted){
+        try{ const {error}=await sb.from('quiz_perguntas').update(dados).eq('id',editingId); if(error) throw error; }
+        catch(err){ return toast('Erro ao atualizar: '+err.message,'err'); }
+      } else if(String(editingId).startsWith('custom-')){
+        saveCustomQ(loadCustomQ().map(q=>q.id===editingId?{...dados,id:editingId}:q));
+      }
+      const idx=questions.findIndex(q=>q.id===editingId);
+      if(idx>=0) questions[idx]={...dados,id:editingId};
+      toast('Pergunta atualizada ✓','ok');
+      log('ok',`Pergunta (${LVL_PT[nivel]}) atualizada`);
     }
-    const idx=questions.findIndex(q=>q.id===editingId);
-    if(idx>=0) questions[idx]={...dados,id:editingId};
-    toast('Pergunta atualizada ✓','ok');
-    log('ok',`Pergunta (${LVL_PT[nivel]}) atualizada`);
     clearAdmForm(); setAdmTab('lista');
     return;
   }
@@ -1025,19 +1046,20 @@ function renderAdmList(){
   const list=questions.filter(q=>q.nivel===nivel);
   if(!list.length){ box.innerHTML='<p class="muted" style="font-size:13px">Nenhuma pergunta neste nível.</p>'; return; }
   list.forEach(q=>{
-    const editable=String(q.id).startsWith('custom-')||!String(q.id).startsWith('local-');
+    const embedded=String(q.id).startsWith('local-');
     const item=document.createElement('div'); item.className='qa-item';
     item.innerHTML=`<div class="qx">${q.pergunta}<br><small>✔ ${q.opcoes[q.correta-1]}${q.referencia?' · '+q.referencia:''}</small></div>`;
-    if(editable){
-      const ed=document.createElement('button'); ed.className='qa-edit'; ed.textContent='✏️';
-      ed.title='Editar'; ed.onclick=()=>editQuestion(q.id);
-      item.appendChild(ed);
+    const ed=document.createElement('button'); ed.className='qa-edit'; ed.textContent='✏️';
+    ed.title='Editar'; ed.onclick=()=>editQuestion(q.id);
+    item.appendChild(ed);
+    if(embedded){
+      const tag=document.createElement('span'); tag.className='muted'; tag.style.fontSize='10px';
+      tag.style.alignSelf='center'; tag.textContent='embutida';
+      item.appendChild(tag);
+    } else {
       const del=document.createElement('button'); del.className='qa-del'; del.textContent='🗑';
       del.title='Excluir'; del.onclick=()=>delQuestion(q.id);
       item.appendChild(del);
-    } else {
-      const tag=document.createElement('span'); tag.className='muted'; tag.style.fontSize='10px'; tag.textContent='embutida';
-      item.appendChild(tag);
     }
     box.appendChild(item);
   });
