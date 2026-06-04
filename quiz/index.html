@@ -28,6 +28,25 @@ html,body{min-height:100%;background:
 .hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.7vw,16px);display:flex;align-items:center;justify-content:center;gap:12px;}
 .hdr-title span{color:var(--gold);}
 .hdr-logo{height:42px;width:auto;object-fit:contain;}
+.hdr-user{font-size:12px;font-weight:600;color:var(--sky);background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.22);border-radius:20px;padding:4px 12px;display:none;white-space:nowrap;}
+
+/* ── Login screen ── */
+.ls-over{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+.ls-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:380px;padding:32px 28px;text-align:center;}
+.ls-box h2{font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:4px;}
+.ls-box .ls-sub{color:var(--muted);font-size:13px;margin-bottom:24px;}
+.ls-box .fld{text-align:left;}
+.ls-err{color:var(--danger);font-size:12px;margin-bottom:10px;display:none;}
+.ls-link{font-size:13px;color:var(--muted);margin-top:12px;}
+.ls-link a{color:var(--sky);text-decoration:none;font-weight:600;}
+
+/* ── Ranking global ── */
+.grank-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px;}
+.grank-row:last-child{border-bottom:none;}
+.grank-medal{font-size:15px;min-width:28px;text-align:center;}
+.grank-nome{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.grank-pts{color:var(--gold);font-weight:700;font-size:14px;}
+.grank-pct{color:var(--muted);font-size:11px;min-width:30px;text-align:right;}
 .tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
   padding:2px 8px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25);border-radius:4px;color:var(--gold);}
 
@@ -232,12 +251,39 @@ html,body{min-height:100%;background:
 </head>
 <body>
 
+<!-- ── TELA DE LOGIN ── -->
+<div class="ls-over" id="loginScreen">
+  <div class="ls-box">
+    <img src="logoteologia.jpg?v=1" style="max-width:110px;margin:0 auto 14px;display:block;border-radius:10px;" onerror="this.style.display='none'">
+    <h2>✝️ Quiz Bíblico</h2>
+    <p class="ls-sub">Ensino Teológico UNA</p>
+
+    <div id="loginForm">
+      <div class="fld"><label>Nome de usuário</label><input type="text" id="loginNome" placeholder="Seu nome" autocomplete="username" style="width:100%"></div>
+      <div class="fld"><label>Senha</label><input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" style="width:100%"></div>
+      <div class="ls-err" id="loginErr"></div>
+      <button class="btn btn-gold btn-lg" id="btnLogin" style="width:100%;margin-bottom:12px">Entrar</button>
+      <p class="ls-link">Não tem conta? <a href="#" id="showRegister">Cadastrar-se</a></p>
+    </div>
+
+    <div id="registerForm" style="display:none">
+      <div class="fld"><label>Nome</label><input type="text" id="regNome" placeholder="Seu nome" autocomplete="name" style="width:100%"></div>
+      <div class="fld"><label>Senha</label><input type="password" id="regSenha" placeholder="Senha" autocomplete="new-password" style="width:100%"></div>
+      <div class="fld"><label>Confirmar senha</label><input type="password" id="regSenha2" placeholder="Repita a senha" style="width:100%"></div>
+      <div class="ls-err" id="regErr"></div>
+      <button class="btn btn-sky btn-lg" id="btnRegister" style="width:100%;margin-bottom:12px">Cadastrar e Entrar</button>
+      <p class="ls-link">Já tem conta? <a href="#" id="showLogin">Entrar</a></p>
+    </div>
+  </div>
+</div>
+
 <header class="hdr"><div class="hdr-in">
   <div class="hdr-title">
     ✝️ Quiz Bíblico <span>Ensino Teológico UNA</span>
     <img src="logo.jpg?v=3" alt="UNA" class="hdr-logo">
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
+    <span class="hdr-user" id="hdrUser"></span>
     <span class="chip chip-off" id="connChip"><span class="dot dot-off" id="connDot"></span><span id="connTxt">ESP32 Offline</span></span>
     <span class="chip chip-off" id="sbChip"><span class="dot dot-off"></span><span id="sbTxt">Local</span></span>
   </div>
@@ -248,7 +294,10 @@ html,body{min-height:100%;background:
   <!-- ── SETUP ── -->
   <div class="card" id="setupCard">
     <div class="card-h"><div class="card-t">⚙️ Configuração da Partida</div>
-      <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button>
+        <button class="btn btn-ghost" id="btnRanking" style="font-size:12px;padding:5px 10px">🏅 Ranking Global</button>
+      </div></div>
     <div class="setup-row">
       <div class="ifield"><span class="ilbl">Nível</span>
         <div class="lvl-tabs" id="lvlTabs">
@@ -429,9 +478,129 @@ html,body{min-height:100%;background:
   </div>
 </div></div>
 
+<!-- ── MODAL: Ranking Global ── -->
+<div class="modal" id="mRanking"><div class="modal-box sm">
+  <div class="modal-h"><h3>🏅 Ranking Global</h3><button class="modal-x" data-close="mRanking">×</button></div>
+  <div id="globalRankList"><p class="muted" style="font-size:12px">Nenhum jogador ainda.</p></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+/* ══════════════ AUTH ══════════════ */
+let currentUser = null;
+
+function getUsers(){ try{ return JSON.parse(localStorage.getItem('quiz_users')||'[]'); }catch(_){ return []; } }
+function saveUsers(u){ localStorage.setItem('quiz_users', JSON.stringify(u)); }
+
+function doLogin(nome, senha){
+  const u = getUsers().find(x => x.nome.toLowerCase()===nome.trim().toLowerCase() && x.senha===senha);
+  if(!u) return null;
+  return u;
+}
+function doRegister(nome, senha){
+  nome = nome.trim();
+  const users = getUsers();
+  if(users.find(x => x.nome.toLowerCase()===nome.toLowerCase())) return null;
+  const u = { id: Date.now(), nome, senha };
+  users.push(u); saveUsers(users);
+  return u;
+}
+function startSession(u){
+  currentUser = u;
+  try{ sessionStorage.setItem('quiz_session', JSON.stringify(u)); }catch(_){}
+  const el = document.getElementById('hdrUser');
+  el.textContent = '👤 ' + u.nome;
+  el.style.display = 'inline-flex';
+  document.getElementById('loginScreen').style.display = 'none';
+  renderGlobalRanking();
+}
+function initAuth(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem('quiz_session')||'null');
+    if(s && s.id){ startSession(s); return; }
+  }catch(_){}
+  // mostra tela de login
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// Eventos de login
+document.getElementById('btnLogin').onclick = () => {
+  const nome = document.getElementById('loginNome').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const err = document.getElementById('loginErr');
+  if(!nome || !senha){ err.textContent='Preencha nome e senha.'; err.style.display='block'; return; }
+  const u = doLogin(nome, senha);
+  if(!u){ err.textContent='Usuário ou senha incorretos.'; err.style.display='block'; return; }
+  err.style.display='none'; startSession(u);
+};
+document.getElementById('loginSenha').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnLogin').click(); });
+document.getElementById('loginNome').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginSenha').focus(); });
+
+document.getElementById('btnRegister').onclick = () => {
+  const nome = document.getElementById('regNome').value.trim();
+  const senha = document.getElementById('regSenha').value;
+  const senha2 = document.getElementById('regSenha2').value;
+  const err = document.getElementById('regErr');
+  if(!nome || !senha){ err.textContent='Preencha todos os campos.'; err.style.display='block'; return; }
+  if(senha.length < 3){ err.textContent='A senha precisa de ao menos 3 caracteres.'; err.style.display='block'; return; }
+  if(senha !== senha2){ err.textContent='As senhas não coincidem.'; err.style.display='block'; return; }
+  const u = doRegister(nome, senha);
+  if(!u){ err.textContent='Esse nome já está em uso.'; err.style.display='block'; return; }
+  err.style.display='none'; startSession(u);
+};
+document.getElementById('regSenha2').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnRegister').click(); });
+
+document.getElementById('showRegister').onclick = e => {
+  e.preventDefault();
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('registerForm').style.display='block';
+  document.getElementById('regNome').focus();
+};
+document.getElementById('showLogin').onclick = e => {
+  e.preventDefault();
+  document.getElementById('registerForm').style.display='none';
+  document.getElementById('loginForm').style.display='block';
+  document.getElementById('loginNome').focus();
+};
+
+/* ══════════════ RANKING GLOBAL ══════════════ */
+function getGlobalRanking(){ try{ return JSON.parse(localStorage.getItem('quiz_global_ranking')||'[]'); }catch(_){ return []; } }
+function saveGlobalRanking(r){ localStorage.setItem('quiz_global_ranking', JSON.stringify(r)); }
+
+function updateGlobalRanking(){
+  if(!currentUser) return;
+  let pts=0, ac=0, err=0;
+  Object.values(scores||{}).forEach(s=>{ pts+=s.pts; ac+=s.ok; err+=s.err; });
+  if(pts===0 && ac===0 && err===0) return;
+  const r = getGlobalRanking();
+  let entry = r.find(x => x.id===currentUser.id);
+  if(!entry){ entry={id:currentUser.id,nome:currentUser.nome,pontos:0,acertos:0,erros:0,partidas:0}; r.push(entry); }
+  entry.nome = currentUser.nome;
+  entry.pontos += pts; entry.acertos += ac; entry.erros += err; entry.partidas++;
+  saveGlobalRanking(r);
+  renderGlobalRanking();
+}
+
+function renderGlobalRanking(){
+  const r = getGlobalRanking().sort((a,b)=>b.pontos-a.pontos).slice(0,10);
+  const el = document.getElementById('globalRankList');
+  if(!el) return;
+  if(!r.length){ el.innerHTML='<p class="muted" style="font-size:12px;padding:8px 0">Nenhum jogador ainda.</p>'; return; }
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML = r.map((u,i)=>{
+    const pct = (u.acertos+u.erros)>0 ? Math.round(u.acertos/(u.acertos+u.erros)*100) : 0;
+    const medal = medals[i] || (i+1)+'º';
+    const me = currentUser && u.id===currentUser.id ? 'style="color:var(--sky)"' : '';
+    return `<div class="grank-row">
+      <span class="grank-medal">${medal}</span>
+      <span class="grank-nome" ${me}>${u.nome}</span>
+      <span class="grank-pts">${u.pontos}</span>
+      <span class="grank-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
 /* ══════════════ CONFIG / ESTADO ══════════════ */
 let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30, adminPass:'1234', castigoSec:5,
   names:['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5','Jogador 6','Jogador 7','Jogador 8'] };
@@ -921,6 +1090,7 @@ function nextRound(){
 }
 
 function resetGame(){
+  updateGlobalRanking();
   scores={}; usedIds.clear(); partidaId=null;
   nextRound(); renderScores();
   log('i','Placar zerado');
@@ -1132,6 +1302,7 @@ document.getElementById('btnVerse').onclick=()=>{
 
 /* ── Admin: aberturas, abas, salvar, excluir, senha ── */
 document.getElementById('btnAdmin').onclick=()=>requireAdmin(openAdmin);
+document.getElementById('btnRanking').onclick=()=>{ renderGlobalRanking(); openModal('mRanking'); };
 document.getElementById('passOk').onclick=tryPass;
 document.getElementById('passInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryPass(); });
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
@@ -1179,6 +1350,7 @@ function init(){
   renderPlayersEdit(); renderScores();
   initSupabase();
   if(cfg.relay||cfg.ip) connect();
+  initAuth();
   log('i','Pronto. Configure o ESP32/Supabase ou jogue em modo local.');
 }
 init();
