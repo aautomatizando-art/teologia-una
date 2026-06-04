@@ -66,12 +66,17 @@ html,body{min-height:100%;background:
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 .btn-lg{padding:13px 26px;font-size:15px;}
 
-.body{max-width:1320px;margin:0 auto;padding:22px clamp(16px,4vw,44px);}
-.grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+.body{max-width:1320px;margin:0 auto;padding:12px clamp(14px,3vw,40px);}
+.grid{display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start;}
 @media(max-width:920px){.grid{grid-template-columns:1fr;}}
 
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;}
-.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.collapse-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;}
+.collapse-x:hover{color:var(--text);}
+#setupCard.collapsed #setupBody{display:none;}
+#setupCard.collapsed{padding-bottom:14px;}
+.players-edit.hide{display:none;}
 .card-t{font-family:'Archivo Black',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
 
 /* ── Setup ── */
@@ -82,7 +87,7 @@ html,body{min-height:100%;background:
 .lvl-tab.on[data-l="medio"]{background:rgba(255,209,102,.16);color:var(--gold);}
 .lvl-tab.on[data-l="avancado"]{background:rgba(239,68,68,.16);color:var(--danger);}
 .lvl-tab.on[data-l="teologico"]{background:rgba(167,139,250,.18);color:var(--purple);}
-.players-edit{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px;}
+.players-edit{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px;}
 .pe-row{display:flex;align-items:center;gap:6px;}
 .pe-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;flex-shrink:0;}
 .pe-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:5px 8px;outline:none;min-width:0;}
@@ -90,7 +95,7 @@ html,body{min-height:100%;background:
 .pe-input.off{opacity:.35;}
 
 /* ── Stage ── */
-.stage{min-height:380px;display:flex;flex-direction:column;}
+.stage{min-height:auto;display:flex;flex-direction:column;}
 .lvl-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 12px;border-radius:20px;}
 .lvl-basico{background:rgba(74,222,128,.14);color:var(--ok);}
 .lvl-medio{background:rgba(255,209,102,.14);color:var(--gold);}
@@ -150,22 +155,22 @@ html,body{min-height:100%;background:
 .est-label{margin-top:10px;color:var(--gold);font-size:12.5px;font-weight:700;letter-spacing:.04em;}
 .est-label .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--danger);box-shadow:0 0 6px var(--danger);animation:bl .5s infinite;margin-right:5px;}
 
-.draw-zone{text-align:center;padding:30px 10px;}
+.draw-zone{text-align:center;padding:18px 10px;}
 .draw-name{font-family:'Archivo Black',sans-serif;font-size:clamp(26px,6vw,52px);line-height:1.1;margin:8px 0 18px;}
 .draw-hint{color:var(--muted);font-size:13px;}
 
-.q-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.q-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
 .q-player{display:flex;align-items:center;gap:8px;font-weight:700;}
 .q-pdot{width:14px;height:14px;border-radius:50%;}
-.q-text{font-family:'Archivo',sans-serif;font-weight:700;font-size:clamp(18px,2.6vw,26px);line-height:1.35;margin-bottom:18px;}
+.q-text{font-family:'Archivo',sans-serif;font-weight:700;font-size:clamp(17px,2.2vw,23px);line-height:1.3;margin-bottom:12px;}
 
-.opts{display:grid;gap:10px;}
-.opt{display:flex;align-items:center;gap:14px;text-align:left;background:var(--bg3);border:1px solid var(--border);
-  border-radius:var(--radius-sm);padding:13px 16px;cursor:pointer;transition:var(--tr);font-size:16px;color:var(--text);width:100%;}
+.opts{display:grid;gap:7px;}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:9px 13px;cursor:pointer;transition:var(--tr);font-size:15px;color:var(--text);width:100%;}
 .opt:hover:not(:disabled){border-color:var(--sky);background:var(--bg4);}
 .opt:disabled{cursor:default;}
-.opt-n{width:34px;height:34px;border-radius:8px;background:var(--bg4);border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;font-family:'Archivo Black',sans-serif;font-size:16px;flex-shrink:0;}
+.opt-n{width:30px;height:30px;border-radius:7px;background:var(--bg4);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-family:'Archivo Black',sans-serif;font-size:14px;flex-shrink:0;}
 .opt.correct{border-color:var(--ok);background:rgba(74,222,128,.12);}
 .opt.correct .opt-n{background:var(--ok);color:#000;border-color:var(--ok);}
 .opt.wrong{border-color:var(--danger);background:rgba(239,68,68,.12);}
@@ -207,15 +212,17 @@ html,body{min-height:100%;background:
 .score-acc{font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;}
 
 /* ── Log ── */
-.log{font-family:'Fira Code',monospace;font-size:11.5px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.log{font-family:'Fira Code',monospace;font-size:11.5px;max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
 .log-i{color:var(--muted);}.log-ok{color:var(--ok);}.log-warn{color:var(--warn);}.log-err{color:var(--danger);}
 
-.banner{display:none;align-items:flex-start;gap:12px;padding:13px 18px;border-radius:var(--radius);margin-bottom:18px;}
+.banner{display:none;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radius-sm);margin-bottom:12px;}
 .banner.show{display:flex;}
 .banner-https{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.35);}
-.bico{font-size:22px;flex-shrink:0;}
-.btxt strong{display:block;font-family:'Archivo Black',sans-serif;font-size:14px;}
-.btxt small{color:var(--muted);font-size:12px;}
+.bico{font-size:16px;flex-shrink:0;}
+.btxt{flex:1;font-size:12px;color:var(--muted);}
+.btxt b{color:var(--text);}
+.banner-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0 4px;}
+.banner-x:hover{color:var(--text);}
 
 .kbd{font-family:'Fira Code',monospace;background:var(--bg4);border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;padding:1px 7px;font-size:11px;}
 .muted{color:var(--muted);}
@@ -247,15 +254,20 @@ html,body{min-height:100%;background:
 
 <div class="body">
 
-  <div class="banner banner-https" id="httpsBanner"><div class="bico">🔒</div><div class="btxt">
-    <strong>Conexão ws:// bloqueada nesta página HTTPS</strong>
-    <small>Para usar o ESP32 na rede local, rode o <b>relay</b> e cole a URL <b>wss://</b> acima, ou abra este HTML salvo no computador.</small>
-  </div></div>
+  <div class="banner banner-https" id="httpsBanner"><div class="bico">🔒</div>
+    <div class="btxt"><b>ws:// bloqueado em HTTPS.</b> Para o ESP32 na rede local, use um <b>relay (wss://)</b> ou abra o HTML salvo no PC.</div>
+    <button class="banner-x" id="bannerClose" title="Fechar">×</button>
+  </div>
 
   <!-- ── SETUP ── -->
   <div class="card" id="setupCard">
     <div class="card-h"><div class="card-t">⚙️ Configuração da Partida</div>
-      <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" id="btnNames" style="padding:6px 11px">✏️ Nomes</button>
+        <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button>
+        <button class="collapse-x" id="setupToggle" title="Recolher/expandir"><span id="setupChevron">▾</span></button>
+      </div></div>
+    <div id="setupBody">
     <div class="setup-row">
       <div class="ifield"><span class="ilbl">Nível</span>
         <div class="lvl-tabs" id="lvlTabs">
@@ -276,7 +288,8 @@ html,body{min-height:100%;background:
       <div class="ifield"><span class="ilbl">Saída castigo no erro (s)</span>
         <input class="iinput" id="cfgCastigo" type="number" min="0" max="60" value="5" style="width:90px" title="0 = desligado"></div>
     </div>
-    <div class="players-edit" id="playersEdit"></div>
+    <div class="players-edit hide" id="playersEdit"></div>
+    </div>
   </div>
 
   <div class="grid">
@@ -421,7 +434,7 @@ html,body{min-height:100%;background:
 
 <script>
 /* ══════════════ CONFIG / ESTADO ══════════════ */
-let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30, adminPass:'1234', castigoSec:5,
+let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30, adminPass:'1234', castigoSec:5, setupCollapsed:false,
   names:['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5','Jogador 6','Jogador 7','Jogador 8'] };
 const COLORS=['#35c8ff','#4ade80','#ffd166','#ff6b35','#a78bfa','#f472b6','#22d3ee','#fb7185'];
 const PTS={basico:10,medio:20,avancado:30,teologico:50};
@@ -752,6 +765,7 @@ function pickQuestion(){
 function showQuestion(){
   currentQ=pickQuestion();
   if(!currentQ){ log('err','Sem perguntas para este nível'); return; }
+  setSetupCollapsed(true);   // recolhe o setup para a pergunta caber na tela
   document.getElementById('drawZone').style.display='none';
   document.getElementById('qZone').style.display='block';
   document.getElementById('result').classList.remove('show');
@@ -1040,6 +1054,20 @@ document.getElementById('btnVerse').onclick=()=>{
   btn.textContent=show?'📖 Ocultar versículo':'📖 Ler versículo (ARC)';
 };
 
+/* ── Layout: banner, recolher setup, nomes ── */
+document.getElementById('bannerClose').onclick=()=>document.getElementById('httpsBanner').classList.remove('show');
+function setSetupCollapsed(v){
+  cfg.setupCollapsed=v; saveCfg();
+  document.getElementById('setupCard').classList.toggle('collapsed',v);
+  document.getElementById('setupChevron').textContent=v?'▸':'▾';
+}
+document.getElementById('setupToggle').onclick=()=>setSetupCollapsed(!cfg.setupCollapsed);
+document.getElementById('btnNames').onclick=()=>{
+  const pe=document.getElementById('playersEdit');
+  if(cfg.setupCollapsed) setSetupCollapsed(false);
+  pe.classList.toggle('hide');
+};
+
 /* ── Admin: aberturas, abas, salvar, excluir, senha ── */
 document.getElementById('btnAdmin').onclick=()=>requireAdmin(openAdmin);
 document.getElementById('passOk').onclick=tryPass;
@@ -1086,6 +1114,7 @@ function init(){
   document.getElementById('cfgCastigo').value=cfg.castigoSec;
   document.getElementById('numPlayers').value=cfg.num;
   setLevel(cfg.level);
+  setSetupCollapsed(!!cfg.setupCollapsed);
   renderPlayersEdit(); renderScores();
   initSupabase();
   if(cfg.relay||cfg.ip) connect();
