@@ -417,7 +417,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     <div class="kcard" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
       <div class="klbl" style="width:100%;text-align:left;">Status</div>
       <div class="kval" id="valSt" style="font-size:15px;color:var(--muted);width:100%;text-align:left;">&#9679; Offline</div>
-      <img id="dinSinalImg" src="off.png" alt="Sinaleiro" style="width:62px;height:auto;display:block;object-fit:contain;margin:8px auto 4px;filter:drop-shadow(0 2px 12px rgba(255,255,255,.15));border-radius:6px;">
+      <img id="dinSinalImg" src="/off.png" alt="&#128994;" style="width:62px;height:auto;display:block;object-fit:contain;margin:8px auto 4px;filter:drop-shadow(0 2px 12px rgba(255,255,255,.2));border-radius:6px;" onerror="this.style.display='none'">
       <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">M&#225;quina Desligada</div>
       <div class="ksub" id="valLast" style="width:100%;text-align:left;">&#218;ltima leitura: --</div>
       <div class="kglow" style="background:var(--danger)"></div>
@@ -876,9 +876,9 @@ function setDout(pin,val){
 }
 function updateDIO(){
   const dinCfg=[
-    {onImg:'green.png',  onColor:'var(--ok)',     onLabel:'Produzindo',   offLabel:'Inativo', glowColor:'rgba(74,222,128,.7)'},
-    {onImg:'yellow.png', onColor:'var(--warn)',   onLabel:'Setup',        offLabel:'Inativo', glowColor:'rgba(245,158,11,.7)'},
-    {onImg:'red.png',    onColor:'var(--danger)', onLabel:'FALHA',        offLabel:'Ok',      glowColor:'rgba(239,68,68,.7)'},
+    {onImg:'/green.png',  onColor:'var(--ok)',     onLabel:'Produzindo',   offLabel:'Inativo', glowColor:'rgba(74,222,128,.7)'},
+    {onImg:'/yellow.png', onColor:'var(--warn)',   onLabel:'Setup',        offLabel:'Inativo', glowColor:'rgba(245,158,11,.7)'},
+    {onImg:'/red.png',    onColor:'var(--danger)', onLabel:'FALHA',        offLabel:'Ok',      glowColor:'rgba(239,68,68,.7)'},
   ];
   const activeIdx = din[2]?2 : din[1]?1 : din[0]?0 : -1;
   const sinalImg   = document.getElementById('dinSinalImg');
@@ -892,7 +892,7 @@ function updateDIO(){
     sinalLabel.textContent=c.onLabel;
     sinalLabel.style.color=c.onColor;
   } else {
-    sinalImg.src='off.png';
+    sinalImg.src='/off.png';
     sinalImg.style.filter='drop-shadow(0 2px 10px rgba(0,0,0,.4))';
     sinalImg.className='';
     sinalLabel.textContent='Máquina Desligada';
