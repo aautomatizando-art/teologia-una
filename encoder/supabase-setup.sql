@@ -5,24 +5,12 @@
 
 -- 1. CLICHÊS (vida útil individual por modelo)
 CREATE TABLE IF NOT EXISTS cliches (
-  id            INT PRIMARY KEY,
+  id            INT PRIMARY KEY,          -- 1 a 10
   nome          TEXT NOT NULL,
   vida_util_m   NUMERIC NOT NULL DEFAULT 1000,
   consumido_m   NUMERIC NOT NULL DEFAULT 0,
-  fabricante    TEXT DEFAULT '',
-  modelo        TEXT DEFAULT '',
-  medidas       TEXT DEFAULT '',
-  data_compra   DATE,
-  qtd_estoque   INT DEFAULT 0,
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Se a tabela já existir, adicione as colunas novas:
-ALTER TABLE cliches ADD COLUMN IF NOT EXISTS fabricante    TEXT DEFAULT '';
-ALTER TABLE cliches ADD COLUMN IF NOT EXISTS modelo        TEXT DEFAULT '';
-ALTER TABLE cliches ADD COLUMN IF NOT EXISTS medidas       TEXT DEFAULT '';
-ALTER TABLE cliches ADD COLUMN IF NOT EXISTS data_compra   DATE;
-ALTER TABLE cliches ADD COLUMN IF NOT EXISTS qtd_estoque   INT DEFAULT 0;
 
 INSERT INTO cliches (id, nome, vida_util_m, consumido_m) VALUES
   (1,'Clichê 1',1000,0),(2,'Clichê 2',1000,0),(3,'Clichê 3',1000,0),
@@ -90,6 +78,32 @@ ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anon_relatorios" ON relatorios FOR ALL USING (true) WITH CHECK (true);
 CREATE INDEX IF NOT EXISTS idx_relatorios_ordem ON relatorios(ordem_id);
 CREATE INDEX IF NOT EXISTS idx_relatorios_data  ON relatorios(data_geracao);
+
+-- 5. TELEMETRIA EM TEMPO REAL (ESP32 → Supabase → Dashboard)
+CREATE TABLE IF NOT EXISTS esp32_telemetry (
+  id          TEXT PRIMARY KEY DEFAULT 'main',
+  pulses      BIGINT  DEFAULT 0,
+  direction   INT     DEFAULT 1,
+  position_m  FLOAT   DEFAULT 0,
+  speed_mpm   FLOAT   DEFAULT 0,
+  din1        INT     DEFAULT 0,
+  din2        INT     DEFAULT 0,
+  din3        INT     DEFAULT 0,
+  dout1       INT     DEFAULT 0,
+  dout2       INT     DEFAULT 0,
+  esp32_ts    BIGINT  DEFAULT 0,
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Linha inicial (ESP32 faz upsert nesta linha)
+INSERT INTO esp32_telemetry (id) VALUES ('main') ON CONFLICT (id) DO NOTHING;
+
+-- Habilitar Realtime (Supabase Dashboard → Database → Replication → supabase_realtime)
+ALTER PUBLICATION supabase_realtime ADD TABLE esp32_telemetry;
+
+-- RLS
+ALTER TABLE esp32_telemetry ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_telemetry" ON esp32_telemetry FOR ALL USING (true) WITH CHECK (true);
 
 -- ─── VIEW ÚTIL ─────────────────────────────────────────
 CREATE OR REPLACE VIEW resumo_ordens AS

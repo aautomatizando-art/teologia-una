@@ -1,155 +1,155 @@
 /**
  * ═══════════════════════════════════════════════════════════
- *  ESP32 Encoder Relay Server  v1.0
+ *  ESP32 Encoder Relay Server  v2.0  —  Inverted Architecture
  * ═══════════════════════════════════════════════════════════
  *
- *  Arquitetura:
- *    ESP32 (ws://192.168.x.x:81/ws)  ←→  [este servidor]  ←→  Browser (wss://…)
+ *  Arquitetura (sem dependência de máquina local):
+ *    ESP32  →  wss://relay.example.com/esp32   (ESP32 conecta ao relay)
+ *    Browser → wss://relay.example.com/        (browser conecta ao relay)
+ *    Relay bridge os dois em cloud (Railway / Render / Fly.io)
  *
- *  Como usar:
- *    1. Instalar dependências:
- *         npm install
+ *  Deploy no Railway:
+ *    1. Crie um novo projeto no railway.app
+ *    2. Deploy este diretório (encoder/relay/)
+ *    3. Copie a URL pública (ex: https://abc.up.railway.app)
+ *    4. No ESP32: altere RELAY_HOST para "abc.up.railway.app"
+ *    5. Na dashboard: cole wss://abc.up.railway.app no campo "Relay URL"
  *
- *    2. Iniciar o relay (com o IP do ESP32):
- *         ESP32_IP=192.168.1.100 npm start
- *
- *    3. Expor publicamente (escolha um):
- *         cloudflared tunnel --url http://localhost:3001
- *         npx localtunnel --port 3001
- *         ngrok http 3001
- *
- *    4. Copiar o URL público (ex: wss://abc.trycloudflare.com)
- *       e colar no campo "Relay URL" da dashboard.
+ *  Paths WebSocket:
+ *    /esp32   → ESP32 conecta aqui (envia JSON 200ms, recebe comandos setout)
+ *    /        → Browser conecta aqui (recebe JSON, envia comandos)
  *
  *  Variáveis de ambiente:
- *    ESP32_IP        IP do ESP32 na rede local   (padrão: 192.168.1.100)
- *    ESP32_WS_PORT   Porta WebSocket do ESP32     (padrão: 81)
- *    ESP32_PATH      Path WebSocket do ESP32      (padrão: /ws)
- *    PORT            Porta local deste servidor   (padrão: 3001)
+ *    PORT    Porta local (Railway injeta automaticamente)
  * ═══════════════════════════════════════════════════════════
  */
 
+const http = require('http');
 const { WebSocket, WebSocketServer } = require('ws');
 
-const PORT       = parseInt(process.env.PORT          || '3001');
-const ESP32_IP   = process.env.ESP32_IP               || '192.168.1.100';
-const ESP32_PORT = parseInt(process.env.ESP32_WS_PORT || '81');
-const ESP32_PATH = process.env.ESP32_PATH             || '/ws';
-const ESP32_URL  = `ws://${ESP32_IP}:${ESP32_PORT}${ESP32_PATH}`;
+const PORT = parseInt(process.env.PORT || '3001');
 
-let esp32ws        = null;
-let reconnectTimer = null;
-let reconnectDelay = 3000;
+// ─── HTTP server base (Railway exige HTTP para health-check) ──
+const httpServer = http.createServer((req, res) => {
+  if (req.method === 'GET' && (req.url === '/' || req.url === '/health')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      relay: 'ESP32 Encoder Relay v2.0',
+      esp32_connected: esp32Socket !== null,
+      browser_clients: browserCount(),
+      ts: Date.now(),
+    }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
 
-// ─── Servidor WebSocket para browsers ──────────────────────
-const wss = new WebSocketServer({ port: PORT });
+// ─── WebSocket server (compartilha a mesma porta HTTP) ─────
+const wss = new WebSocketServer({ server: httpServer });
 
-function broadcast(msg) {
+let esp32Socket = null;   // única conexão ESP32
+
+function browserCount() {
+  let n = 0;
+  wss.clients.forEach(c => { if (c._isBrowser && c.readyState === WebSocket.OPEN) n++; });
+  return n;
+}
+
+function broadcastBrowsers(msg) {
   const payload = typeof msg === 'string' ? msg : JSON.stringify(msg);
   wss.clients.forEach(c => {
-    if (c.readyState === WebSocket.OPEN) c.send(payload);
+    if (c._isBrowser && c.readyState === WebSocket.OPEN) c.send(payload);
   });
 }
 
-function broadcastRelay(connected) {
-  broadcast({
+function relayStatus(connected) {
+  broadcastBrowsers({
     __relay: true,
     esp32_connected: connected,
-    esp32_url: ESP32_URL,
-    clients: wss.clients.size,
+    clients: browserCount(),
     ts: Date.now(),
   });
 }
 
-// ─── Conexão com o ESP32 ───────────────────────────────────
-function connectEsp32() {
-  if (esp32ws) return;
-  console.log(`[ESP32] Conectando → ${ESP32_URL}`);
+// ─── Roteamento por path ───────────────────────────────────
+wss.on('connection', (ws, req) => {
+  const url = req.url || '/';
 
-  try {
-    esp32ws = new WebSocket(ESP32_URL, { handshakeTimeout: 5000 });
+  if (url === '/esp32') {
+    // ── Conexão do ESP32 ──────────────────────────────────
+    if (esp32Socket && esp32Socket.readyState === WebSocket.OPEN) {
+      console.log('[ESP32] Nova conexão — substituindo anterior');
+      esp32Socket.terminate();
+    }
+    esp32Socket = ws;
+    ws._isEsp32 = true;
+    console.log('[ESP32] ✓ Conectado');
+    relayStatus(true);
 
-    esp32ws.on('open', () => {
-      reconnectDelay = 3000;
-      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-      console.log('[ESP32] ✓ Conectado');
-      broadcastRelay(true);
+    ws.on('message', data => {
+      // Encaminha JSON do ESP32 para todos os browsers
+      broadcastBrowsers(data.toString());
     });
 
-    esp32ws.on('message', data => {
-      // Encaminha dados do ESP32 para todos os browsers
-      broadcast(data.toString());
+    ws.on('close', () => {
+      if (esp32Socket === ws) esp32Socket = null;
+      console.log('[ESP32] Desconectado');
+      relayStatus(false);
     });
 
-    esp32ws.on('error', err => {
+    ws.on('error', err => {
       console.error('[ESP32] Erro:', err.message);
     });
 
-    esp32ws.on('close', () => {
-      esp32ws = null;
-      console.log(`[ESP32] Desconectado — nova tentativa em ${reconnectDelay / 1000}s`);
-      broadcastRelay(false);
-      reconnectTimer = setTimeout(() => {
-        reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
-        connectEsp32();
-      }, reconnectDelay);
+  } else {
+    // ── Conexão do Browser ────────────────────────────────
+    ws._isBrowser = true;
+    const addr = req.socket.remoteAddress;
+    console.log(`[Browser] + ${addr}  (total: ${browserCount()})`);
+
+    // Envia status atual ao conectar
+    ws.send(JSON.stringify({
+      __relay: true,
+      esp32_connected: esp32Socket !== null && esp32Socket.readyState === WebSocket.OPEN,
+      clients: browserCount(),
+      ts: Date.now(),
+    }));
+
+    ws.on('message', data => {
+      // Encaminha comandos do browser para o ESP32
+      if (esp32Socket && esp32Socket.readyState === WebSocket.OPEN) {
+        esp32Socket.send(data.toString());
+      } else {
+        ws.send(JSON.stringify({ __relay: true, esp32_connected: false, ts: Date.now() }));
+      }
     });
 
-  } catch (err) {
-    esp32ws = null;
-    console.error('[ESP32] Falha:', err.message);
-    reconnectTimer = setTimeout(connectEsp32, reconnectDelay);
+    ws.on('close', () => {
+      console.log(`[Browser] - ${addr}  (total: ${browserCount()})`);
+    });
+
+    ws.on('error', () => {});
   }
-}
-
-// ─── Clientes browser ──────────────────────────────────────
-wss.on('connection', (client, req) => {
-  const addr = req.socket.remoteAddress;
-  console.log(`[Browser] + ${addr}  (total: ${wss.clients.size})`);
-
-  // Envia status atual ao conectar
-  client.send(JSON.stringify({
-    __relay: true,
-    esp32_connected: esp32ws?.readyState === WebSocket.OPEN,
-    esp32_url: ESP32_URL,
-    clients: wss.clients.size,
-    ts: Date.now(),
-  }));
-
-  client.on('message', data => {
-    // Encaminha comandos do browser (ex: setout) para o ESP32
-    if (esp32ws?.readyState === WebSocket.OPEN) {
-      esp32ws.send(data.toString());
-    } else {
-      client.send(JSON.stringify({ __relay: true, esp32_connected: false, ts: Date.now() }));
-    }
-  });
-
-  client.on('close', () => {
-    console.log(`[Browser] - ${addr}  (total: ${wss.clients.size})`);
-  });
-
-  client.on('error', () => {});
 });
 
 // ─── Start ─────────────────────────────────────────────────
-wss.on('listening', () => {
-  console.log('\n' + '═'.repeat(50));
-  console.log('  ESP32 Encoder Relay  v1.0');
-  console.log('  Browser WS  → ws://localhost:' + PORT);
-  console.log('  ESP32 WS    → ' + ESP32_URL);
-  console.log('═'.repeat(50));
-  console.log('\n  Exponha publicamente com um dos comandos:');
-  console.log('    cloudflared tunnel --url http://localhost:' + PORT);
-  console.log('    npx localtunnel --port ' + PORT);
-  console.log('    ngrok http ' + PORT);
-  console.log('\n  Depois cole o URL público no campo');
-  console.log('  "Relay URL" das Configurações da dashboard.\n');
+httpServer.listen(PORT, () => {
+  console.log('\n' + '═'.repeat(52));
+  console.log('  ESP32 Encoder Relay  v2.0  (inverted)');
+  console.log('  Local  → http://localhost:' + PORT);
+  console.log('  ESP32  → wss://<relay-host>/esp32');
+  console.log('  Browser→ wss://<relay-host>/');
+  console.log('═'.repeat(52));
+  console.log('\n  Deploy no Railway:');
+  console.log('    1. railway.app → New Project → Deploy from GitHub');
+  console.log('    2. Selecione o diretório encoder/relay/');
+  console.log('    3. Railway injeta PORT automaticamente');
+  console.log('    4. Copie o URL público e configure no ESP32 e dashboard\n');
 });
 
-wss.on('error', err => {
-  console.error('[Relay] Erro no servidor WS:', err.message);
+httpServer.on('error', err => {
+  console.error('[Relay] Erro no servidor HTTP:', err.message);
   process.exit(1);
 });
-
-connectEsp32();
