@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quiz Bíblico Pentecostal · ESP32</title>
-<meta name="description" content="Quiz Bíblico Pentecostal com níveis Básico, Médio, Avançado e Teológico, cronômetro, sorteio de até 8 jogadores e integração com ESP32.">
+<title>Quiz Bíblico · Ensino Teológico UNA</title>
+<meta name="description" content="Quiz Bíblico Ensino Teológico UNA com níveis Básico, Médio, Avançado e Teológico, cronômetro, sorteio de até 8 jogadores e integração com ESP32.">
 <meta name="theme-color" content="#0e0e0e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -25,8 +25,9 @@ html,body{min-height:100%;background:
 
 .hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
 .hdr-in{max-width:1320px;margin:0 auto;height:60px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
-.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(13px,1.8vw,17px);display:flex;align-items:center;gap:10px;}
+.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.7vw,16px);display:flex;align-items:center;justify-content:center;gap:12px;}
 .hdr-title span{color:var(--gold);}
+.hdr-logo{height:42px;width:auto;object-fit:contain;}
 .tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
   padding:2px 8px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25);border-radius:4px;color:var(--gold);}
 
@@ -232,7 +233,11 @@ html,body{min-height:100%;background:
 <body>
 
 <header class="hdr"><div class="hdr-in">
-  <div class="hdr-title">✝️ Quiz Bíblico <span>Pentecostal</span> <span class="tag">ESP32</span></div>
+  <div class="hdr-title">
+    <img src="logoteologia.jpg?v=1" alt="UNA" class="hdr-logo">
+    Quiz Bíblico <span>Ensino Teológico UNA</span>
+    <img src="logoteologia.jpg?v=1" alt="UNA" class="hdr-logo">
+  </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <span class="chip chip-off" id="connChip"><span class="dot dot-off" id="connDot"></span><span id="connTxt">ESP32 Offline</span></span>
     <span class="chip chip-off" id="sbChip"><span class="dot dot-off"></span><span id="sbTxt">Local</span></span>
