@@ -22,6 +22,6 @@ Pronto — o quiz ficará no domínio próprio, ex.: `https://quiz-biblico.verce
 - `firmware/esp32_quiz_biblico/…ino` — firmware do ESP32.
 
 ## Hardware / Supabase / uso
-Veja o guia completo em [`../QUIZ-BIBLICO.md`](../QUIZ-BIBLICO.md).
+Veja o guia completo em [`QUIZ-BIBLICO.md`](QUIZ-BIBLICO.md).
 Pinagem resumida: botões 1–5 → GPIO 13/12/14/27/15 · saídas jogador 1–8 →
 16/17/18/19/21/22/23/4 · buzzer → 25 · **saída de castigo → 33**.
