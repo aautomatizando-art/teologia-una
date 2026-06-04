@@ -156,6 +156,11 @@ html,body{min-height:100%;background:
 .draw-zone{text-align:center;padding:30px 10px;}
 .draw-name{font-family:'Archivo Black',sans-serif;font-size:clamp(26px,6vw,52px);line-height:1.1;margin:8px 0 18px;}
 .draw-hint{color:var(--muted);font-size:13px;}
+.draw-verse{max-width:560px;margin-left:auto;margin-right:auto;color:var(--text);font-style:italic;font-size:14.5px;line-height:1.55;
+  background:rgba(0,0,0,.22);border-left:3px solid var(--gold);border-radius:8px;padding:12px 16px;text-align:left;}
+.draw-verse b{color:var(--gold);font-style:normal;}
+.draw-verse-ref{display:block;margin-top:8px;color:var(--muted);font-style:normal;font-family:'Fira Code',monospace;font-size:11px;letter-spacing:.03em;}
+.draw-logo{display:block;max-width:170px;max-height:120px;width:auto;height:auto;margin:16px auto 0;object-fit:contain;}
 
 .q-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .q-player{display:flex;align-items:center;gap:8px;font-weight:700;}
@@ -272,7 +277,11 @@ html,body{min-height:100%;background:
           <div class="draw-hint">Pronto para começar</div>
           <div class="draw-name" id="drawName" style="color:var(--gold)">Quiz Bíblico</div>
           <button class="btn btn-gold btn-lg" id="btnDraw">🎲 Sortear Jogador</button>
-          <div class="draw-hint" style="margin-top:14px">O sorteio aciona a saída do jogador no ESP32</div>
+          <div class="draw-verse" style="margin-top:16px">
+            “Conheçamos e prossigamos em conhecer o <b>SENHOR</b>: como a alva, será a sua saída; e ele a nós virá como a chuva, como chuva serôdia que rega a terra.”
+            <span class="draw-verse-ref">Oseias 6:3 · ARC</span>
+          </div>
+          <img id="drawLogo" src="logo.png" alt="Logo" class="draw-logo" onerror="this.style.display='none'">
         </div>
       </div>
       <p class="muted" style="font-size:12px;text-align:center">
