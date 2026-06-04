@@ -417,7 +417,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
     <div class="kcard" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
       <div class="klbl" style="width:100%;text-align:left;">Status</div>
       <div class="kval" id="valSt" style="font-size:15px;color:var(--muted);width:100%;text-align:left;">&#9679; Offline</div>
-      <img id="dinSinalImg" src="/off.png" alt="&#128994;" style="width:62px;height:auto;display:block;object-fit:contain;margin:8px auto 4px;filter:drop-shadow(0 2px 12px rgba(255,255,255,.2));border-radius:6px;" onerror="this.style.display='none'">
+      <div id="dinSinalImg" style="width:52px;display:block;margin:8px auto 4px;">
+        <div style="width:52px;background:#0a0a0a;border:1px solid #2e2e2e;border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:0 2px 12px rgba(0,0,0,.7);">
+          <div id="sinalRed"    style="width:26px;height:26px;border-radius:50%;background:#2a0a0a;transition:background .3s,box-shadow .3s;"></div>
+          <div id="sinalYellow" style="width:26px;height:26px;border-radius:50%;background:#2a1a00;transition:background .3s,box-shadow .3s;"></div>
+          <div id="sinalGreen"  style="width:26px;height:26px;border-radius:50%;background:#0a2a0a;transition:background .3s,box-shadow .3s;"></div>
+        </div>
+      </div>
       <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">M&#225;quina Desligada</div>
       <div class="ksub" id="valLast" style="width:100%;text-align:left;">&#218;ltima leitura: --</div>
       <div class="kglow" style="background:var(--danger)"></div>
@@ -875,28 +881,26 @@ function setDout(pin,val){
   updateDIO();
 }
 function updateDIO(){
-  const dinCfg=[
-    {onImg:'/green.png',  onColor:'var(--ok)',     onLabel:'Produzindo',   offLabel:'Inativo', glowColor:'rgba(74,222,128,.7)'},
-    {onImg:'/yellow.png', onColor:'var(--warn)',   onLabel:'Setup',        offLabel:'Inativo', glowColor:'rgba(245,158,11,.7)'},
-    {onImg:'/red.png',    onColor:'var(--danger)', onLabel:'FALHA',        offLabel:'Ok',      glowColor:'rgba(239,68,68,.7)'},
-  ];
-  const activeIdx = din[2]?2 : din[1]?1 : din[0]?0 : -1;
-  const sinalImg   = document.getElementById('dinSinalImg');
-  const sinalLabel = document.getElementById('dinSinalLabel');
-  if(!sinalImg) return;
-  if(activeIdx>=0){
-    const c=dinCfg[activeIdx];
-    sinalImg.src=c.onImg;
-    sinalImg.style.filter=`drop-shadow(0 2px 18px ${c.glowColor})`;
-    sinalImg.className='lamp-blink';
-    sinalLabel.textContent=c.onLabel;
-    sinalLabel.style.color=c.onColor;
+  const rEl=document.getElementById('sinalRed');
+  const yEl=document.getElementById('sinalYellow');
+  const gEl=document.getElementById('sinalGreen');
+  const lEl=document.getElementById('dinSinalLabel');
+  if(!rEl) return;
+  // reset all to dark (off state)
+  rEl.style.background='#2a0a0a'; rEl.style.boxShadow='none'; rEl.className='';
+  yEl.style.background='#2a1a00'; yEl.style.boxShadow='none'; yEl.className='';
+  gEl.style.background='#0a2a0a'; gEl.style.boxShadow='none'; gEl.className='';
+  if(din[2]){
+    rEl.style.background='#ef4444'; rEl.style.boxShadow='0 0 18px rgba(239,68,68,.9)'; rEl.className='lamp-blink';
+    lEl.textContent='FALHA'; lEl.style.color='var(--danger)';
+  } else if(din[1]){
+    yEl.style.background='#f59e0b'; yEl.style.boxShadow='0 0 18px rgba(245,158,11,.9)'; yEl.className='lamp-blink';
+    lEl.textContent='Setup'; lEl.style.color='var(--warn)';
+  } else if(din[0]){
+    gEl.style.background='#4ade80'; gEl.style.boxShadow='0 0 18px rgba(74,222,128,.9)'; gEl.className='lamp-blink';
+    lEl.textContent='Produzindo'; lEl.style.color='var(--ok)';
   } else {
-    sinalImg.src='/off.png';
-    sinalImg.style.filter='drop-shadow(0 2px 10px rgba(0,0,0,.4))';
-    sinalImg.className='';
-    sinalLabel.textContent='Máquina Desligada';
-    sinalLabel.style.color='var(--muted)';
+    lEl.textContent='Máquina Desligada'; lEl.style.color='var(--muted)';
   }
 }
 
