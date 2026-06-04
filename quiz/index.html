@@ -102,6 +102,7 @@ html,body{min-height:100%;background:
 .modal.show{display:flex;}
 .modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;padding:24px;animation:fu .25s ease;}
 .modal-box.sm{max-width:380px;}
+.modal-box.lg{max-width:680px;}
 .modal-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
 .modal-h h3{font-family:'Archivo Black',sans-serif;font-size:17px;}
 .modal-x{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;padding:0 4px;}
@@ -290,40 +291,6 @@ html,body{min-height:100%;background:
           <button class="btn btn-gold btn-lg" id="btnDraw">🎲 Sortear Jogador</button>
           <div class="draw-hint" style="margin-top:14px">O sorteio aciona a saída do jogador no ESP32</div>
         </div>
-
-        <!-- pergunta -->
-        <div id="qZone" style="display:none">
-          <div class="q-meta">
-            <div class="q-player"><span class="q-pdot" id="qPdot"></span><span id="qPname">—</span></div>
-            <span class="lvl-badge" id="qLvl">Básico</span>
-          </div>
-          <div class="q-text" id="qText">—</div>
-          <div class="opts" id="qOpts"></div>
-          <div class="timer-wrap" style="margin-top:18px">
-            <div class="timer-num" id="timerNum">30</div>
-            <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
-          </div>
-
-          <div class="result" id="result">
-            <div class="result-emoji" id="resEmoji">🎉</div>
-            <div class="result-title" id="resTitle">Parabéns!</div>
-            <div class="result-sub" id="resSub"></div>
-            <div class="castigo" id="resCastigo" style="display:none"></div>
-            <div class="esteira" id="esteira">
-              <div class="est-wrap">
-                <div class="est-roller l"></div>
-                <div class="est-belt"></div>
-                <div class="est-roller r"></div>
-                <div class="est-box">⚡</div>
-              </div>
-              <div class="est-label" id="estLabel"><span class="dot"></span>Saída de castigo ligada…</div>
-            </div>
-            <div class="ref" id="resRef"></div>
-            <button class="btn btn-gold" id="btnVerse" style="display:none;margin-top:12px">📖 Ler versículo (ARC)</button>
-            <div class="vtext" id="resVerse" style="display:none"></div>
-            <div style="margin-top:16px"><button class="btn btn-sky btn-lg" id="btnNext">➡️ Próxima Rodada</button></div>
-          </div>
-        </div>
       </div>
       <p class="muted" style="font-size:12px;text-align:center">
         Atalhos: <span class="kbd">1</span>–<span class="kbd">5</span> respondem · <span class="kbd">S</span> sorteia · <span class="kbd">Espaço</span> próxima
@@ -344,6 +311,43 @@ html,body{min-height:100%;background:
     </div>
   </div>
 </div>
+
+<!-- ── MODAL: PERGUNTA (centro) ── -->
+<div class="modal" id="mQuestion" data-nodismiss="1"><div class="modal-box lg">
+  <div class="q-meta">
+    <div class="q-player"><span class="q-pdot" id="qPdot"></span><span id="qPname">—</span></div>
+    <span class="lvl-badge" id="qLvl">Básico</span>
+  </div>
+  <div class="q-text" id="qText">—</div>
+  <div class="opts" id="qOpts"></div>
+  <div class="timer-wrap" style="margin-top:18px">
+    <div class="timer-num" id="timerNum">30</div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+  </div>
+</div></div>
+
+<!-- ── MODAL: RESULTADO (centro) ── -->
+<div class="modal" id="mResult" data-nodismiss="1"><div class="modal-box">
+  <div class="result show" id="result">
+    <div class="result-emoji" id="resEmoji">🎉</div>
+    <div class="result-title" id="resTitle">Parabéns!</div>
+    <div class="result-sub" id="resSub"></div>
+    <div class="castigo" id="resCastigo" style="display:none"></div>
+    <div class="esteira" id="esteira">
+      <div class="est-wrap">
+        <div class="est-roller l"></div>
+        <div class="est-belt"></div>
+        <div class="est-roller r"></div>
+        <div class="est-box">⚡</div>
+      </div>
+      <div class="est-label" id="estLabel"><span class="dot"></span>Saída de castigo ligada…</div>
+    </div>
+    <div class="ref" id="resRef"></div>
+    <button class="btn btn-gold" id="btnVerse" style="display:none;margin-top:12px">📖 Ler versículo (ARC)</button>
+    <div class="vtext" id="resVerse" style="display:none"></div>
+    <div style="margin-top:16px"><button class="btn btn-sky btn-lg" id="btnNext">➡️ Próxima Rodada</button></div>
+  </div>
+</div></div>
 
 <!-- ── MODAL: senha de administrador ── -->
 <div class="modal" id="mPass"><div class="modal-box sm">
@@ -752,9 +756,8 @@ function pickQuestion(){
 function showQuestion(){
   currentQ=pickQuestion();
   if(!currentQ){ log('err','Sem perguntas para este nível'); return; }
-  document.getElementById('drawZone').style.display='none';
-  document.getElementById('qZone').style.display='block';
-  document.getElementById('result').classList.remove('show');
+  closeModal('mResult');
+  openModal('mQuestion');                 // pergunta numa janela central
 
   document.getElementById('qPname').textContent=cfg.names[currentPlayer-1];
   document.getElementById('qPdot').style.background=COLORS[currentPlayer-1];
@@ -852,6 +855,9 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
     vBox.innerHTML=`“${_v}”<span class="vref">📖 ${_ref} · Almeida Revista e Corrigida</span>`;
   } else { vBtn.style.display='none'; }
 
+  // mostra a alternativa marcada por um instante e abre a janela de resultado
+  setTimeout(()=>{ closeModal('mQuestion'); openModal('mResult'); }, 750);
+
   saveResposta(correct,n,elapsed,pts);
 }
 
@@ -876,9 +882,8 @@ function nextRound(){
   sendCmd({cmd:'alloff'});
   hideEsteira();
   currentQ=null; currentPlayer=0; answered=true;
-  document.getElementById('qZone').style.display='none';
+  closeModal('mQuestion'); closeModal('mResult');
   document.getElementById('drawZone').style.display='block';
-  document.getElementById('result').classList.remove('show');
   document.getElementById('drawName').textContent='Quiz Bíblico';
   document.getElementById('drawName').style.color='var(--gold)';
   document.getElementById('btnDraw').disabled=false;
@@ -1045,7 +1050,7 @@ document.getElementById('btnAdmin').onclick=()=>requireAdmin(openAdmin);
 document.getElementById('passOk').onclick=tryPass;
 document.getElementById('passInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryPass(); });
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{ if(e.target===m) m.classList.remove('show'); }));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{ if(e.target===m && !m.dataset.nodismiss) m.classList.remove('show'); }));
 document.querySelectorAll('.adm-tab').forEach(t=>t.onclick=()=>setAdmTab(t.dataset.at));
 document.querySelectorAll('#atNova .onb').forEach(b=>b.onclick=()=>{
   adCorreta=+b.dataset.c;
@@ -1073,7 +1078,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key.toLowerCase()==='s'){ if(answered && !document.getElementById('btnDraw').disabled
       && document.getElementById('drawZone').style.display!=='none') drawPlayer(); }
   else if(e.key===' '){ e.preventDefault();
-    if(document.getElementById('result').classList.contains('show')) nextRound(); }
+    if(document.getElementById('mResult').classList.contains('show')) nextRound(); }
 });
 
 /* ══════════════ INIT ══════════════ */
