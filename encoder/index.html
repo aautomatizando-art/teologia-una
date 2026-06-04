@@ -51,6 +51,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .dot-fail{background:var(--danger);box-shadow:0 0 5px var(--danger);animation:bl .5s infinite;}
 .dot-off{background:var(--muted);}
 @keyframes bl{0%,100%{opacity:1;}50%{opacity:.25;}}
+.lamp-blink{animation:bl 1s ease-in-out infinite;}
 
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);
   font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr);border:1px solid;}
@@ -413,10 +414,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <div class="ksub" id="valDirSub">Aguardando</div>
       <div class="kglow" style="background:var(--orange)"></div>
     </div>
-    <div class="kcard">
-      <div class="klbl">Status</div>
-      <div class="kval" id="valSt" style="font-size:16px;color:var(--muted)">&#9679; Offline</div>
-      <div class="ksub" id="valLast">&#218;ltima leitura: --</div>
+    <div class="kcard" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+      <div class="klbl" style="width:100%;text-align:left;">Status</div>
+      <div class="kval" id="valSt" style="font-size:15px;color:var(--muted);width:100%;text-align:left;">&#9679; Offline</div>
+      <img id="dinSinalImg" src="off.png" alt="Sinaleiro" style="width:62px;height:auto;object-fit:contain;margin:8px 0 4px;drop-shadow(0 2px 10px rgba(0,0,0,.4));">
+      <div id="dinSinalLabel" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">M&#225;quina Desligada</div>
+      <div class="ksub" id="valLast" style="width:100%;text-align:left;">&#218;ltima leitura: --</div>
       <div class="kglow" style="background:var(--danger)"></div>
     </div>
   </div>
@@ -871,7 +874,31 @@ function setDout(pin,val){
   sendWsCmd({cmd:'setout',pin,val});
   updateDIO();
 }
-function updateDIO(){}
+function updateDIO(){
+  const dinCfg=[
+    {onImg:'green.png',  onColor:'var(--ok)',     onLabel:'Produzindo',   offLabel:'Inativo', glowColor:'rgba(74,222,128,.7)'},
+    {onImg:'yellow.png', onColor:'var(--warn)',   onLabel:'Setup',        offLabel:'Inativo', glowColor:'rgba(245,158,11,.7)'},
+    {onImg:'red.png',    onColor:'var(--danger)', onLabel:'FALHA',        offLabel:'Ok',      glowColor:'rgba(239,68,68,.7)'},
+  ];
+  const activeIdx = din[2]?2 : din[1]?1 : din[0]?0 : -1;
+  const sinalImg   = document.getElementById('dinSinalImg');
+  const sinalLabel = document.getElementById('dinSinalLabel');
+  if(!sinalImg) return;
+  if(activeIdx>=0){
+    const c=dinCfg[activeIdx];
+    sinalImg.src=c.onImg;
+    sinalImg.style.filter=`drop-shadow(0 2px 18px ${c.glowColor})`;
+    sinalImg.className='lamp-blink';
+    sinalLabel.textContent=c.onLabel;
+    sinalLabel.style.color=c.onColor;
+  } else {
+    sinalImg.src='off.png';
+    sinalImg.style.filter='drop-shadow(0 2px 10px rgba(0,0,0,.4))';
+    sinalImg.className='';
+    sinalLabel.textContent='Máquina Desligada';
+    sinalLabel.style.color='var(--muted)';
+  }
+}
 
 /* ══ CONEXÃO ══ */
 function connect(){
