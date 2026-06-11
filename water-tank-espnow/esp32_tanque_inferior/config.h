@@ -44,8 +44,8 @@
 // ─── ENTRADAS DIGITAIS (sinais do quadro/inversor da bomba) ──────────
 // Contatos secos (rele) ligados ao GND quando ativos -> usa INPUT_PULLUP
 // (pino em HIGH = inativo, pino em LOW = ativo)
-// OBS: este no NAO possui "Entrada 1" (Bomba ligou) — esse sinal so existe
-// no sensor do tanque superior.
+// As 4 entradas do quadro/inversor da bomba ficam todas neste no.
+#define ENTRADA1_PIN    27   // ENTRADA 1: Bomba ligou
 #define ENTRADA2_PIN    14   // ENTRADA 2: Bomba falhou
 #define ENTRADA3_PIN    13   // ENTRADA 3: Falha no inversor
 #define ENTRADA4_PIN     4   // ENTRADA 4: Painel sem energia (sem rede CA)

@@ -239,9 +239,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
           </div>
         </div>
 
-        <div class="section-title">Entradas do Quadro / Inversor</div>
-        <div class="entradas-grid" id="entradasGridSup"></div>
-
         <div class="section-title">Histórico de nível</div>
         <div class="chart-box"><canvas id="chartNivelSup"></canvas></div>
       </div>
@@ -411,17 +408,13 @@ const TIMEOUT_SENSOR_MS = 120000;
 const MAX_CHART_POINTS = 30;
 
 // ─── ENTRADAS POR SECAO ─────────────────────────────────────────────────
-const ENTRADAS_SUP = [
+// Tanque Superior: so o sensor JSN-SR04T (sem entradas digitais).
+// As 4 entradas do quadro/inversor da bomba ficam no Tanque Inferior.
+const ENTRADAS_INF = [
   { key: "entrada1_bomba_ligada",       icon: "&#x1F4A7;", nome: "Entrada 1", desc: "Bomba ligou",          onLabel: "LIGADA",       offLabel: "desligada", cls: "act-info"   },
   { key: "entrada2_bomba_falhou",       icon: "&#x26A0;&#xFE0F;", nome: "Entrada 2", desc: "Bomba falhou",         onLabel: "FALHA",        offLabel: "normal",    cls: "act-danger" },
   { key: "entrada3_falha_inversor",     icon: "&#x1F50C;", nome: "Entrada 3", desc: "Falha no inversor",    onLabel: "FALHA",        offLabel: "normal",    cls: "act-danger" },
   { key: "entrada4_painel_sem_energia", icon: "&#x1F50B;", nome: "Entrada 4", desc: "Painel sem energia",   onLabel: "SEM ENERGIA",  offLabel: "normal",    cls: "act-warn"   },
-];
-
-const ENTRADAS_INF = [
-  { key: "entrada2_bomba_falhou",       icon: "&#x26A0;&#xFE0F;", nome: "Entrada 2", desc: "Bomba falhou",       onLabel: "FALHA",       offLabel: "normal", cls: "act-danger" },
-  { key: "entrada3_falha_inversor",     icon: "&#x1F50C;", nome: "Entrada 3", desc: "Falha no inversor",  onLabel: "FALHA",       offLabel: "normal", cls: "act-danger" },
-  { key: "entrada4_painel_sem_energia", icon: "&#x1F50B;", nome: "Entrada 4", desc: "Painel sem energia", onLabel: "SEM ENERGIA", offLabel: "normal", cls: "act-warn"   },
 ];
 
 const ENTRADAS_BOMBAS_INCENDIO = [
@@ -617,7 +610,6 @@ function updateUISuperior(row) {
 
   document.getElementById("kLastSup").textContent = new Date(row.created_at).toLocaleTimeString("pt-BR");
 
-  applyEntradas(ENTRADAS_SUP, row, "sup");
   pushChartPoint("chartNivelSup", timeLabel(row.created_at), nivel);
 
   refreshConn();
@@ -908,7 +900,6 @@ document.getElementById("cfgSave").addEventListener("click", () => {
 });
 
 // ─── INICIALIZACAO ──────────────────────────────────────────────────────
-renderEntradas("entradasGridSup", ENTRADAS_SUP, "sup");
 renderEntradas("entradasGridInf", ENTRADAS_INF, "inf");
 renderEntradas("entradasBombasIncendio", ENTRADAS_BOMBAS_INCENDIO, "bombas");
 renderEntradas("entradasCancela", ENTRADAS_CANCELA, "cancela");

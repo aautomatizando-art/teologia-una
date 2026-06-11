@@ -2,18 +2,17 @@
  * ESP32 - Tanque Inferior (no standalone, WiFi direto, sem ESP-NOW)
  * Funcao: monitora o tanque inferior (reservatorio/cisterna proximo a bomba)
  *         - Nivel de agua via sensor ultrassonico JSN-SR04T
- *         - 3 entradas digitais do quadro/inversor da bomba
+ *         - 4 entradas digitais do quadro/inversor da bomba
  *         - Temperatura da bomba via sensor DS18B20 (OneWire)
  *         - Vibracao da bomba via sensor analogico
  *
  * Envia os dados para o Supabase (tabela "tanque_inferior") e dispara
  * alertas para o grupo do WhatsApp via Evolution API.
  *
+ * ENTRADA 1 (GPIO27): Bomba ligou
  * ENTRADA 2 (GPIO14): Bomba falhou
  * ENTRADA 3 (GPIO13): Falha no inversor
  * ENTRADA 4 (GPIO4):  Painel sem energia (sem rede CA)
- * (Nao existe "Entrada 1" neste no — esse sinal so existe no sensor do
- *  tanque superior)
  *
  * WiFi: configuravel no local via WiFiManager. Se nao conectar na rede salva,
  * o ESP32 cria o AP "TanqueInferior-Setup" (senha 12345678) com portal para
@@ -43,6 +42,7 @@ DallasTemperature sensoresTemp(&oneWire);
 // ─── DADOS DA LEITURA ATUAL ─────────────────────────────────────────────
 float distanciaCm   = -1;
 int   nivelPct      = 0;
+bool  entrada1_bombaLigada      = false;
 bool  entrada2_bombaFalhou      = false;
 bool  entrada3_falhaInversor    = false;
 bool  entrada4_painelSemEnergia = false;
@@ -108,8 +108,9 @@ int distParaPorcento(float dist) {
     return (int)constrain(p, 0, 100);
 }
 
-// Le as 3 entradas digitais (contato seco para GND = ativo, INPUT_PULLUP)
+// Le as 4 entradas digitais (contato seco para GND = ativo, INPUT_PULLUP)
 void lerEntradas() {
+    entrada1_bombaLigada      = (digitalRead(ENTRADA1_PIN) == LOW);
     entrada2_bombaFalhou      = (digitalRead(ENTRADA2_PIN) == LOW);
     entrada3_falhaInversor    = (digitalRead(ENTRADA3_PIN) == LOW);
     entrada4_painelSemEnergia = (digitalRead(ENTRADA4_PIN) == LOW);
@@ -187,6 +188,7 @@ bool enviarSupabase() {
     doc["condominio"]                  = CONDOMINIO_NOME;
     doc["distancia_cm"]                = distanciaCm;
     doc["nivel_pct"]                   = nivelPct;
+    doc["entrada1_bomba_ligada"]       = entrada1_bombaLigada;
     doc["entrada2_bomba_falhou"]       = entrada2_bombaFalhou;
     doc["entrada3_falha_inversor"]     = entrada3_falhaInversor;
     doc["entrada4_painel_sem_energia"] = entrada4_painelSemEnergia;
@@ -216,6 +218,7 @@ void setup() {
     pinMode(ECHO_PIN, INPUT);
     pinMode(LED_PIN,  OUTPUT);
 
+    pinMode(ENTRADA1_PIN, INPUT_PULLUP);
     pinMode(ENTRADA2_PIN, INPUT_PULLUP);
     pinMode(ENTRADA3_PIN, INPUT_PULLUP);
     pinMode(ENTRADA4_PIN, INPUT_PULLUP);
@@ -259,8 +262,9 @@ void loop() {
         vibracaoAlerta = (vibracaoValor > VIBRACAO_LIMIAR);
 
         if (leituraValida) {
-            Serial.printf("[DADOS] %.1fcm -> %d%% | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f\n",
+            Serial.printf("[DADOS] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f\n",
                 dist, nivelPct,
+                entrada1_bombaLigada,
                 entrada2_bombaFalhou,
                 entrada3_falhaInversor,
                 entrada4_painelSemEnergia,
@@ -328,6 +332,9 @@ void loop() {
             String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *Nivel baixo no Tanque Inferior!*\n\n";
             msg += "\xF0\x9F\x93\x8A Nivel: *" + String(nivelPct) + "%*\n";
             msg += "\xF0\x9F\x93\x8F Distancia: " + String(distanciaCm, 1) + "cm";
+            if (entrada1_bombaLigada) {
+                msg += "\n\xF0\x9F\x9F\xA2 Entrada 1 acionada: Bomba LIGADA";
+            }
             enviarWhatsApp(msg);
             alertaNivelBaixoEnviado = true;
         }
