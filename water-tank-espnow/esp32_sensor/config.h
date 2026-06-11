@@ -4,7 +4,7 @@
 // ─── MAC DO GATEWAY (ESP32 #2) ────────────────────────────────────────
 // Grave get_mac_address.ino no ESP32 #2 e copie o MAC exibido no Serial Monitor
 // Exemplo: {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}
-uint8_t GATEWAY_MAC[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // <- substitua!
+uint8_t GATEWAY_MAC[] = {0x08, 0xA6, 0xF7, 0x46, 0xD2, 0xA8};
 
 // ─── PINOS ESP32 SENSOR ─────────────────────────────────────────────
 #define TRIG_PIN        32   // JSN-SR04T TRIG
