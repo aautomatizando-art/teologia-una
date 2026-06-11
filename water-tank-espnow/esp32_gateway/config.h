@@ -5,24 +5,19 @@
 #define WIFI_SSID  "SUA_REDE_WIFI"
 #define WIFI_PASS  "SUA_SENHA_WIFI"
 
-// ─── EVOLUTION API (WhatsApp no seu VPS Hostinger) ────────────────────────────
-// Base URL: IP do seu VPS + porta da Evolution API
-#define EVO_BASE_URL   "http://SEU_IP_VPS:8080"
+// ─── EVOLUTION API (WhatsApp no VPS Hostinger) ─────────────────────────────────
+// IP do VPS (srv1745227.hstgr.cloud)
+#define EVO_BASE_URL   "http://2.25.192.72:8080"
 
-// Nome da instancia criada na Evolution API
-// (a mesma usada no projeto do leitor biometrico)
-#define EVO_INSTANCE   "SUA_INSTANCIA"
+// Instancia conectada (verificada via /instance/fetchInstances)
+#define EVO_INSTANCE   "escola-una-v2"
 
-// API Key global da Evolution API
-// (variavel AUTHENTICATION_API_KEY do docker-compose / .env)
-#define EVO_APIKEY     "SUA_APIKEY"
+// API Key global da Evolution API (AUTHENTICATION_API_KEY)
+// NAO comitar a chave real no GitHub — preencha apenas localmente!
+#define EVO_APIKEY     "SUA_APIKEY_AQUI"
 
-// ID do GRUPO do WhatsApp que recebera os alertas
-// Formato: 120363xxxxxxxxxxx@g.us
-// Para descobrir, rode no terminal do VPS:
-//   curl -H "apikey: SUA_APIKEY" \
-//     "http://localhost:8080/group/fetchAllGroups/SUA_INSTANCIA?getParticipants=false"
-#define WHATS_GROUP_ID "120363xxxxxxxxxxx@g.us"
+// Grupo do WhatsApp: "Gestao Condominio"
+#define WHATS_GROUP_ID "120363407922496564@g.us"
 
 // ─── LIMITES DE ALERTA ──────────────────────────────────────────────────────────
 #define NIVEL_ALERTA  20   // % abaixo disto -> alerta de nivel baixo
