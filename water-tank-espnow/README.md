@@ -78,8 +78,11 @@ os nos do mesmo condominio na dashboard e nas mensagens do WhatsApp (veja
 | Sensor sem comunicacao (2 min)                 | "Sensor sem comunicacao!"                 |
 | Sensor voltou a comunicar                      | "Sensor online novamente!"                |
 | Leitura invalida do sensor                     | "Sensor com leitura invalida!"            |
+| Leitura voltou ao normal                       | "Leitura do JSN-SR04T normalizada!"       |
 | Gateway ligado/reiniciado                      | "Gateway reiniciado!" + nivel atual do Tanque Superior e do Tanque Inferior |
 | WiFi do gateway caiu e reconectou sozinho      | "WiFi do gateway caiu e reconectou sozinho!" + tempo offline |
+| Camera (Alarme de Incendio) sem comunicacao (~2 min) | "Camera do Alarme de Incendio sem comunicacao!" |
+| Camera voltou a enviar dados                   | "Camera do Alarme de Incendio online novamente!" |
 
 A cada leitura, o gateway tambem envia os dados (nivel e distancia) para o
 Supabase (tabela `leituras`), que alimenta a dashboard em tempo real.
@@ -202,6 +205,7 @@ ESP32 #2 (Gateway)        Sensor de vibracao (saida analogica)
 | Vibracao > `VIBRACAO_LIMIAR`               | "Vibracao excessiva detectada na bomba!"     |
 | Vibracao normalizada                       | "Vibracao da bomba normalizada"              |
 | Leitura invalida do sensor ultrassonico    | "Sensor com leitura invalida!"               |
+| Leitura voltou ao normal                   | "Leitura do JSN-SR04T normalizada!"          |
 
 A cada leitura (a cada `INTERVALO_MEDICAO_MS`, padrao 30s), o Gateway envia os
 dados (nivel, distancia, as 4 entradas, temperatura e vibracao) para o
