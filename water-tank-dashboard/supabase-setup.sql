@@ -4,15 +4,13 @@
 -- ═══════════════════════════════════════════════════════
 
 -- Tabela de leituras enviadas pelo ESP32 Gateway
+-- (Tanque Superior: somente o sensor JSN-SR04T - sem entradas digitais.
+--  As 4 entradas do quadro/inversor da bomba ficam no Tanque Inferior.)
 CREATE TABLE IF NOT EXISTS leituras (
   id                          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   condominio                  TEXT NOT NULL DEFAULT 'Condominio Principal',
   distancia_cm                NUMERIC,
   nivel_pct                    INT,
-  entrada1_bomba_ligada        BOOLEAN DEFAULT FALSE,  -- Entrada 1: Bomba ligou
-  entrada2_bomba_falhou        BOOLEAN DEFAULT FALSE,  -- Entrada 2: Bomba falhou
-  entrada3_falha_inversor      BOOLEAN DEFAULT FALSE,  -- Entrada 3: Falha no inversor
-  entrada4_painel_sem_energia  BOOLEAN DEFAULT FALSE,  -- Entrada 4: Painel sem energia
   sensor_uptime_s              BIGINT,
   leitura_valida               BOOLEAN DEFAULT TRUE,
   created_at                   TIMESTAMPTZ DEFAULT NOW()
@@ -20,6 +18,13 @@ CREATE TABLE IF NOT EXISTS leituras (
 
 -- Migracao para tabelas criadas antes do suporte multi-condominio:
 ALTER TABLE leituras ADD COLUMN IF NOT EXISTS condominio TEXT NOT NULL DEFAULT 'Condominio Principal';
+
+-- Migracao: as 4 entradas do Tanque Superior foram movidas para o Tanque
+-- Inferior (o ESP32 do Tanque Superior agora so tem o sensor JSN-SR04T)
+ALTER TABLE leituras DROP COLUMN IF EXISTS entrada1_bomba_ligada;
+ALTER TABLE leituras DROP COLUMN IF EXISTS entrada2_bomba_falhou;
+ALTER TABLE leituras DROP COLUMN IF EXISTS entrada3_falha_inversor;
+ALTER TABLE leituras DROP COLUMN IF EXISTS entrada4_painel_sem_energia;
 
 CREATE INDEX IF NOT EXISTS idx_leituras_created_at ON leituras(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_leituras_condominio ON leituras(condominio, created_at DESC);
@@ -56,11 +61,14 @@ ORDER BY condominio, created_at DESC;
 -- ═══════════════════════════════════════════════════════
 
 -- ─── TANQUE INFERIOR (ESP32 #3 - WiFi direto) ──────────────────
+-- Recebe as 4 entradas do quadro/inversor da bomba (movidas do Tanque
+-- Superior, que agora so tem o sensor JSN-SR04T) + temperatura e vibracao.
 CREATE TABLE IF NOT EXISTS tanque_inferior (
   id                          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   condominio                  TEXT NOT NULL DEFAULT 'Condominio Principal',
   distancia_cm                NUMERIC,
   nivel_pct                    INT,
+  entrada1_bomba_ligada        BOOLEAN DEFAULT FALSE,  -- Entrada 1: Bomba ligou
   entrada2_bomba_falhou        BOOLEAN DEFAULT FALSE,  -- Entrada 2: Bomba falhou
   entrada3_falha_inversor      BOOLEAN DEFAULT FALSE,  -- Entrada 3: Falha no inversor
   entrada4_painel_sem_energia  BOOLEAN DEFAULT FALSE,  -- Entrada 4: Painel sem energia
@@ -71,6 +79,8 @@ CREATE TABLE IF NOT EXISTS tanque_inferior (
   leitura_valida               BOOLEAN DEFAULT TRUE,
   created_at                   TIMESTAMPTZ DEFAULT NOW()
 );
+-- Migracao para tabelas criadas antes da Entrada 1 ser movida para ca:
+ALTER TABLE tanque_inferior ADD COLUMN IF NOT EXISTS entrada1_bomba_ligada BOOLEAN DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_tanque_inferior_created_at ON tanque_inferior(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tanque_inferior_condominio ON tanque_inferior(condominio, created_at DESC);
 ALTER TABLE tanque_inferior ENABLE ROW LEVEL SECURITY;

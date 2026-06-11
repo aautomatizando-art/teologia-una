@@ -3,11 +3,10 @@
 Dashboard moderna (single-page, sem build) para acompanhar em tempo real
 todos os módulos de monitoramento do condomínio:
 
-- **Tanque Superior** — nível animado + Entradas 1-4 (Bomba ligou / Bomba
-  falhou / Falha no inversor / Painel sem energia) + histórico do nível
-- **Tanque Inferior** — nível animado + Entradas 2-4 (Bomba falhou / Falha no
-  inversor / Painel sem energia) + histórico do nível, temperatura e vibração
-  da bomba
+- **Tanque Superior** — nível animado + histórico do nível
+- **Tanque Inferior** — nível animado + Entradas 1-4 (Bomba ligou / Bomba
+  falhou / Falha no inversor / Painel sem energia) + histórico do nível,
+  temperatura e vibração da bomba
 - **Alarme de Incêndio** — status (Sistema Normal / Alarme / Avaria), ícone de
   sinaleiro (verde) ou sirene (vermelho) e foto da central enviada pelo
   ESP32-CAM

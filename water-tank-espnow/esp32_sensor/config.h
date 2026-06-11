@@ -11,14 +11,6 @@ uint8_t GATEWAY_MAC[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // <- substitua!
 #define ECHO_PIN        33   // JSN-SR04T ECHO
 #define LED_PIN          2   // LED onboard (pisca ao enviar)
 
-// ─── ENTRADAS DIGITAIS (sinais do quadro/inversor da bomba) ──────────
-// Contatos secos (rele) ligados ao GND quando ativos -> usa INPUT_PULLUP
-// (pino em HIGH = inativo, pino em LOW = ativo)
-#define ENTRADA1_PIN    27   // ENTRADA 1: Bomba ligou
-#define ENTRADA2_PIN    14   // ENTRADA 2: Bomba falhou
-#define ENTRADA3_PIN    13   // ENTRADA 3: Falha no inversor
-#define ENTRADA4_PIN     4   // ENTRADA 4: Painel sem energia (sem rede CA)
-
 // ─── CALIBRACAO DA CAIXA ─────────────────────────────────────────────
 // Distancia (cm) do sensor ate a superficie da agua:
 //

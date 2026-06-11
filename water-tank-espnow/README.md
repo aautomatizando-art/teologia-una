@@ -38,50 +38,34 @@ os nos do mesmo condominio na dashboard e nas mensagens do WhatsApp (veja
 
  ESP32 #1 (Sensor)                ESP32 #2 (Gateway)             Evolution API
  +--------------------+           +------------------+           +--------------+
- | JSN-SR04T          |           | WiFi             |   HTTP    | Docker :8080 |
- | ENTRADA 1: Bomba   |  ESP-NOW  | HTTPClient       | --------> | evolution_api|---> Grupo
- |   ligou            | --------> | JSON p/ Evo API  |           | postgres     |     WhatsApp
- | ENTRADA 2: Bomba   |           |                  |           | redis        |
- |   falhou           |           | HTTPS / JSON     |           +--------------+
- | ENTRADA 3: Falha   |           | -------------------------> Supabase (REST) -> Dashboard
- |   no inversor      |           |                                              (Vercel)
- | ENTRADA 4: Painel  |           |
- |   sem energia      |           |
+ | JSN-SR04T          |  ESP-NOW  | WiFi             |   HTTP    | Docker :8080 |
+ | (nivel da caixa)   | --------> | HTTPClient       | --------> | evolution_api|---> Grupo
+ |                    |           | JSON p/ Evo API  |           | postgres     |     WhatsApp
+ |                    |           |                  |           | redis        |
+ |                    |           | HTTPS / JSON     |           +--------------+
+ |                    |           | -------------------------> Supabase (REST) -> Dashboard
+ |                    |           |                                              (Vercel)
  +--------------------+           +------------------+
 ```
 
-### Entradas do ESP32 Sensor (Tanque Superior)
-
-Sao 4 entradas digitais (contato seco, ligadas ao GND quando ativas,
-`INPUT_PULLUP`) vindas do quadro de comando / inversor da bomba:
-
-| Entrada    | GPIO | Funcao                          |
-|------------|------|----------------------------------|
-| ENTRADA 1  | 27   | Bomba ligou                     |
-| ENTRADA 2  | 14   | Bomba falhou                    |
-| ENTRADA 3  | 13   | Falha no inversor                |
-| ENTRADA 4  | 4    | Painel sem energia (sem rede CA) |
+> O ESP32 #1 (Sensor) tem **somente** o sensor ultrassonico JSN-SR04T. As 4
+> entradas do quadro/inversor da bomba (Bomba ligou / Bomba falhou / Falha no
+> inversor / Painel sem energia) ficam no ESP32 do **Tanque Inferior**
+> (secao 3), que fica na casa de bombas com WiFi.
 
 ### Alertas no Grupo do WhatsApp (Tanque Superior)
 
 | Evento                                       | Mensagem                                  |
 |-----------------------------------------------|--------------------------------------------|
-| Nivel baixo + Entrada 1 acionada (Bomba ligou) | "Nivel baixo! Bomba LIGADA" + nivel/dist  |
-| Caixa abastecida (>= 80%)                      | "Caixa abastecida! Bomba DESLIGADA"       |
-| Entrada 2 acionada (Bomba falhou)              | "FALHA NA BOMBA!" + causas possiveis      |
-| Entrada 2 normalizada                          | "Falha na bomba normalizada"              |
-| Entrada 3 acionada (Falha no inversor)         | "FALHA NO INVERSOR!"                      |
-| Entrada 3 normalizada                          | "Falha no inversor normalizada"           |
-| Entrada 4 acionada (Painel sem energia)        | "PAINEL SEM ENERGIA!"                     |
-| Entrada 4 normalizada                          | "Energia do painel restabelecida!"        |
+| Nivel <= `NIVEL_ALERTA`                        | "Nivel baixo na caixa d'agua!" + nivel/dist |
+| Caixa abastecida (>= `NIVEL_OK`)               | "Caixa d'agua abastecida!"                |
 | Sensor sem comunicacao (2 min)                 | "Sensor sem comunicacao!"                 |
 | Sensor voltou a comunicar                      | "Sensor online novamente!"                |
 | Leitura invalida do sensor                     | "Sensor com leitura invalida!"            |
 | Gateway ligado                                 | "Monitor iniciado!"                       |
 
-A cada leitura, o gateway tambem envia os dados (nivel, distancia e as 4
-entradas) para o Supabase (tabela `leituras`), que alimenta a dashboard em
-tempo real.
+A cada leitura, o gateway tambem envia os dados (nivel e distancia) para o
+Supabase (tabela `leituras`), que alimenta a dashboard em tempo real.
 
 ### Esquema de Ligacao (ESP32 #1 - Sensor)
 
@@ -91,13 +75,6 @@ ESP32 #1       JSN-SR04T
   GPIO33  <---- ECHO
   5V      ----> VCC
   GND     ----> GND
-
-ESP32 #1       Entradas (contato seco do quadro/inversor da bomba)
-  GPIO27  <---- ENTRADA 1: Bomba ligou
-  GPIO14  <---- ENTRADA 2: Bomba falhou
-  GPIO13  <---- ENTRADA 3: Falha no inversor
-  GPIO4   <---- ENTRADA 4: Painel sem energia
-  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
 ```
 
 ### Calibracao do Sensor (Tanque Superior)
@@ -128,8 +105,8 @@ conforme a altura real da sua caixa.
 ## 3. Tanque Inferior (ESP32 standalone, WiFi direto)
 
 ESP32 DevKit conectado direto na rede WiFi do condominio (sem ESP-NOW),
-instalado na casa de bombas / cisterna. Mede o nivel do tanque inferior, le 3
-entradas do quadro/inversor da bomba e monitora temperatura e vibracao da
+instalado na casa de bombas / cisterna. Mede o nivel do tanque inferior, le as
+4 entradas do quadro/inversor da bomba e monitora temperatura e vibracao da
 bomba.
 
 ### Sensores e Entradas
@@ -138,14 +115,12 @@ bomba.
 |---------------------------------|------|----------------------------------------------|
 | JSN-SR04T TRIG                 | 32   | Disparo do sensor ultrassonico               |
 | JSN-SR04T ECHO                 | 33   | Eco do sensor ultrassonico                   |
+| ENTRADA 1                       | 27   | Bomba ligou                                 |
 | ENTRADA 2                       | 14   | Bomba falhou                                |
 | ENTRADA 3                       | 13   | Falha no inversor                            |
 | ENTRADA 4                       | 4    | Painel sem energia (sem rede CA)            |
 | Sensor de temperatura (DS18B20) | 15   | Temperatura da bomba (OneWire)               |
 | Sensor de vibracao (analogico)  | 35   | Vibracao da bomba (ADC1)                     |
-
-> Nao existe "Entrada 1" neste no — esse sinal (Bomba ligou) so existe no
-> sensor do Tanque Superior.
 
 ### Esquema de Ligacao
 
@@ -157,6 +132,7 @@ ESP32 (Tanque Inferior)   JSN-SR04T
   GND     ----> GND
 
 ESP32 (Tanque Inferior)   Entradas (contato seco do quadro/inversor da bomba)
+  GPIO27  <---- ENTRADA 1: Bomba ligou
   GPIO14  <---- ENTRADA 2: Bomba falhou
   GPIO13  <---- ENTRADA 3: Falha no inversor
   GPIO4   <---- ENTRADA 4: Painel sem energia
@@ -193,14 +169,14 @@ ESP32 (Tanque Inferior)   Sensor de vibracao (saida analogica)
 
 | Evento                                  | Mensagem                                |
 |-------------------------------------------|---------------------------------------------|
+| Nivel <= `NIVEL_ALERTA`                    | "Nivel baixo no Tanque Inferior!" (+ "Entrada 1 acionada: Bomba LIGADA" se a bomba estiver ligada) |
+| Nivel >= `NIVEL_OK`                        | "Tanque Inferior abastecido!"                |
 | Entrada 2 acionada (Bomba falhou)          | "FALHA NA BOMBA!" + causas possiveis        |
 | Entrada 2 normalizada                      | "Falha na bomba normalizada"                |
 | Entrada 3 acionada (Falha no inversor)     | "FALHA NO INVERSOR!"                        |
 | Entrada 3 normalizada                      | "Falha no inversor normalizada"             |
 | Entrada 4 acionada (Painel sem energia)    | "PAINEL SEM ENERGIA!"                       |
 | Entrada 4 normalizada                      | "Energia do painel restabelecida!"          |
-| Nivel <= `NIVEL_ALERTA`                    | "Nivel baixo no Tanque Inferior!"            |
-| Nivel >= `NIVEL_OK`                        | "Tanque Inferior abastecido!"                |
 | Temperatura > `TEMP_ALERTA_C`              | "Temperatura alta na bomba!"                 |
 | Temperatura normalizada                    | "Temperatura da bomba normalizada"           |
 | Vibracao > `VIBRACAO_LIMIAR`               | "Vibracao excessiva detectada na bomba!"     |
@@ -209,8 +185,11 @@ ESP32 (Tanque Inferior)   Sensor de vibracao (saida analogica)
 | Gateway ligado                             | "Monitor Tanque Inferior iniciado!"          |
 
 A cada leitura (a cada `INTERVALO_MEDICAO_MS`, padrao 30s), envia os dados
-(nivel, distancia, as 3 entradas, temperatura e vibracao) para o Supabase
+(nivel, distancia, as 4 entradas, temperatura e vibracao) para o Supabase
 (tabela `tanque_inferior`).
+
+> Entrada 1 (Bomba ligou) e informativa: nao gera alerta proprio, mas seu
+> estado e enviado ao Supabase e aparece junto com o alerta de nivel baixo.
 
 ---
 

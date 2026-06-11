@@ -1,13 +1,11 @@
 /*
- * ESP32 #1 - No sensor (caixa d'agua)
- * Funcao: le o nivel da caixa, le 4 entradas digitais vindas do quadro/inversor
- *         da bomba e envia tudo via ESP-NOW ao gateway
- * Sem WiFi necessario neste ESP32
+ * ESP32 #1 - No sensor (caixa d'agua, Tanque Superior)
+ * Funcao: le o nivel da caixa com o sensor JSN-SR04T e envia via ESP-NOW
+ *         ao gateway. Sem WiFi necessario neste ESP32.
  *
- * ENTRADA 1 (GPIO27): Bomba ligou
- * ENTRADA 2 (GPIO14): Bomba falhou
- * ENTRADA 3 (GPIO13): Falha no inversor
- * ENTRADA 4 (GPIO4):  Painel sem energia (sem rede CA)
+ * As 4 entradas do quadro/inversor da bomba (Bomba ligou / Bomba falhou /
+ * Falha no inversor / Painel sem energia) NAO ficam neste no — sao lidas
+ * pelo ESP32 do Tanque Inferior (que fica na casa de bombas, com WiFi).
  *
  * Bibliotecas: apenas ESP32 core (nenhuma adicional necessaria)
  */
@@ -20,10 +18,6 @@
 typedef struct {
     float    distancia;
     int      nivel;
-    bool     entrada1_bombaLigada;
-    bool     entrada2_bombaFalhou;
-    bool     entrada3_falhaInversor;
-    bool     entrada4_painelSemEnergia;
     unsigned long uptime;
     bool     leituraValida;
 } DadosSensor;
@@ -62,25 +56,12 @@ int distParaPorcento(float dist) {
     return (int)constrain(p, 0, 100);
 }
 
-// Le as 4 entradas digitais (contato seco para GND = ativo, INPUT_PULLUP)
-void lerEntradas() {
-    dados.entrada1_bombaLigada       = (digitalRead(ENTRADA1_PIN) == LOW);
-    dados.entrada2_bombaFalhou       = (digitalRead(ENTRADA2_PIN) == LOW);
-    dados.entrada3_falhaInversor     = (digitalRead(ENTRADA3_PIN) == LOW);
-    dados.entrada4_painelSemEnergia  = (digitalRead(ENTRADA4_PIN) == LOW);
-}
-
 void setup() {
     Serial.begin(115200);
 
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
     pinMode(LED_PIN,  OUTPUT);
-
-    pinMode(ENTRADA1_PIN, INPUT_PULLUP);
-    pinMode(ENTRADA2_PIN, INPUT_PULLUP);
-    pinMode(ENTRADA3_PIN, INPUT_PULLUP);
-    pinMode(ENTRADA4_PIN, INPUT_PULLUP);
 
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
@@ -122,15 +103,8 @@ void loop() {
         dados.nivel         = dados.leituraValida ? distParaPorcento(dist) : 0;
         dados.uptime        = agora / 1000;
 
-        lerEntradas();
-
         if (dados.leituraValida) {
-            Serial.printf("[NIVEL] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d\n",
-                dist, dados.nivel,
-                dados.entrada1_bombaLigada,
-                dados.entrada2_bombaFalhou,
-                dados.entrada3_falhaInversor,
-                dados.entrada4_painelSemEnergia);
+            Serial.printf("[NIVEL] %.1fcm -> %d%%\n", dist, dados.nivel);
         } else {
             Serial.println("[SENSOR] Leitura invalida!");
         }
