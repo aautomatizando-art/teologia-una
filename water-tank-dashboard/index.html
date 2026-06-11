@@ -16,10 +16,10 @@
   --radius:12px;--radius-sm:8px;--tr:.2s ease;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:14px;line-height:1.5;}
 
 .hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
-.hdr-in{max-width:1320px;margin:0 auto;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+.hdr-in{max-width:1320px;margin:0 auto;height:50px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
 .hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(13px,1.8vw,16px);display:flex;align-items:center;gap:8px;}
 .hdr-title span{color:var(--sky);}
 .hdr-right{display:flex;align-items:center;gap:10px;}
@@ -44,22 +44,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:16px;transition:var(--tr);}
 .icon-btn:hover{border-color:var(--sky);color:var(--sky);}
 
-.body{max-width:1320px;margin:0 auto;padding:24px clamp(16px,4vw,44px) 60px;}
+.body{max-width:1320px;margin:0 auto;padding:14px clamp(16px,4vw,44px) 24px;}
 
-.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:24px 0 12px;}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:14px 0 8px;}
 
 /* ── Layout principal: 2 colunas ── */
-.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
 @media(max-width:900px){.main-grid{grid-template-columns:1fr;}}
-.col{display:flex;flex-direction:column;gap:20px;}
+.col{display:flex;flex-direction:column;gap:14px;}
 
 /* ── Card de secao ── */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
-.card-title{font-family:'Archivo Black',sans-serif;font-size:15px;display:flex;align-items:center;gap:9px;margin-bottom:16px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.card-title{font-family:'Archivo Black',sans-serif;font-size:14px;display:flex;align-items:center;gap:9px;margin-bottom:10px;}
 
 /* ── TOP GRID: tank + KPIs ── */
 .top-grid{display:grid;grid-template-columns:260px 1fr;gap:20px;}
-.card .top-grid{grid-template-columns:140px 1fr;gap:16px;}
+.card .top-grid{grid-template-columns:120px 1fr;gap:14px;}
 @media(max-width:760px){.top-grid{grid-template-columns:1fr;}.card .top-grid{grid-template-columns:1fr;}}
 
 .tank-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
@@ -69,7 +69,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .tank{position:relative;width:170px;height:300px;border:3px solid var(--border);
   border-radius:16px 16px 24px 24px;overflow:hidden;background:var(--bg3);
   box-shadow:inset 0 0 30px rgba(0,0,0,.5);}
-.tank.tank-sm{width:118px;height:200px;border-radius:12px 12px 18px 18px;}
+.tank.tank-sm{width:96px;height:160px;border-radius:10px 10px 16px 16px;}
 .tank-water{position:absolute;left:-25%;right:-25%;bottom:0;height:0%;
   background:linear-gradient(180deg,#35c8ff 0%,#1a7fb0 100%);
   transition:height 1.4s cubic-bezier(.4,0,.2,1),background 1s ease;}
@@ -85,24 +85,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);}
 .tank-scale i{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,.12);}
 .tank-pct{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:1;}
-.compact .tank-pct{font-size:26px;}
+.compact .tank-pct{font-size:22px;}
 .tank-pct .u{font-size:18px;color:var(--muted);font-family:'Archivo',sans-serif;font-weight:700;}
 .compact .tank-pct .u{font-size:13px;}
 .tank-label{font-size:12px;color:var(--muted);text-align:center;}
 .compact .tank-label{font-size:11px;}
 
 /* ── KPI cards ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-content:start;}
-.kcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
-.klbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
-.kval{font-family:'Archivo Black',sans-serif;font-size:clamp(18px,2.4vw,24px);line-height:1.15;margin-bottom:4px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-content:start;}
+.kcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;}
+.klbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px;}
+.kval{font-family:'Archivo Black',sans-serif;font-size:clamp(16px,2.2vw,21px);line-height:1.15;margin-bottom:2px;}
 .kunit{font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;color:var(--muted);margin-left:2px;}
 .ksub{font-size:11px;color:var(--muted);}
 
 /* ── Entradas ── */
-.entradas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.entradas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
 .entrada-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px 18px;display:flex;flex-direction:column;gap:10px;transition:all .35s ease;}
+  padding:10px 12px;display:flex;flex-direction:column;gap:6px;transition:all .35s ease;}
 .entrada-card .e-top{display:flex;align-items:center;justify-content:space-between;}
 .entrada-card .e-icon{font-size:22px;}
 .entrada-card .e-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
@@ -118,25 +118,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 @keyframes cardPulse{0%,100%{box-shadow:0 0 0 rgba(239,68,68,0);}50%{box-shadow:0 0 18px rgba(239,68,68,.25);}}
 
 /* ── Graficos historicos ── */
-.chart-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
-.chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;height:170px;}
-.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
-@media(max-width:520px){.charts-row{grid-template-columns:1fr;}}
+.chart-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;}
+.chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;height:120px;}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.charts-row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:520px){.charts-row{grid-template-columns:1fr;}.charts-row-3{grid-template-columns:1fr;}}
+@media(max-width:760px){.charts-row-3{grid-template-columns:1fr 1fr;}}
 
 /* ── Alarme de incendio ── */
 .incendio-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:560px){.incendio-grid{grid-template-columns:1fr;}}
 .foto-box{position:relative;border:2px solid var(--warn);border-radius:var(--radius-sm);background:var(--bg3);
-  aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .foto-box img{width:100%;height:100%;object-fit:cover;display:none;}
 .foto-box.has-photo img{display:block;}
 .foto-box.has-photo .foto-placeholder{display:none;}
 .foto-placeholder{font-size:12px;color:var(--muted);text-align:center;padding:14px;}
 .foto-time{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);font-size:10px;color:#fff;padding:4px 8px;text-align:center;}
 
-.incendio-status{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;
-  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;}
-.beacon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;
+.incendio-status{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;}
+.beacon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;
   background:rgba(74,222,128,.12);border:2px solid rgba(74,222,128,.4);transition:var(--tr);}
 .beacon.alerta{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.5);animation:beaconBlink .7s infinite;}
 @keyframes beaconBlink{0%,100%{box-shadow:0 0 8px rgba(239,68,68,.3);}50%{box-shadow:0 0 26px rgba(239,68,68,.7);}}
@@ -144,13 +146,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .incendio-sub{font-size:11px;color:var(--muted);}
 
 /* ── Cancela da portaria ── */
-.cancela-grid{display:flex;gap:18px;align-items:stretch;}
-.cancela-icon{font-size:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);}
-@media(max-width:480px){.cancela-grid{flex-direction:column;}.cancela-icon{width:100%;height:64px;}}
+.cancela-grid{display:flex;gap:14px;align-items:stretch;}
+.cancela-icon{font-size:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  width:64px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);}
+@media(max-width:480px){.cancela-grid{flex-direction:column;}.cancela-icon{width:100%;height:50px;}}
 
 /* ── Config panel ── */
-.cfg-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-top:28px;}
+.cfg-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-top:14px;}
 .cfg-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .cfg-head h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
   display:flex;align-items:center;gap:8px;}
@@ -167,7 +169,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .btn-sky{background:var(--sky);border-color:var(--sky);color:#000;}
 .btn-sky:hover{filter:brightness(1.1);}
 
-.footer{margin-top:32px;text-align:center;font-size:11px;color:var(--muted);}
+.footer{margin-top:14px;text-align:center;font-size:11px;color:var(--muted);}
 .footer a{color:var(--sky);text-decoration:none;}
 </style>
 </head>
@@ -321,10 +323,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
         <div class="section-title">Casa de Bombas — Entradas</div>
         <div class="entradas-grid" id="entradasGridInf"></div>
 
-        <div class="section-title">Histórico de nível</div>
-        <div class="chart-box"><canvas id="chartNivelInf"></canvas></div>
-
-        <div class="charts-row">
+        <div class="section-title">Histórico</div>
+        <div class="charts-row-3">
+          <div>
+            <div class="chart-lbl">Nível (%)</div>
+            <div class="chart-box"><canvas id="chartNivelInf"></canvas></div>
+          </div>
           <div>
             <div class="chart-lbl">Temperatura (°C)</div>
             <div class="chart-box"><canvas id="chartTempInf"></canvas></div>
@@ -348,7 +352,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
       <!-- ── AGUA DA RUA ── -->
       <div class="card">
         <div class="card-title"><span class="dot dot-off" id="dotAguaRua"></span>&#x1F6B0; Água da Rua</div>
-        <div class="kpi-grid" style="margin-bottom:14px">
+        <div class="kpi-grid" style="margin-bottom:10px">
           <div class="kcard">
             <div class="klbl">Vazão atual</div>
             <div class="kval" id="kFluxoRua">-- <span class="kunit">L/min</span></div>
