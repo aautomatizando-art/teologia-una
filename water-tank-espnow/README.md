@@ -1,11 +1,37 @@
-# Controle de Caixa d'Agua via ESP-NOW + WiFi + WhatsApp + Dashboard (Supabase/Vercel)
+# Gestao Condominio - ESP32 + WiFi/ESP-NOW + WhatsApp + Dashboard (Supabase/Vercel)
 
-Sistema de dois ESP32 para monitorar o nivel de uma caixa d'agua e o painel/quadro
-de comando da bomba. Comunicacao local via **ESP-NOW** (sem WiFi no ponto da caixa),
-alertas em um **grupo do WhatsApp** atraves da **Evolution API** (VPS/Docker) e uma
-**dashboard web** (Vercel + Supabase) com o nivel animado e o status das 4 entradas.
+Conjunto de firmwares ESP32 para monitorar a caixa d'agua (tanque superior e
+inferior), o alarme de incendio (com foto), as bombas de incendio, as cancelas
+da portaria e a agua da rua de um condominio. Cada modulo envia alertas para um
+**grupo do WhatsApp** via **Evolution API** (VPS/Docker) e publica os dados no
+**Supabase**, que alimenta a **dashboard web** (Vercel) em tempo real.
 
-## Arquitetura
+A dashboard fica em [`../water-tank-dashboard`](../water-tank-dashboard/).
+
+## Visao geral dos nos
+
+| # | Modulo                     | Placa            | Pasta                          | Tabela Supabase     | AP de configuracao (WiFiManager) |
+|---|----------------------------|------------------|---------------------------------|----------------------|-------------------------------------|
+| 1 | Tanque Superior - Sensor    | ESP32 DevKit     | `esp32_sensor/`                | `leituras` (via gateway) | -- (sem WiFi, fala via ESP-NOW) |
+| 2 | Tanque Superior - Gateway   | ESP32 DevKit     | `esp32_gateway/`                | `leituras`            | `CaixaDagua-Setup`                 |
+| 3 | Tanque Inferior              | ESP32 DevKit     | `esp32_tanque_inferior/`        | `tanque_inferior`     | `TanqueInferior-Setup`             |
+| 4 | Alarme de Incendio (com foto) | ESP32-CAM (AI-Thinker) | `esp32cam_alarme_incendio/` | `alarme_incendio`     | `AlarmeIncendio-Setup`             |
+| 5 | Bombas de Incendio           | ESP32 DevKit     | `esp32_bombas_incendio/`        | `bombas_incendio`     | `BombaIncendio-Setup`              |
+| 6 | Cancela da Portaria          | ESP32 DevKit     | `esp32_cancela_portaria/`       | `cancela_portaria`    | `CancelaPortaria-Setup`            |
+| 7 | Agua da Rua                  | ESP32 DevKit     | `esp32_agua_rua/`                | `agua_rua`            | `AguaRua-Setup`                     |
+
+Os modulos 3 a 7 sao **independentes**: cada um conecta direto na rede WiFi do
+condominio (via WiFiManager), envia o status para o Supabase e dispara
+alertas no WhatsApp. Apenas o **Tanque Superior** (modulos 1 e 2) usa
+**ESP-NOW** entre o sensor (sem WiFi) e o gateway (com WiFi).
+
+Em todos os `config.h`, defina o **mesmo** `CONDOMINIO_NOME` para identificar
+os nos do mesmo condominio na dashboard e nas mensagens do WhatsApp (veja
+[Varios Condominios](#varios-condominios)).
+
+---
+
+## 1-2. Tanque Superior (ESP-NOW)
 
 ```
 [Caixa d'agua - sem WiFi]        [100m - com WiFi]              [VPS Hostinger]
@@ -24,9 +50,7 @@ alertas em um **grupo do WhatsApp** atraves da **Evolution API** (VPS/Docker) e 
  +--------------------+           +------------------+
 ```
 
-A dashboard fica em [`../water-tank-dashboard`](../water-tank-dashboard/).
-
-## Entradas do ESP32 Sensor
+### Entradas do ESP32 Sensor (Tanque Superior)
 
 Sao 4 entradas digitais (contato seco, ligadas ao GND quando ativas,
 `INPUT_PULLUP`) vindas do quadro de comando / inversor da bomba:
@@ -38,7 +62,7 @@ Sao 4 entradas digitais (contato seco, ligadas ao GND quando ativas,
 | ENTRADA 3  | 13   | Falha no inversor                |
 | ENTRADA 4  | 4    | Painel sem energia (sem rede CA) |
 
-## Alertas no Grupo do WhatsApp
+### Alertas no Grupo do WhatsApp (Tanque Superior)
 
 | Evento                                       | Mensagem                                  |
 |-----------------------------------------------|--------------------------------------------|
@@ -56,16 +80,335 @@ Sao 4 entradas digitais (contato seco, ligadas ao GND quando ativas,
 | Gateway ligado                                 | "Monitor iniciado!"                       |
 
 A cada leitura, o gateway tambem envia os dados (nivel, distancia e as 4
-entradas) para o Supabase, que alimenta a dashboard em tempo real.
+entradas) para o Supabase (tabela `leituras`), que alimenta a dashboard em
+tempo real.
 
-## Hardware
+### Esquema de Ligacao (ESP32 #1 - Sensor)
 
-| Item               | Qtd | Uso                                  |
-|--------------------|-----|----------------------------------------|
-| ESP32 DevKit       | 2   | Sensor + Gateway                       |
-| JSN-SR04T          | 1   | Sensor de nivel                        |
-| Sinais do quadro / inversor | 4 | Contatos secos -> ENTRADA 1-4 (GND ativo) |
-| Fonte 5V 1A        | 2   | Uma para cada ESP32                    |
+```
+ESP32 #1       JSN-SR04T
+  GPIO32  ----> TRIG
+  GPIO33  <---- ECHO
+  5V      ----> VCC
+  GND     ----> GND
+
+ESP32 #1       Entradas (contato seco do quadro/inversor da bomba)
+  GPIO27  <---- ENTRADA 1: Bomba ligou
+  GPIO14  <---- ENTRADA 2: Bomba falhou
+  GPIO13  <---- ENTRADA 3: Falha no inversor
+  GPIO4   <---- ENTRADA 4: Painel sem energia
+  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
+```
+
+### Calibracao do Sensor (Tanque Superior)
+
+```
+[JSN-SR04T na tampa da caixa]
+   |  <- 15cm  DIST_CAIXA_CHEIA  -> caixa cheia (100%)
+   |
+   ~  nivel da agua
+   |
+   |  <- 90cm  DIST_CAIXA_VAZIA  -> caixa vazia (0%)
+   |
+[Fundo da caixa]
+```
+
+Ajuste `DIST_CAIXA_VAZIA` e `DIST_CAIXA_CHEIA` em `esp32_sensor/config.h`
+conforme a altura real da sua caixa.
+
+### Dicas de Alcance ESP-NOW (100m)
+
+- Em campo aberto: 200-400m — seus 100m estao dentro do alcance
+- Posicione o gateway em janela/area aberta voltada para a caixa
+- Evite obstaculos metalicos na linha de visada
+- Se precisar de mais alcance: ESP32 com antena externa (conector U.FL)
+
+---
+
+## 3. Tanque Inferior (ESP32 standalone, WiFi direto)
+
+ESP32 DevKit conectado direto na rede WiFi do condominio (sem ESP-NOW),
+instalado na casa de bombas / cisterna. Mede o nivel do tanque inferior, le 3
+entradas do quadro/inversor da bomba e monitora temperatura e vibracao da
+bomba.
+
+### Sensores e Entradas
+
+| Sinal                          | GPIO | Funcao                                     |
+|---------------------------------|------|----------------------------------------------|
+| JSN-SR04T TRIG                 | 32   | Disparo do sensor ultrassonico               |
+| JSN-SR04T ECHO                 | 33   | Eco do sensor ultrassonico                   |
+| ENTRADA 2                       | 14   | Bomba falhou                                |
+| ENTRADA 3                       | 13   | Falha no inversor                            |
+| ENTRADA 4                       | 4    | Painel sem energia (sem rede CA)            |
+| Sensor de temperatura (DS18B20) | 15   | Temperatura da bomba (OneWire)               |
+| Sensor de vibracao (analogico)  | 35   | Vibracao da bomba (ADC1)                     |
+
+> Nao existe "Entrada 1" neste no — esse sinal (Bomba ligou) so existe no
+> sensor do Tanque Superior.
+
+### Esquema de Ligacao
+
+```
+ESP32 (Tanque Inferior)   JSN-SR04T
+  GPIO32  ----> TRIG
+  GPIO33  <---- ECHO
+  5V      ----> VCC
+  GND     ----> GND
+
+ESP32 (Tanque Inferior)   Entradas (contato seco do quadro/inversor da bomba)
+  GPIO14  <---- ENTRADA 2: Bomba falhou
+  GPIO13  <---- ENTRADA 3: Falha no inversor
+  GPIO4   <---- ENTRADA 4: Painel sem energia
+  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
+
+ESP32 (Tanque Inferior)   DS18B20 (temperatura)
+  GPIO15  <---> DQ (dados, com resistor de pull-up 4.7k para 3V3)
+  3V3     ----> VCC
+  GND     ----> GND
+
+ESP32 (Tanque Inferior)   Sensor de vibracao (saida analogica)
+  GPIO35  <---- AOUT (ADC1, somente leitura)
+  3V3/5V  ----> VCC (conforme o modulo)
+  GND     ----> GND
+```
+
+### Calibracao
+
+`config.h`:
+```cpp
+#define DIST_CAIXA_VAZIA  90   // cm com o tanque inferior vazio
+#define DIST_CAIXA_CHEIA  15   // cm com o tanque inferior cheio
+#define NIVEL_ALERTA      20   // % - dispara alerta de nivel baixo
+#define NIVEL_OK          80   // % - considera "abastecido"
+#define TEMP_ALERTA_C     60   // graus C - alerta de temperatura alta na bomba
+#define VIBRACAO_LIMIAR   2500 // leitura ADC acima disso = vibracao excessiva
+```
+
+> O sensor de vibracao precisa ser calibrado no local: registre a leitura
+> (`vibracaoValor`, exibida no Serial Monitor) com a bomba funcionando
+> normalmente e ajuste `VIBRACAO_LIMIAR` acima desse valor.
+
+### Alertas no Grupo do WhatsApp (Tanque Inferior)
+
+| Evento                                  | Mensagem                                |
+|-------------------------------------------|---------------------------------------------|
+| Entrada 2 acionada (Bomba falhou)          | "FALHA NA BOMBA!" + causas possiveis        |
+| Entrada 2 normalizada                      | "Falha na bomba normalizada"                |
+| Entrada 3 acionada (Falha no inversor)     | "FALHA NO INVERSOR!"                        |
+| Entrada 3 normalizada                      | "Falha no inversor normalizada"             |
+| Entrada 4 acionada (Painel sem energia)    | "PAINEL SEM ENERGIA!"                       |
+| Entrada 4 normalizada                      | "Energia do painel restabelecida!"          |
+| Nivel <= `NIVEL_ALERTA`                    | "Nivel baixo no Tanque Inferior!"            |
+| Nivel >= `NIVEL_OK`                        | "Tanque Inferior abastecido!"                |
+| Temperatura > `TEMP_ALERTA_C`              | "Temperatura alta na bomba!"                 |
+| Temperatura normalizada                    | "Temperatura da bomba normalizada"           |
+| Vibracao > `VIBRACAO_LIMIAR`               | "Vibracao excessiva detectada na bomba!"     |
+| Vibracao normalizada                       | "Vibracao da bomba normalizada"              |
+| Leitura invalida do sensor ultrassonico    | "Sensor com leitura invalida!"               |
+| Gateway ligado                             | "Monitor Tanque Inferior iniciado!"          |
+
+A cada leitura (a cada `INTERVALO_MEDICAO_MS`, padrao 30s), envia os dados
+(nivel, distancia, as 3 entradas, temperatura e vibracao) para o Supabase
+(tabela `tanque_inferior`).
+
+---
+
+## 4. Alarme de Incendio (ESP32-CAM, com foto)
+
+**ESP32-CAM (AI-Thinker)**, com camera OV2640 onboard. Le 2 entradas digitais
+da central de alarme de incendio e tira fotos da central que sao enviadas
+para a dashboard e para o grupo do WhatsApp.
+
+### Entradas
+
+| Entrada    | GPIO | Funcao                              |
+|------------|------|----------------------------------------|
+| ENTRADA 1  | 13   | Alarme acionado (central disparou)     |
+| ENTRADA 2  | 15   | Central com avaria/falha               |
+
+> O modulo AI-Thinker ESP32-CAM usa quase todos os GPIOs para a camera, o
+> cartao SD e pinos de boot/strapping. **So GPIO13 e GPIO15 estao livres** —
+> nao reaproveite GPIO0, GPIO2, GPIO4, GPIO12, GPIO33 nem os pinos da camera
+> (5,18,19,21,22,23,25,26,27,32,34,35,36,39).
+
+### Comportamento
+
+| Situacao                                  | Dashboard                          | WhatsApp                                  |
+|----------------------------------------------|---------------------------------------|----------------------------------------------|
+| Nenhuma entrada acionada                      | Status "Sistema Normal" + sinaleiro verde | "Alarme de incendio normalizado" / "Avaria normalizada" (na transicao) |
+| Entrada 1 acionada (Alarme)                   | Status "alarme" + sirene + foto da central | "ALARME DE INCENDIO ACIONADO!" + foto      |
+| Entrada 2 acionada (Avaria/Falha na central)  | Status "avaria" + sirene + foto da central | "Central de alarme com AVARIA/FALHA!" + foto |
+
+- A foto e capturada (VGA/JPEG) e enviada para o Supabase Storage, bucket
+  `fotos-incendio`, sempre no mesmo caminho (`incendio/<condominio>.jpg`) —
+  a foto anterior e **sobrescrita automaticamente** (upload com
+  `x-upsert: true`), sem precisar apagar manualmente.
+- A URL publica da foto e gravada na tabela `alarme_incendio`
+  (`foto_url` / `foto_atualizada_em`) para a dashboard exibir.
+- Enquanto o status nao for "normal", uma nova foto e enviada a cada
+  `FOTO_INTERVALO_MS` (padrao 1 hora) para manter a foto atualizada.
+- A cada `INTERVALO_MEDICAO_MS` (padrao 30s) o status atual e enviado ao
+  Supabase (heartbeat), mesmo sem mudanca.
+
+### Esquema de Ligacao
+
+```
+ESP32-CAM (AI-Thinker)    Entradas (contato seco da central de incendio)
+  GPIO13  <---- ENTRADA 1: Alarme acionado
+  GPIO15  <---- ENTRADA 2: Central com avaria/falha
+  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
+```
+
+### Gravacao do ESP32-CAM
+
+O ESP32-CAM nao tem porta USB — grave com um adaptador **FTDI USB-Serial**
+(3.3V):
+
+| FTDI | ESP32-CAM |
+|------|-----------|
+| 5V   | 5V        |
+| GND  | GND       |
+| TX   | U0R (RX)  |
+| RX   | U0T (TX)  |
+
+1. Ligue **GPIO0 ao GND** (modo de gravacao)
+2. Na Arduino IDE: **Ferramentas > Placa > "AI Thinker ESP32-CAM"**, com
+   **PSRAM: Enabled**
+3. Faca o upload do `esp32cam_alarme_incendio.ino`
+4. Apos o upload, **desligue GPIO0 do GND** e pressione o botao **RESET**
+   para iniciar normalmente
+5. Abra o Serial Monitor (115200) para acompanhar o boot, conexao WiFi e
+   inicializacao da camera
+
+---
+
+## 5. Bombas de Incendio
+
+ESP32 DevKit standalone (WiFi direto), monitora 3 entradas do quadro de
+comando das bombas de incendio.
+
+### Entradas
+
+| Entrada    | GPIO | Funcao                                  |
+|------------|------|--------------------------------------------|
+| ENTRADA 1  | 27   | Bomba Principal de Incendio ligada         |
+| ENTRADA 2  | 14   | Falha na Bomba de Incendio                  |
+| ENTRADA 3  | 13   | Bomba Reserva de Incendio ligada           |
+
+### Esquema de Ligacao
+
+```
+ESP32 (Bombas de Incendio)  Entradas (contato seco do quadro de comando)
+  GPIO27  <---- ENTRADA 1: Bomba Principal de Incendio ligada
+  GPIO14  <---- ENTRADA 2: Falha na Bomba de Incendio
+  GPIO13  <---- ENTRADA 3: Bomba Reserva de Incendio ligada
+  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
+```
+
+### Alertas no Grupo do WhatsApp
+
+| Evento                                      | Mensagem                                  |
+|------------------------------------------------|----------------------------------------------|
+| Entrada 1 acionada                              | "Bomba Principal de Incendio LIGADA!"        |
+| Entrada 1 normalizada                           | "Bomba Principal de Incendio desligada."     |
+| Entrada 2 acionada                              | "FALHA NA BOMBA DE INCENDIO!"                |
+| Entrada 2 normalizada                           | "Falha na bomba de incendio normalizada."    |
+| Entrada 3 acionada                              | "Bomba Reserva de Incendio LIGADA!"          |
+| Entrada 3 normalizada                           | "Bomba Reserva de Incendio desligada."       |
+| Inicializacao                                   | "Monitor Bombas de Incendio iniciado!"       |
+
+Envia o status ao Supabase (tabela `bombas_incendio`) sempre que uma entrada
+muda de estado, alem de um heartbeat a cada `INTERVALO_ENVIO_MS` (padrao 30s).
+
+---
+
+## 6. Cancela da Portaria
+
+ESP32 DevKit standalone (WiFi direto), monitora 2 sinais de falha das
+cancelas da portaria.
+
+### Entradas
+
+| Entrada    | GPIO | Funcao                  |
+|------------|------|---------------------------|
+| ENTRADA 1  | 27   | Cancela 1 em falha        |
+| ENTRADA 2  | 14   | Cancela 2 em falha        |
+
+### Esquema de Ligacao
+
+```
+ESP32 (Cancela da Portaria)  Entradas (contato seco do quadro das cancelas)
+  GPIO27  <---- ENTRADA 1: Cancela 1 em falha
+  GPIO14  <---- ENTRADA 2: Cancela 2 em falha
+  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
+```
+
+### Alertas no Grupo do WhatsApp
+
+| Evento                          | Mensagem                                   |
+|------------------------------------|------------------------------------------------|
+| Entrada 1 acionada                  | "Cancela 1 da portaria em FALHA!"               |
+| Entrada 1 normalizada               | "Cancela 1 da portaria normalizada."            |
+| Entrada 2 acionada                  | "Cancela 2 da portaria em FALHA!"               |
+| Entrada 2 normalizada               | "Cancela 2 da portaria normalizada."            |
+| Inicializacao                       | "Monitor Cancela da Portaria iniciado!"         |
+
+Envia o status ao Supabase (tabela `cancela_portaria`) sempre que uma
+entrada muda de estado, alem de um heartbeat a cada `INTERVALO_ENVIO_MS`
+(padrao 30s).
+
+---
+
+## 7. Agua da Rua
+
+ESP32 DevKit standalone (WiFi direto), com sensor de fluxo por efeito Hall
+(ex: YF-S201) instalado na entrada de agua da rua. Calcula a vazao (L/min) e
+avisa se o fluxo parar por muito tempo.
+
+### Sensor
+
+| Sinal      | GPIO | Funcao                                          |
+|------------|------|----------------------------------------------------|
+| FLUXO_PIN  | 27   | Sensor de fluxo (hall effect, pulsos por interrupcao) |
+
+### Esquema de Ligacao
+
+```
+ESP32 (Agua da Rua)   Sensor de Fluxo (ex: YF-S201)
+  GPIO27  <---- Sinal (pulsos)
+  5V      ----> VCC (vermelho)
+  GND     ----> GND (preto)
+```
+
+### Calibracao
+
+`config.h`:
+```cpp
+#define FLUXO_FATOR_CALIBRACAO  7.5    // pulsos/s por L/min - tipico do YF-S201, AJUSTAR no local
+#define FLUXO_MINIMO_LPM        0.5    // abaixo disso = "sem fluxo"
+#define INTERVALO_MEDICAO_MS    30000UL // calcula vazao e envia a cada 30s
+#define FLUXO_TIMEOUT_MS        1800000UL // alerta apos 30 min sem fluxo
+```
+
+> A agua da rua costuma chegar de forma intermitente (em horarios
+> determinados). Ajuste `FLUXO_TIMEOUT_MS` conforme o padrao de
+> abastecimento do condominio para evitar falsos alarmes, e calibre
+> `FLUXO_FATOR_CALIBRACAO` medindo um volume conhecido escoando em um tempo
+> conhecido.
+
+### Alertas no Grupo do WhatsApp
+
+| Evento                                  | Mensagem                                       |
+|---------------------------------------------|----------------------------------------------------|
+| Sem fluxo por mais de `FLUXO_TIMEOUT_MS`     | "Agua da rua parou! Sem fluxo detectado ha mais de 30 minutos." |
+| Fluxo normalizado                            | "Agua da rua normalizada — fluxo detectado novamente." |
+| Inicializacao                                | "Monitor Agua da Rua iniciado!"                     |
+
+Envia a vazao (`fluxo_lpm`) e o status (`fluxo_ativo`) ao Supabase (tabela
+`agua_rua`) a cada `INTERVALO_MEDICAO_MS` (padrao 30s).
+
+---
 
 ## Configuracao da Evolution API (VPS)
 
@@ -150,51 +493,42 @@ uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
 7. Acesse a dashboard ([`water-tank-dashboard`](../water-tank-dashboard/)) e selecione
    o condominio no seletor do topo
 
-> Para trocar de rede WiFi depois (ex: mudou a senha do roteador): segure o
-> ESP32 fora do alcance da rede antiga ou aguarde a falha de conexao — o portal
-> reabre automaticamente.
+### Passo 5 - Configurar os demais nos (Tanque Inferior, Alarme de Incendio,
+Bombas de Incendio, Cancela da Portaria, Agua da Rua)
+
+Para cada um dos 5 nos restantes, o processo e o mesmo:
+
+1. Edite `config.h` da pasta correspondente:
+   - `CONDOMINIO_NOME` — **igual ao do gateway** do mesmo condominio
+   - `EVO_BASE_URL`, `EVO_INSTANCE`, `EVO_APIKEY`, `WHATS_GROUP_ID` — iguais
+     aos do gateway
+   - `SUPABASE_URL`, `SUPABASE_KEY` — iguais aos do gateway
+   - Ajuste pinos/calibracao especificos do modulo (veja as secoes acima)
+2. Grave o `.ino` no ESP32 (ou ESP32-CAM, no caso do Alarme de Incendio — veja
+   as instrucoes de gravacao na secao 4)
+3. Ligue o modulo. Se nao houver rede WiFi salva, ele cria o proprio AP de
+   configuracao (veja a tabela em [Visao geral dos nos](#visao-geral-dos-nos)),
+   senha `12345678`
+4. Conecte pelo celular, configure a rede WiFi do condominio (igual ao Passo 4)
+5. Deve chegar a mensagem de "Monitor ... iniciado!" no grupo do WhatsApp
+6. Na dashboard, o card correspondente passa a exibir os dados desse no
+
+> Para trocar de rede WiFi depois (ex: mudou a senha do roteador), em
+> qualquer um dos nos: segure o ESP32 fora do alcance da rede antiga ou
+> aguarde a falha de conexao — o portal de configuracao reabre
+> automaticamente apos `PORTAL_TIMEOUT_S` (padrao 180s).
 
 ## Varios Condominios
 
-Cada condominio recebe um **par de ESP32** (sensor + gateway). No gateway de
-cada local, defina um `CONDOMINIO_NOME` diferente — todos enviam para o mesmo
-Supabase e aparecem no seletor da mesma dashboard. As mensagens do WhatsApp
-chegam prefixadas com o nome do condominio (pode usar o mesmo grupo ou um
-`WHATS_GROUP_ID` diferente por local).
+Cada condominio recebe o conjunto completo de ESP32 que estiver instalando
+(no minimo o par Tanque Superior). Em **todos** os `config.h` de um mesmo
+condominio, defina o **mesmo** `CONDOMINIO_NOME` (ex: `"Residencial Sol"`,
+`"Condominio Park"`) — todos enviam para o mesmo Supabase e aparecem juntos
+no seletor da mesma dashboard. As mensagens do WhatsApp chegam prefixadas
+com o nome do condominio (pode usar o mesmo grupo ou um `WHATS_GROUP_ID`
+diferente por local).
 
-## Esquema de Ligacao (ESP32 #1 - Sensor)
-
-```
-ESP32 #1       JSN-SR04T
-  GPIO32  ----> TRIG
-  GPIO33  <---- ECHO
-  5V      ----> VCC
-  GND     ----> GND
-
-ESP32 #1       Entradas (contato seco do quadro/inversor da bomba)
-  GPIO27  <---- ENTRADA 1: Bomba ligou
-  GPIO14  <---- ENTRADA 2: Bomba falhou
-  GPIO13  <---- ENTRADA 3: Falha no inversor
-  GPIO4   <---- ENTRADA 4: Painel sem energia
-  GND     ----> Comum dos contatos (GND ativo, INPUT_PULLUP)
-```
-
-## Calibracao do Sensor
-
-```
-[JSN-SR04T na tampa da caixa]
-   |  <- 15cm  DIST_CAIXA_CHEIA  -> caixa cheia (100%)
-   |
-   ~  nivel da agua
-   |
-   |  <- 90cm  DIST_CAIXA_VAZIA  -> caixa vazia (0%)
-   |
-[Fundo da caixa]
-```
-
-## Dicas de Alcance ESP-NOW (100m)
-
-- Em campo aberto: 200-400m — seus 100m estao dentro do alcance
-- Posicione o gateway em janela/area aberta voltada para a caixa
-- Evite obstaculos metalicos na linha de visada
-- Se precisar de mais alcance: ESP32 com antena externa (conector U.FL)
+Os AP de configuracao do WiFiManager ja tem nomes diferentes por tipo de
+modulo (`CaixaDagua-Setup`, `TanqueInferior-Setup`, `AlarmeIncendio-Setup`,
+`BombaIncendio-Setup`, `CancelaPortaria-Setup`, `AguaRua-Setup`), entao nao ha
+conflito mesmo com varios condominios sendo configurados ao mesmo tempo.

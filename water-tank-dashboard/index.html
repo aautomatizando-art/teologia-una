@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 :root{
   --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#262626;
@@ -18,10 +19,14 @@
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
 
 .hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
-.hdr-in{max-width:1200px;margin:0 auto;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+.hdr-in{max-width:1320px;margin:0 auto;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
 .hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(13px,1.8vw,16px);display:flex;align-items:center;gap:8px;}
 .hdr-title span{color:var(--sky);}
 .hdr-right{display:flex;align-items:center;gap:10px;}
+
+.brand{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-family:'Archivo Black',sans-serif;
+  font-size:11px;letter-spacing:.06em;color:var(--sky);border:1px solid var(--border);background:var(--bg3);}
+.brand b{color:var(--text);}
 
 .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
 .chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
@@ -39,20 +44,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:16px;transition:var(--tr);}
 .icon-btn:hover{border-color:var(--sky);color:var(--sky);}
 
-.body{max-width:1200px;margin:0 auto;padding:24px clamp(16px,4vw,44px) 60px;}
+.body{max-width:1320px;margin:0 auto;padding:24px clamp(16px,4vw,44px) 60px;}
 
-.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:28px 0 12px;}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:24px 0 12px;}
+
+/* ── Layout principal: 2 colunas ── */
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr;}}
+.col{display:flex;flex-direction:column;gap:20px;}
+
+/* ── Card de secao ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
+.card-title{font-family:'Archivo Black',sans-serif;font-size:15px;display:flex;align-items:center;gap:9px;margin-bottom:16px;}
 
 /* ── TOP GRID: tank + KPIs ── */
 .top-grid{display:grid;grid-template-columns:260px 1fr;gap:20px;}
-@media(max-width:760px){.top-grid{grid-template-columns:1fr;}}
+.card .top-grid{grid-template-columns:140px 1fr;gap:16px;}
+@media(max-width:760px){.top-grid{grid-template-columns:1fr;}.card .top-grid{grid-template-columns:1fr;}}
 
 .tank-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
   padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.tank-card.compact{background:transparent;border:0;padding:0;gap:10px;}
 
 .tank{position:relative;width:170px;height:300px;border:3px solid var(--border);
   border-radius:16px 16px 24px 24px;overflow:hidden;background:var(--bg3);
   box-shadow:inset 0 0 30px rgba(0,0,0,.5);}
+.tank.tank-sm{width:118px;height:200px;border-radius:12px 12px 18px 18px;}
 .tank-water{position:absolute;left:-25%;right:-25%;bottom:0;height:0%;
   background:linear-gradient(180deg,#35c8ff 0%,#1a7fb0 100%);
   transition:height 1.4s cubic-bezier(.4,0,.2,1),background 1s ease;}
@@ -68,27 +85,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);}
 .tank-scale i{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,.12);}
 .tank-pct{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:1;}
+.compact .tank-pct{font-size:26px;}
 .tank-pct .u{font-size:18px;color:var(--muted);font-family:'Archivo',sans-serif;font-weight:700;}
+.compact .tank-pct .u{font-size:13px;}
 .tank-label{font-size:12px;color:var(--muted);text-align:center;}
+.compact .tank-label{font-size:11px;}
 
 /* ── KPI cards ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-content:start;}
-.kcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-content:start;}
+.kcard{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
 .klbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
-.kval{font-family:'Archivo Black',sans-serif;font-size:clamp(20px,2.6vw,28px);line-height:1.15;margin-bottom:4px;}
+.kval{font-family:'Archivo Black',sans-serif;font-size:clamp(18px,2.4vw,24px);line-height:1.15;margin-bottom:4px;}
 .kunit{font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;color:var(--muted);margin-left:2px;}
 .ksub{font-size:11px;color:var(--muted);}
 
 /* ── Entradas ── */
-.entradas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
-.entrada-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
-  padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:all .35s ease;}
+.entradas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.entrada-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;display:flex;flex-direction:column;gap:10px;transition:all .35s ease;}
 .entrada-card .e-top{display:flex;align-items:center;justify-content:space-between;}
 .entrada-card .e-icon{font-size:22px;}
 .entrada-card .e-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
-.entrada-card .e-desc{font-family:'Archivo Black',sans-serif;font-size:15px;}
+.entrada-card .e-desc{font-family:'Archivo Black',sans-serif;font-size:14px;}
 .entrada-card .e-state{align-self:flex-start;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
-  text-transform:uppercase;letter-spacing:.06em;background:var(--bg3);border:1px solid var(--border);color:var(--muted);}
+  text-transform:uppercase;letter-spacing:.06em;background:var(--bg4);border:1px solid var(--border);color:var(--muted);}
 .entrada-card.act-info{border-color:rgba(53,200,255,.45);background:rgba(53,200,255,.06);}
 .entrada-card.act-info .e-state{color:var(--sky);border-color:rgba(53,200,255,.3);background:rgba(53,200,255,.1);}
 .entrada-card.act-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.06);}
@@ -96,6 +116,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 .entrada-card.act-danger{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06);animation:cardPulse 1.6s ease-in-out infinite;}
 .entrada-card.act-danger .e-state{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.1);}
 @keyframes cardPulse{0%,100%{box-shadow:0 0 0 rgba(239,68,68,0);}50%{box-shadow:0 0 18px rgba(239,68,68,.25);}}
+
+/* ── Graficos historicos ── */
+.chart-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
+.chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;height:170px;}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
+@media(max-width:520px){.charts-row{grid-template-columns:1fr;}}
+
+/* ── Alarme de incendio ── */
+.incendio-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:560px){.incendio-grid{grid-template-columns:1fr;}}
+.foto-box{position:relative;border:2px solid var(--warn);border-radius:var(--radius-sm);background:var(--bg3);
+  aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.foto-box img{width:100%;height:100%;object-fit:cover;display:none;}
+.foto-box.has-photo img{display:block;}
+.foto-box.has-photo .foto-placeholder{display:none;}
+.foto-placeholder{font-size:12px;color:var(--muted);text-align:center;padding:14px;}
+.foto-time{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);font-size:10px;color:#fff;padding:4px 8px;text-align:center;}
+
+.incendio-status{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;}
+.beacon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;
+  background:rgba(74,222,128,.12);border:2px solid rgba(74,222,128,.4);transition:var(--tr);}
+.beacon.alerta{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.5);animation:beaconBlink .7s infinite;}
+@keyframes beaconBlink{0%,100%{box-shadow:0 0 8px rgba(239,68,68,.3);}50%{box-shadow:0 0 26px rgba(239,68,68,.7);}}
+.incendio-texto{font-family:'Archivo Black',sans-serif;font-size:16px;}
+.incendio-sub{font-size:11px;color:var(--muted);}
+
+/* ── Cancela da portaria ── */
+.cancela-grid{display:flex;gap:18px;align-items:stretch;}
+.cancela-icon{font-size:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);}
+@media(max-width:480px){.cancela-grid{flex-direction:column;}.cancela-icon{width:100%;height:64px;}}
 
 /* ── Config panel ── */
 .cfg-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-top:28px;}
@@ -125,6 +177,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <div class="hdr-in">
     <div class="hdr-title">&#x1F4A7; <span>Gestão Condomínio</span> · Caixa d'Água</div>
     <div class="hdr-right">
+      <div class="brand">&#x26A1; VOLT <b>ENERGY</b></div>
       <select class="fctl" id="condoSel" style="width:auto;min-width:150px;padding:6px 10px;cursor:pointer;" title="Condomínio"></select>
       <div class="chip chip-off" id="connBadge"><span class="dot dot-off"></span> Conectando...</div>
       <div class="icon-btn" id="cfgToggle" title="Configuração">&#x2699;</div>
@@ -134,52 +187,188 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 
 <div class="body">
 
-  <div class="top-grid">
-    <div class="tank-card">
-      <div class="tank">
-        <div class="tank-water lvl-ok" id="tankWater">
-          <svg class="wave wave1" viewBox="0 0 1200 24" preserveAspectRatio="none">
-            <path d="M0,12 C150,24 300,0 450,12 C600,24 750,0 900,12 C1050,24 1150,6 1200,12 V24 H0 Z"/>
-          </svg>
-          <svg class="wave wave2" viewBox="0 0 1200 24" preserveAspectRatio="none">
-            <path d="M0,12 C150,0 300,24 450,12 C600,0 750,24 900,12 C1050,0 1150,18 1200,12 V24 H0 Z"/>
-          </svg>
+  <div class="main-grid">
+
+    <!-- ═══════════ COLUNA ESQUERDA ═══════════ -->
+    <div class="col">
+
+      <!-- ── TANQUE SUPERIOR ── -->
+      <div class="card">
+        <div class="card-title"><span class="dot dot-off" id="dotSup"></span>&#x1F4A7; Tanque Superior</div>
+        <div class="top-grid">
+          <div class="tank-card compact">
+            <div class="tank tank-sm">
+              <div class="tank-water lvl-ok" id="tankWaterSup">
+                <svg class="wave wave1" viewBox="0 0 1200 24" preserveAspectRatio="none">
+                  <path d="M0,12 C150,24 300,0 450,12 C600,24 750,0 900,12 C1050,24 1150,6 1200,12 V24 H0 Z"/>
+                </svg>
+                <svg class="wave wave2" viewBox="0 0 1200 24" preserveAspectRatio="none">
+                  <path d="M0,12 C150,0 300,24 450,12 C600,0 750,24 900,12 C1050,0 1150,18 1200,12 V24 H0 Z"/>
+                </svg>
+              </div>
+              <div class="tank-scale">
+                <i style="bottom:80%"></i><span style="bottom:80%">80%</span>
+                <i style="bottom:20%"></i><span style="bottom:20%">20%</span>
+              </div>
+            </div>
+            <div class="tank-pct" id="tankPctSup">--<span class="u">%</span></div>
+            <div class="tank-label">Nível da caixa</div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kcard">
+              <div class="klbl">Distância do sensor</div>
+              <div class="kval" id="kDistSup">-- <span class="kunit">cm</span></div>
+              <div class="ksub">JSN-SR04T (ultrassônico)</div>
+            </div>
+            <div class="kcard">
+              <div class="klbl">Leitura do sensor</div>
+              <div class="kval" id="kValidaSup">--</div>
+              <div class="ksub">Status do JSN-SR04T</div>
+            </div>
+            <div class="kcard">
+              <div class="klbl">Última atualização</div>
+              <div class="kval" id="kLastSup" style="font-size:18px">--</div>
+              <div class="ksub" id="kLastRelSup">aguardando dados...</div>
+            </div>
+            <div class="kcard">
+              <div class="klbl">Sensor ligado há</div>
+              <div class="kval" id="kUptimeSup" style="font-size:18px">--</div>
+              <div class="ksub">desde o último reset (ESP32 #1)</div>
+            </div>
+          </div>
         </div>
-        <div class="tank-scale">
-          <i style="bottom:80%"></i><span style="bottom:80%">80%</span>
-          <i style="bottom:20%"></i><span style="bottom:20%">20%</span>
+
+        <div class="section-title">Entradas do Quadro / Inversor</div>
+        <div class="entradas-grid" id="entradasGridSup"></div>
+
+        <div class="section-title">Histórico de nível</div>
+        <div class="chart-box"><canvas id="chartNivelSup"></canvas></div>
+      </div>
+
+      <!-- ── ALARME DE INCENDIO ── -->
+      <div class="card">
+        <div class="card-title"><span class="dot dot-off" id="dotIncendio"></span>&#x1F525; Alarme de Incêndio</div>
+        <div class="incendio-grid">
+          <div class="foto-box" id="incendioFotoBox">
+            <img id="incendioFoto" alt="Foto da central de alarme">
+            <div class="foto-placeholder">Aguardando foto da central...</div>
+            <div class="foto-time" id="incendioFotoTime"></div>
+          </div>
+          <div class="incendio-status">
+            <div class="beacon" id="incendioBeacon">&#x1F7E2;</div>
+            <div class="incendio-texto" id="incendioTexto">Sistema Normal</div>
+            <div class="incendio-sub" id="incendioSub">Nenhum alarme ativo</div>
+          </div>
         </div>
       </div>
-      <div class="tank-pct" id="tankPct">--<span class="u">%</span></div>
-      <div class="tank-label">Nível da caixa d'água</div>
+
+      <!-- ── BOMBAS DE INCENDIO ── -->
+      <div class="card">
+        <div class="card-title"><span class="dot dot-off" id="dotBombasIncendio"></span>&#x1F9EF; Bombas de Incêndio</div>
+        <div class="entradas-grid" id="entradasBombasIncendio"></div>
+      </div>
+
     </div>
 
-    <div class="kpi-grid">
-      <div class="kcard">
-        <div class="klbl">Distância do sensor</div>
-        <div class="kval" id="kDist">-- <span class="kunit">cm</span></div>
-        <div class="ksub">JSN-SR04T (ultrassônico)</div>
+    <!-- ═══════════ COLUNA DIREITA ═══════════ -->
+    <div class="col">
+
+      <!-- ── TANQUE INFERIOR ── -->
+      <div class="card">
+        <div class="card-title"><span class="dot dot-off" id="dotInf"></span>&#x1F4A7; Tanque Inferior</div>
+        <div class="top-grid">
+          <div class="tank-card compact">
+            <div class="tank tank-sm">
+              <div class="tank-water lvl-ok" id="tankWaterInf">
+                <svg class="wave wave1" viewBox="0 0 1200 24" preserveAspectRatio="none">
+                  <path d="M0,12 C150,24 300,0 450,12 C600,24 750,0 900,12 C1050,24 1150,6 1200,12 V24 H0 Z"/>
+                </svg>
+                <svg class="wave wave2" viewBox="0 0 1200 24" preserveAspectRatio="none">
+                  <path d="M0,12 C150,0 300,24 450,12 C600,0 750,24 900,12 C1050,0 1150,18 1200,12 V24 H0 Z"/>
+                </svg>
+              </div>
+              <div class="tank-scale">
+                <i style="bottom:80%"></i><span style="bottom:80%">80%</span>
+                <i style="bottom:20%"></i><span style="bottom:20%">20%</span>
+              </div>
+            </div>
+            <div class="tank-pct" id="tankPctInf">--<span class="u">%</span></div>
+            <div class="tank-label">Nível da caixa</div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kcard">
+              <div class="klbl">Distância do sensor</div>
+              <div class="kval" id="kDistInf">-- <span class="kunit">cm</span></div>
+              <div class="ksub">JSN-SR04T (ultrassônico)</div>
+            </div>
+            <div class="kcard">
+              <div class="klbl">Temperatura</div>
+              <div class="kval" id="kTempInf">-- <span class="kunit">°C</span></div>
+              <div class="ksub">Sensor de temperatura</div>
+            </div>
+            <div class="kcard">
+              <div class="klbl">Vibração da bomba</div>
+              <div class="kval" id="kVibInf">--</div>
+              <div class="ksub" id="kVibSubInf">Sensor de vibração</div>
+            </div>
+            <div class="kcard">
+              <div class="klbl">Última atualização</div>
+              <div class="kval" id="kLastInf" style="font-size:18px">--</div>
+              <div class="ksub" id="kLastRelInf">aguardando dados...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Casa de Bombas — Entradas</div>
+        <div class="entradas-grid" id="entradasGridInf"></div>
+
+        <div class="section-title">Histórico de nível</div>
+        <div class="chart-box"><canvas id="chartNivelInf"></canvas></div>
+
+        <div class="charts-row">
+          <div>
+            <div class="chart-lbl">Temperatura (°C)</div>
+            <div class="chart-box"><canvas id="chartTempInf"></canvas></div>
+          </div>
+          <div>
+            <div class="chart-lbl">Vibração da Bomba</div>
+            <div class="chart-box"><canvas id="chartVibInf"></canvas></div>
+          </div>
+        </div>
       </div>
-      <div class="kcard">
-        <div class="klbl">Leitura do sensor</div>
-        <div class="kval" id="kValida">--</div>
-        <div class="ksub">Status do JSN-SR04T</div>
+
+      <!-- ── CANCELA DA PORTARIA ── -->
+      <div class="card">
+        <div class="card-title"><span class="dot dot-off" id="dotCancela"></span>&#x1F6A7; Cancela da Portaria</div>
+        <div class="cancela-grid">
+          <div class="cancela-icon">&#x1F6A7;</div>
+          <div class="entradas-grid" id="entradasCancela" style="flex:1"></div>
+        </div>
       </div>
-      <div class="kcard">
-        <div class="klbl">Última atualização</div>
-        <div class="kval" id="kLast" style="font-size:18px">--</div>
-        <div class="ksub" id="kLastRel">aguardando dados...</div>
+
+      <!-- ── AGUA DA RUA ── -->
+      <div class="card">
+        <div class="card-title"><span class="dot dot-off" id="dotAguaRua"></span>&#x1F6B0; Água da Rua</div>
+        <div class="kpi-grid" style="margin-bottom:14px">
+          <div class="kcard">
+            <div class="klbl">Vazão atual</div>
+            <div class="kval" id="kFluxoRua">-- <span class="kunit">L/min</span></div>
+            <div class="ksub">Sensor de fluxo (hidrômetro)</div>
+          </div>
+          <div class="kcard">
+            <div class="klbl">Última atualização</div>
+            <div class="kval" id="kLastAgua" style="font-size:18px">--</div>
+            <div class="ksub" id="kLastRelAgua">aguardando dados...</div>
+          </div>
+        </div>
+        <div class="entradas-grid" id="entradasAguaRua"></div>
       </div>
-      <div class="kcard">
-        <div class="klbl">Sensor ligado há</div>
-        <div class="kval" id="kUptime" style="font-size:18px">--</div>
-        <div class="ksub">desde o último reset (ESP32 #1)</div>
-      </div>
+
     </div>
+
   </div>
-
-  <div class="section-title">Entradas do Quadro / Inversor</div>
-  <div class="entradas-grid" id="entradasGrid"></div>
 
   <div class="cfg-panel">
     <div class="cfg-head" id="cfgHead">
@@ -204,7 +393,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   </div>
 
   <div class="footer">
-    Dados via ESP-NOW &rarr; ESP32 Gateway &rarr; <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a>.
+    Tanque Superior (ESP-NOW), Tanque Inferior, Alarme de Incêndio (ESP32-CAM), Bombas de Incêndio,
+    Cancela da Portaria e Água da Rua &rarr; <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a>.
     Atualização em tempo real.
   </div>
 
@@ -216,20 +406,44 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
 const DEFAULT_SB_URL = "https://odnjbvsjqteqapppkkpc.supabase.co";
 const DEFAULT_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kbmpidnNqcXRlcWFwcHBra3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0Mjk4NDQsImV4cCI6MjA5NjAwNTg0NH0.YWEzDGBl-045TPfp66drFkFwo8eeILxEu6Ex8n3pO2M";
 
-// Mesmo valor de TIMEOUT_SENSOR_MS no esp32_gateway/config.h
+// Mesmo valor de TIMEOUT_SENSOR_MS usado nos config.h dos ESP32
 const TIMEOUT_SENSOR_MS = 120000;
+const MAX_CHART_POINTS = 30;
 
-const ENTRADAS = [
+// ─── ENTRADAS POR SECAO ─────────────────────────────────────────────────
+const ENTRADAS_SUP = [
   { key: "entrada1_bomba_ligada",       icon: "&#x1F4A7;", nome: "Entrada 1", desc: "Bomba ligou",          onLabel: "LIGADA",       offLabel: "desligada", cls: "act-info"   },
   { key: "entrada2_bomba_falhou",       icon: "&#x26A0;&#xFE0F;", nome: "Entrada 2", desc: "Bomba falhou",         onLabel: "FALHA",        offLabel: "normal",    cls: "act-danger" },
   { key: "entrada3_falha_inversor",     icon: "&#x1F50C;", nome: "Entrada 3", desc: "Falha no inversor",    onLabel: "FALHA",        offLabel: "normal",    cls: "act-danger" },
   { key: "entrada4_painel_sem_energia", icon: "&#x1F50B;", nome: "Entrada 4", desc: "Painel sem energia",   onLabel: "SEM ENERGIA",  offLabel: "normal",    cls: "act-warn"   },
 ];
 
+const ENTRADAS_INF = [
+  { key: "entrada2_bomba_falhou",       icon: "&#x26A0;&#xFE0F;", nome: "Entrada 2", desc: "Bomba falhou",       onLabel: "FALHA",       offLabel: "normal", cls: "act-danger" },
+  { key: "entrada3_falha_inversor",     icon: "&#x1F50C;", nome: "Entrada 3", desc: "Falha no inversor",  onLabel: "FALHA",       offLabel: "normal", cls: "act-danger" },
+  { key: "entrada4_painel_sem_energia", icon: "&#x1F50B;", nome: "Entrada 4", desc: "Painel sem energia", onLabel: "SEM ENERGIA", offLabel: "normal", cls: "act-warn"   },
+];
+
+const ENTRADAS_BOMBAS_INCENDIO = [
+  { key: "entrada1_bomba_principal_ligada", icon: "&#x1F9EF;", nome: "Entrada 1", desc: "Bomba principal de incêndio", onLabel: "LIGADA", offLabel: "desligada", cls: "act-info"   },
+  { key: "entrada2_falha_bomba",            icon: "&#x26A0;&#xFE0F;", nome: "Entrada 2", desc: "Falha na bomba de incêndio",  onLabel: "FALHA",  offLabel: "normal",    cls: "act-danger" },
+  { key: "entrada3_bomba_reserva_ligada",   icon: "&#x1F9EF;", nome: "Entrada 3", desc: "Bomba reserva de incêndio",   onLabel: "LIGADA", offLabel: "desligada", cls: "act-info"   },
+];
+
+const ENTRADAS_CANCELA = [
+  { key: "entrada1_cancela1_falha", icon: "&#x1F6A7;", nome: "Entrada 1", desc: "Cancela 1", onLabel: "EM FALHA", offLabel: "normal", cls: "act-danger" },
+  { key: "entrada2_cancela2_falha", icon: "&#x1F6A7;", nome: "Entrada 2", desc: "Cancela 2", onLabel: "EM FALHA", offLabel: "normal", cls: "act-danger" },
+];
+
+const ENTRADAS_AGUA_RUA = [
+  { key: "fluxo_parado", icon: "&#x1F6B0;", nome: "Sensor de fluxo", desc: "Água da rua", onLabel: "SEM FLUXO", offLabel: "normal", cls: "act-danger" },
+];
+
 let sb = null;
-let lastUpdateTs = 0;
+let lastTs = {};                    // ultimo created_at (ms) por secao: sup, inf, incendio, bombas, cancela, agua
 let currentCondo = localStorage.getItem("condo_sel") || null;
 let condoList = [];
+let charts = {};
 
 function getCfg() {
   return {
@@ -242,18 +456,45 @@ function cfgValido(cfg) {
   return cfg.url && cfg.key && !cfg.url.includes("SEU_PROJETO") && !cfg.key.includes("SUA_SUPABASE");
 }
 
-function renderEntradas() {
-  const grid = document.getElementById("entradasGrid");
-  grid.innerHTML = ENTRADAS.map(e => `
-    <div class="entrada-card" id="card-${e.key}">
+// ─── HELPERS GENERICOS ────────────────────────────────────────────────
+function renderEntradas(gridId, list, prefix) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = list.map(e => `
+    <div class="entrada-card" id="card-${prefix}-${e.key}">
       <div class="e-top">
         <span class="e-icon">${e.icon}</span>
         <span class="e-name">${e.nome}</span>
       </div>
       <div class="e-desc">${e.desc}</div>
-      <div class="e-state" id="state-${e.key}">${e.offLabel}</div>
+      <div class="e-state" id="state-${prefix}-${e.key}">${e.offLabel}</div>
     </div>
   `).join("");
+}
+
+function applyEntradas(list, row, prefix) {
+  list.forEach(e => {
+    const ativo = !!row[e.key];
+    const card  = document.getElementById(`card-${prefix}-${e.key}`);
+    const state = document.getElementById(`state-${prefix}-${e.key}`);
+    if (!card || !state) return;
+    card.classList.remove("act-info", "act-warn", "act-danger");
+    if (ativo) {
+      card.classList.add(e.cls);
+      state.textContent = e.onLabel;
+    } else {
+      state.textContent = e.offLabel;
+    }
+  });
+}
+
+function updateTank(prefix, nivel) {
+  const tank = document.getElementById(`tankWater${prefix}`);
+  tank.style.height = Math.max(0, Math.min(100, nivel)) + "%";
+  tank.classList.remove("lvl-low", "lvl-mid", "lvl-ok");
+  if (nivel <= 20) tank.classList.add("lvl-low");
+  else if (nivel <= 40) tank.classList.add("lvl-mid");
+  else tank.classList.add("lvl-ok");
+  document.getElementById(`tankPct${prefix}`).innerHTML = `${nivel}<span class="u">%</span>`;
 }
 
 function fmtUptime(s) {
@@ -266,6 +507,7 @@ function fmtUptime(s) {
 }
 
 function fmtRelTime(ts) {
+  if (!ts) return "--";
   const diff = Math.floor((Date.now() - ts) / 1000);
   if (diff < 5) return "agora mesmo";
   if (diff < 60) return `há ${diff}s`;
@@ -273,6 +515,66 @@ function fmtRelTime(ts) {
   return `há ${Math.floor(diff / 3600)}h`;
 }
 
+function refreshDot(key, dotId) {
+  const dot = document.getElementById(dotId);
+  if (!dot) return;
+  const ts = lastTs[key];
+  if (!ts) { dot.className = "dot dot-off"; return; }
+  dot.className = (Date.now() - ts) >= TIMEOUT_SENSOR_MS ? "dot dot-fail" : "dot dot-ok";
+}
+
+// ─── GRAFICOS (Chart.js) ───────────────────────────────────────────────
+function createChart(canvasId, label, color) {
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  charts[canvasId] = new Chart(ctx, {
+    type: "line",
+    data: { labels: [], datasets: [{ label, data: [], borderColor: color, backgroundColor: color + "22", tension: .35, fill: true, pointRadius: 0, borderWidth: 2 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      scales: {
+        x: { ticks: { color: "#888", maxTicksLimit: 6, font: { size: 10 } }, grid: { color: "rgba(255,255,255,.05)" } },
+        y: { ticks: { color: "#888", font: { size: 10 } }, grid: { color: "rgba(255,255,255,.05)" }, beginAtZero: true },
+      },
+      plugins: { legend: { display: false } },
+    },
+  });
+}
+
+function pushChartPoint(canvasId, label, value) {
+  const c = charts[canvasId];
+  if (!c || value == null || isNaN(value)) return;
+  c.data.labels.push(label);
+  c.data.datasets[0].data.push(value);
+  if (c.data.labels.length > MAX_CHART_POINTS) {
+    c.data.labels.shift();
+    c.data.datasets[0].data.shift();
+  }
+  c.update();
+}
+
+function setChartHistory(canvasId, rows, valueKey) {
+  const c = charts[canvasId];
+  if (!c) return;
+  c.data.labels = rows.map(r => new Date(r.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  c.data.datasets[0].data = rows.map(r => r[valueKey]);
+  c.update();
+}
+
+function clearCharts() {
+  Object.values(charts).forEach(c => {
+    c.data.labels = [];
+    c.data.datasets[0].data = [];
+    c.update();
+  });
+}
+
+function timeLabel(createdAt) {
+  return new Date(createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+// ─── CONDOMINIOS ────────────────────────────────────────────────────────
 async function loadCondominios() {
   if (!sb) return;
   const { data, error } = await sb.from("condominios").select("condominio");
@@ -292,24 +594,19 @@ async function loadCondominios() {
   ).join("");
 }
 
-function updateUI(row) {
+// ─── TANQUE SUPERIOR (tabela: leituras) ────────────────────────────────
+function updateUISuperior(row) {
   if (!row) return;
   if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
-  lastUpdateTs = new Date(row.created_at).getTime() || Date.now();
+  lastTs.sup = new Date(row.created_at).getTime() || Date.now();
 
   const nivel = row.nivel_pct ?? 0;
-  const tank = document.getElementById("tankWater");
-  tank.style.height = Math.max(0, Math.min(100, nivel)) + "%";
-  tank.classList.remove("lvl-low", "lvl-mid", "lvl-ok");
-  if (nivel <= 20) tank.classList.add("lvl-low");
-  else if (nivel <= 40) tank.classList.add("lvl-mid");
-  else tank.classList.add("lvl-ok");
+  updateTank("Sup", nivel);
 
-  document.getElementById("tankPct").innerHTML = `${nivel}<span class="u">%</span>`;
-  document.getElementById("kDist").innerHTML = `${row.distancia_cm != null ? Number(row.distancia_cm).toFixed(1) : "--"} <span class="kunit">cm</span>`;
-  document.getElementById("kUptime").textContent = fmtUptime(row.sensor_uptime_s);
+  document.getElementById("kDistSup").innerHTML = `${row.distancia_cm != null ? Number(row.distancia_cm).toFixed(1) : "--"} <span class="kunit">cm</span>`;
+  document.getElementById("kUptimeSup").textContent = fmtUptime(row.sensor_uptime_s);
 
-  const validaEl = document.getElementById("kValida");
+  const validaEl = document.getElementById("kValidaSup");
   if (row.leitura_valida) {
     validaEl.textContent = "OK";
     validaEl.style.color = "var(--ok)";
@@ -318,35 +615,138 @@ function updateUI(row) {
     validaEl.style.color = "var(--danger)";
   }
 
-  const last = new Date(row.created_at);
-  document.getElementById("kLast").textContent = last.toLocaleTimeString("pt-BR");
+  document.getElementById("kLastSup").textContent = new Date(row.created_at).toLocaleTimeString("pt-BR");
 
-  ENTRADAS.forEach(e => {
-    const ativo = !!row[e.key];
-    const card = document.getElementById(`card-${e.key}`);
-    const state = document.getElementById(`state-${e.key}`);
-    card.classList.remove("act-info", "act-warn", "act-danger");
-    if (ativo) {
-      card.classList.add(e.cls);
-      state.textContent = e.onLabel;
-    } else {
-      state.textContent = e.offLabel;
-    }
-  });
+  applyEntradas(ENTRADAS_SUP, row, "sup");
+  pushChartPoint("chartNivelSup", timeLabel(row.created_at), nivel);
 
   refreshConn();
+  refreshDot("sup", "dotSup");
 }
 
+// ─── TANQUE INFERIOR (tabela: tanque_inferior) ─────────────────────────
+function updateUIInferior(row) {
+  if (!row) return;
+  if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
+  lastTs.inf = new Date(row.created_at).getTime() || Date.now();
+
+  const nivel = row.nivel_pct ?? 0;
+  updateTank("Inf", nivel);
+
+  document.getElementById("kDistInf").innerHTML = `${row.distancia_cm != null ? Number(row.distancia_cm).toFixed(1) : "--"} <span class="kunit">cm</span>`;
+  document.getElementById("kTempInf").innerHTML = `${row.temperatura_c != null ? Number(row.temperatura_c).toFixed(1) : "--"} <span class="kunit">°C</span>`;
+
+  const vibEl = document.getElementById("kVibInf");
+  const vibSub = document.getElementById("kVibSubInf");
+  if (row.vibracao_alerta) {
+    vibEl.textContent = "ALERTA";
+    vibEl.style.color = "var(--danger)";
+    vibSub.textContent = "Vibração acima do limite!";
+  } else {
+    vibEl.textContent = "Normal";
+    vibEl.style.color = "var(--ok)";
+    vibSub.textContent = row.vibracao_valor != null ? `Leitura: ${Number(row.vibracao_valor).toFixed(0)}` : "Sensor de vibração";
+  }
+
+  document.getElementById("kLastInf").textContent = new Date(row.created_at).toLocaleTimeString("pt-BR");
+
+  applyEntradas(ENTRADAS_INF, row, "inf");
+
+  const t = timeLabel(row.created_at);
+  pushChartPoint("chartNivelInf", t, nivel);
+  pushChartPoint("chartTempInf", t, row.temperatura_c != null ? Number(row.temperatura_c) : null);
+  pushChartPoint("chartVibInf", t, row.vibracao_valor != null ? Number(row.vibracao_valor) : null);
+
+  refreshDot("inf", "dotInf");
+}
+
+// ─── ALARME DE INCENDIO (tabela: alarme_incendio) ──────────────────────
+function updateUIIncendio(row) {
+  if (!row) return;
+  if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
+  lastTs.incendio = new Date(row.created_at).getTime() || Date.now();
+
+  const beacon = document.getElementById("incendioBeacon");
+  const texto  = document.getElementById("incendioTexto");
+  const sub    = document.getElementById("incendioSub");
+
+  beacon.classList.remove("alerta");
+  if (row.entrada1_alarme_acionado) {
+    beacon.textContent = "\u{1F6A8}";
+    beacon.classList.add("alerta");
+    texto.textContent = "ALARME ACIONADO!";
+    texto.style.color = "var(--danger)";
+    sub.textContent = "Entrada 1 ativa — verifique a central de incêndio";
+  } else if (row.entrada2_central_avaria) {
+    beacon.textContent = "\u{1F6A8}";
+    beacon.classList.add("alerta");
+    texto.textContent = "AVARIA NA CENTRAL";
+    texto.style.color = "var(--warn)";
+    sub.textContent = "Entrada 2 ativa — falha/avaria na central de alarme";
+  } else {
+    beacon.textContent = "\u{1F7E2}";
+    texto.textContent = "Sistema Normal";
+    texto.style.color = "var(--ok)";
+    sub.textContent = "Nenhum alarme ativo";
+  }
+
+  const fotoBox  = document.getElementById("incendioFotoBox");
+  const foto     = document.getElementById("incendioFoto");
+  const fotoTime = document.getElementById("incendioFotoTime");
+  if (row.foto_url) {
+    const cacheBust = row.foto_atualizada_em ? `?t=${new Date(row.foto_atualizada_em).getTime()}` : "";
+    foto.src = row.foto_url + cacheBust;
+    fotoBox.classList.add("has-photo");
+    fotoTime.textContent = row.foto_atualizada_em ? `Foto atualizada ${fmtRelTime(new Date(row.foto_atualizada_em).getTime())}` : "";
+  } else {
+    fotoBox.classList.remove("has-photo");
+  }
+
+  refreshDot("incendio", "dotIncendio");
+}
+
+// ─── BOMBAS DE INCENDIO (tabela: bombas_incendio) ──────────────────────
+function updateUIBombasIncendio(row) {
+  if (!row) return;
+  if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
+  lastTs.bombas = new Date(row.created_at).getTime() || Date.now();
+  applyEntradas(ENTRADAS_BOMBAS_INCENDIO, row, "bombas");
+  refreshDot("bombas", "dotBombasIncendio");
+}
+
+// ─── CANCELA DA PORTARIA (tabela: cancela_portaria) ────────────────────
+function updateUICancela(row) {
+  if (!row) return;
+  if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
+  lastTs.cancela = new Date(row.created_at).getTime() || Date.now();
+  applyEntradas(ENTRADAS_CANCELA, row, "cancela");
+  refreshDot("cancela", "dotCancela");
+}
+
+// ─── AGUA DA RUA (tabela: agua_rua) ────────────────────────────────────
+function updateUIAguaRua(row) {
+  if (!row) return;
+  if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
+  lastTs.agua = new Date(row.created_at).getTime() || Date.now();
+
+  row.fluxo_parado = row.fluxo_ativo === false;
+  applyEntradas(ENTRADAS_AGUA_RUA, row, "agua");
+
+  document.getElementById("kFluxoRua").innerHTML = `${row.fluxo_lpm != null ? Number(row.fluxo_lpm).toFixed(1) : "--"} <span class="kunit">L/min</span>`;
+  document.getElementById("kLastAgua").textContent = new Date(row.created_at).toLocaleTimeString("pt-BR");
+
+  refreshDot("agua", "dotAguaRua");
+}
+
+// ─── BADGE DE CONEXAO (header) — segue o Tanque Superior ───────────────
 function refreshConn() {
   const badge = document.getElementById("connBadge");
-  const rel = document.getElementById("kLastRel");
-  if (!lastUpdateTs) {
+  if (!lastTs.sup) {
     badge.className = "chip chip-off";
     badge.innerHTML = '<span class="dot dot-off"></span> Conectando...';
     return;
   }
-  rel.textContent = `Última leitura ${fmtRelTime(lastUpdateTs)}`;
-  const offline = (Date.now() - lastUpdateTs) >= TIMEOUT_SENSOR_MS;
+  const offline = (Date.now() - lastTs.sup) >= TIMEOUT_SENSOR_MS;
   if (offline) {
     badge.className = "chip chip-fail";
     badge.innerHTML = '<span class="dot dot-fail"></span> Sensor offline';
@@ -356,29 +756,104 @@ function refreshConn() {
   }
 }
 
-async function loadLatest() {
+function updateRelTimes() {
+  if (lastTs.sup)  document.getElementById("kLastRelSup").textContent  = `Última leitura ${fmtRelTime(lastTs.sup)}`;
+  if (lastTs.inf)  document.getElementById("kLastRelInf").textContent  = `Última leitura ${fmtRelTime(lastTs.inf)}`;
+  if (lastTs.agua) document.getElementById("kLastRelAgua").textContent = `Última leitura ${fmtRelTime(lastTs.agua)}`;
+}
+
+function tick() {
+  refreshConn();
+  updateRelTimes();
+  refreshDot("sup", "dotSup");
+  refreshDot("inf", "dotInf");
+  refreshDot("incendio", "dotIncendio");
+  refreshDot("bombas", "dotBombasIncendio");
+  refreshDot("cancela", "dotCancela");
+  refreshDot("agua", "dotAguaRua");
+}
+
+// ─── CARREGAMENTO DE DADOS ──────────────────────────────────────────────
+async function loadLatestTable(table, updateFn) {
   if (!sb) return;
-  let q = sb.from("leituras").select("*");
+  let q = sb.from(table).select("*");
   if (currentCondo) q = q.eq("condominio", currentCondo);
   const { data, error } = await q.order("created_at", { ascending: false }).limit(1);
   if (error) {
-    console.error("[Supabase] erro ao buscar leitura:", error.message);
+    console.error(`[Supabase] erro ao buscar ${table}:`, error.message);
     return;
   }
-  if (data && data.length) updateUI(data[0]);
+  if (data && data.length) updateFn(data[0]);
 }
 
+async function loadAllLatest() {
+  await Promise.all([
+    loadLatestTable("leituras", updateUISuperior),
+    loadLatestTable("tanque_inferior", updateUIInferior),
+    loadLatestTable("alarme_incendio", updateUIIncendio),
+    loadLatestTable("bombas_incendio", updateUIBombasIncendio),
+    loadLatestTable("cancela_portaria", updateUICancela),
+    loadLatestTable("agua_rua", updateUIAguaRua),
+  ]);
+}
+
+async function loadHistory(table, valueKey, canvasId) {
+  if (!sb) return;
+  let q = sb.from(table).select(`created_at, ${valueKey}`);
+  if (currentCondo) q = q.eq("condominio", currentCondo);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(MAX_CHART_POINTS);
+  if (error) {
+    console.error(`[Supabase] erro no histórico de ${table}:`, error.message);
+    return;
+  }
+  setChartHistory(canvasId, (data || []).reverse(), valueKey);
+}
+
+async function loadAllHistory() {
+  await Promise.all([
+    loadHistory("leituras", "nivel_pct", "chartNivelSup"),
+    loadHistory("tanque_inferior", "nivel_pct", "chartNivelInf"),
+    loadHistory("tanque_inferior", "temperatura_c", "chartTempInf"),
+    loadHistory("tanque_inferior", "vibracao_valor", "chartVibInf"),
+  ]);
+}
+
+// ─── REALTIME ───────────────────────────────────────────────────────────
 function subscribeRealtime() {
   if (!sb) return;
+
   sb.channel("leituras-rt")
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "leituras" }, payload => {
-      // Condominio novo aparecendo: atualiza o seletor
       if (payload.new.condominio && !condoList.includes(payload.new.condominio)) loadCondominios();
-      updateUI(payload.new);
+      updateUISuperior(payload.new);
     })
+    .subscribe();
+
+  sb.channel("tanque_inferior-rt")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "tanque_inferior" }, payload => {
+      if (payload.new.condominio && !condoList.includes(payload.new.condominio)) loadCondominios();
+      updateUIInferior(payload.new);
+    })
+    .subscribe();
+
+  sb.channel("alarme_incendio-rt")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "alarme_incendio" }, payload => updateUIIncendio(payload.new))
+    .subscribe();
+
+  sb.channel("bombas_incendio-rt")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "bombas_incendio" }, payload => updateUIBombasIncendio(payload.new))
+    .subscribe();
+
+  sb.channel("cancela_portaria-rt")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "cancela_portaria" }, payload => updateUICancela(payload.new))
+    .subscribe();
+
+  sb.channel("agua_rua-rt")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "agua_rua" }, payload => updateUIAguaRua(payload.new))
     .subscribe();
 }
 
+// ─── CONEXAO ────────────────────────────────────────────────────────────
 function connect() {
   const cfg = getCfg();
   document.getElementById("cfgUrl").value = cfg.url.includes("SEU_PROJETO") ? "" : cfg.url;
@@ -393,17 +868,22 @@ function connect() {
   }
 
   sb = supabase.createClient(cfg.url, cfg.key);
-  loadCondominios().then(loadLatest);
+  loadCondominios().then(() => {
+    loadAllLatest();
+    loadAllHistory();
+  });
   subscribeRealtime();
 }
 
 document.getElementById("condoSel").addEventListener("change", e => {
   currentCondo = e.target.value;
   localStorage.setItem("condo_sel", currentCondo);
-  lastUpdateTs = 0;
+  lastTs = {};
   document.getElementById("connBadge").className = "chip chip-off";
   document.getElementById("connBadge").innerHTML = '<span class="dot dot-off"></span> Carregando...';
-  loadLatest();
+  clearCharts();
+  loadAllLatest();
+  loadAllHistory();
 });
 
 document.getElementById("cfgHead").addEventListener("click", () => {
@@ -427,10 +907,21 @@ document.getElementById("cfgSave").addEventListener("click", () => {
   location.reload();
 });
 
-renderEntradas();
+// ─── INICIALIZACAO ──────────────────────────────────────────────────────
+renderEntradas("entradasGridSup", ENTRADAS_SUP, "sup");
+renderEntradas("entradasGridInf", ENTRADAS_INF, "inf");
+renderEntradas("entradasBombasIncendio", ENTRADAS_BOMBAS_INCENDIO, "bombas");
+renderEntradas("entradasCancela", ENTRADAS_CANCELA, "cancela");
+renderEntradas("entradasAguaRua", ENTRADAS_AGUA_RUA, "agua");
+
+createChart("chartNivelSup", "Nível (%)", "#35c8ff");
+createChart("chartNivelInf", "Nível (%)", "#35c8ff");
+createChart("chartTempInf", "Temperatura (°C)", "#f59e0b");
+createChart("chartVibInf", "Vibração", "#ef4444");
+
 connect();
-setInterval(refreshConn, 1000);
-setInterval(loadLatest, 30000);
+setInterval(tick, 1000);
+setInterval(loadAllLatest, 30000);
 </script>
 </body>
 </html>
