@@ -51,6 +51,7 @@ Sao 4 entradas digitais (contato seco, ligadas ao GND quando ativas,
 | Entrada 4 acionada (Painel sem energia)        | "PAINEL SEM ENERGIA!"                     |
 | Entrada 4 normalizada                          | "Energia do painel restabelecida!"        |
 | Sensor sem comunicacao (2 min)                 | "Sensor sem comunicacao!"                 |
+| Sensor voltou a comunicar                      | "Sensor online novamente!"                |
 | Leitura invalida do sensor                     | "Sensor com leitura invalida!"            |
 | Gateway ligado                                 | "Monitor iniciado!"                       |
 
