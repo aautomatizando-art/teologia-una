@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS leituras (
 ALTER TABLE leituras ADD COLUMN IF NOT EXISTS condominio TEXT NOT NULL DEFAULT 'Condominio Principal';
 
 -- Migracao: as 4 entradas do Tanque Superior foram movidas para o Tanque
--- Inferior (o ESP32 do Tanque Superior agora so tem o sensor JSN-SR04T)
+-- Inferior (o ESP32 do Tanque Superior agora so tem o sensor JSN-SR04T).
+-- A view ultima_leitura (SELECT *) depende dessas colunas, entao precisa
+-- ser removida antes do DROP COLUMN — ela e recriada logo abaixo.
+DROP VIEW IF EXISTS ultima_leitura;
 ALTER TABLE leituras DROP COLUMN IF EXISTS entrada1_bomba_ligada;
 ALTER TABLE leituras DROP COLUMN IF EXISTS entrada2_bomba_falhou;
 ALTER TABLE leituras DROP COLUMN IF EXISTS entrada3_falha_inversor;
