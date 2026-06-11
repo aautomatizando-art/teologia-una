@@ -19,6 +19,14 @@
 // Grupo do WhatsApp: "Gestao Condominio"
 #define WHATS_GROUP_ID "120363407922496564@g.us"
 
+// ─── SUPABASE (Dashboard web) ───────────────────────────────────────────────────
+// URL do projeto: Supabase -> Settings -> API -> Project URL
+#define SUPABASE_URL  "https://SEU_PROJETO.supabase.co"
+
+// Chave anon/public: Supabase -> Settings -> API -> anon public
+// NAO comitar a chave real no GitHub — preencha apenas localmente!
+#define SUPABASE_KEY  "SUA_SUPABASE_ANON_KEY_AQUI"
+
 // ─── LIMITES DE ALERTA ──────────────────────────────────────────────────────────
 #define NIVEL_ALERTA  20   // % abaixo disto -> alerta de nivel baixo
 #define NIVEL_OK      80   // % acima disto  -> aviso de caixa cheia

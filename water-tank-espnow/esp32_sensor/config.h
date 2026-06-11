@@ -9,32 +9,30 @@ uint8_t GATEWAY_MAC[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // <- substitua!
 // ─── PINOS ESP32 SENSOR ─────────────────────────────────────────────
 #define TRIG_PIN        32   // JSN-SR04T TRIG
 #define ECHO_PIN        33   // JSN-SR04T ECHO
-#define SAIDA1_PIN      25   // SAIDA 1: Rele da bomba (Bomba Ligada)
-#define SAIDA2_PIN      26   // SAIDA 2: Sinalizacao de Falha na Bomba (LED/sirene)
 #define LED_PIN          2   // LED onboard (pisca ao enviar)
+
+// ─── ENTRADAS DIGITAIS (sinais do quadro/inversor da bomba) ──────────
+// Contatos secos (rele) ligados ao GND quando ativos -> usa INPUT_PULLUP
+// (pino em HIGH = inativo, pino em LOW = ativo)
+#define ENTRADA1_PIN    27   // ENTRADA 1: Bomba ligou
+#define ENTRADA2_PIN    14   // ENTRADA 2: Bomba falhou
+#define ENTRADA3_PIN    13   // ENTRADA 3: Falha no inversor
+#define ENTRADA4_PIN     4   // ENTRADA 4: Painel sem energia (sem rede CA)
 
 // ─── CALIBRACAO DA CAIXA ─────────────────────────────────────────────
 // Distancia (cm) do sensor ate a superficie da agua:
 //
 //  [Sensor na tampa]
-//     |  <- DIST_CAIXA_CHEIA (15cm) => caixa cheia, desliga bomba
+//     |  <- DIST_CAIXA_CHEIA (15cm) => caixa cheia (100%)
 //     |
 //     ~  nivel da agua
 //     |
-//     |  <- DIST_CAIXA_VAZIA (90cm) => caixa vazia, liga bomba
+//     |  <- DIST_CAIXA_VAZIA (90cm) => caixa vazia (0%)
 //     |
 //  [Fundo]
 //
-#define DIST_CAIXA_VAZIA  90   // cm: nivel baixo -> liga bomba (SAIDA 1)
-#define DIST_CAIXA_CHEIA  15   // cm: nivel ok    -> desliga bomba
-
-// ─── DETECCAO DE FALHA DA BOMBA (SAIDA 2) ──────────────────────────────
-// Se a bomba ficar ligada por FALHA_TEMPO_MS e o nivel NAO subir pelo menos
-// FALHA_DELTA_CM, considera falha (bomba queimada, sem agua no poco, registro
-// fechado, etc). Aciona SAIDA 2 e desliga a bomba por seguranca.
-#define FALHA_TEMPO_MS   600000UL  // 10 minutos
-#define FALHA_DELTA_CM   3.0f      // nivel deve subir >= 3cm no periodo
-#define DESLIGA_BOMBA_NA_FALHA  true  // desliga bomba ao detectar falha
+#define DIST_CAIXA_VAZIA  90   // cm: nivel baixo (caixa vazia)
+#define DIST_CAIXA_CHEIA  15   // cm: nivel cheio (caixa cheia)
 
 // ─── INTERVALO DE MEDICAO ─────────────────────────────────────────────
 #define INTERVALO_MEDICAO_MS  30000UL   // mede e envia a cada 30 segundos

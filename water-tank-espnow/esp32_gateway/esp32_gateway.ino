@@ -1,21 +1,25 @@
 /*
  * ESP32 #2 - Gateway (proximo ao WiFi)
- * Funcao: recebe dados via ESP-NOW e envia alertas para um GRUPO do WhatsApp
- *         atraves da Evolution API rodando no VPS (Docker)
+ * Funcao: recebe dados via ESP-NOW, envia alertas para um GRUPO do WhatsApp
+ *         atraves da Evolution API e publica os dados no Supabase para a
+ *         dashboard web (Vercel)
  *
- * Alertas enviados:
- *   - Nivel baixo + SAIDA 1 acionada (Bomba Ligada)
- *   - SAIDA 2 acionada (Falha na Bomba)
- *   - Caixa abastecida (bomba desligada)
+ * Alertas enviados ao WhatsApp:
+ *   - Nivel baixo + Entrada 1 (Bomba ligou)
+ *   - Entrada 2 acionada (Bomba falhou)
+ *   - Entrada 3 acionada (Falha no inversor)
+ *   - Entrada 4 acionada (Painel sem energia)
+ *   - Caixa abastecida (nivel OK)
  *   - Sensor sem comunicacao
  *
  * Bibliotecas necessarias:
  *   - ArduinoJson by Benoit Blanchon
- *   (HTTPClient e WiFi ja vem no ESP32 core)
+ *   (HTTPClient, WiFiClientSecure e WiFi ja vem no ESP32 core)
  */
 
 #include <esp_now.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "config.h"
@@ -24,8 +28,10 @@
 typedef struct {
     float    distancia;
     int      nivel;
-    bool     saida1_bombaLigada;
-    bool     saida2_falhaBomba;
+    bool     entrada1_bombaLigada;
+    bool     entrada2_bombaFalhou;
+    bool     entrada3_falhaInversor;
+    bool     entrada4_painelSemEnergia;
     unsigned long uptime;
     bool     leituraValida;
 } DadosSensor;
@@ -33,8 +39,10 @@ typedef struct {
 DadosSensor dados;
 volatile bool dadosNovos = false;
 
-bool alertaNivelEnviado  = false;
-bool alertaFalhaEnviado  = false;
+bool alertaNivelEnviado    = false;
+bool alertaBombaFalhouEnviado = false;
+bool alertaInversorEnviado    = false;
+bool alertaPainelEnviado      = false;
 bool alertaSemSinal      = false;
 bool leituraInvalidaAvisada = false;
 unsigned long ultimoStatus   = 0;
@@ -90,6 +98,41 @@ bool enviarWhatsApp(const String &texto) {
     return ok;
 }
 
+// Envia a leitura atual para o Supabase (dashboard web)
+bool enviarSupabase() {
+    if (WiFi.status() != WL_CONNECTED) return false;
+
+    WiFiClientSecure client;
+    client.setInsecure();
+
+    HTTPClient http;
+    String url = String(SUPABASE_URL) + "/rest/v1/leituras";
+    http.begin(client, url);
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("apikey", SUPABASE_KEY);
+    http.addHeader("Authorization", "Bearer " + String(SUPABASE_KEY));
+    http.addHeader("Prefer", "return=minimal");
+    http.setTimeout(10000);
+
+    JsonDocument doc;
+    doc["distancia_cm"]                = dados.distancia;
+    doc["nivel_pct"]                   = dados.nivel;
+    doc["entrada1_bomba_ligada"]       = dados.entrada1_bombaLigada;
+    doc["entrada2_bomba_falhou"]       = dados.entrada2_bombaFalhou;
+    doc["entrada3_falha_inversor"]     = dados.entrada3_falhaInversor;
+    doc["entrada4_painel_sem_energia"] = dados.entrada4_painelSemEnergia;
+    doc["sensor_uptime_s"]             = dados.uptime;
+    doc["leitura_valida"]              = dados.leituraValida;
+    String body;
+    serializeJson(doc, body);
+
+    int code = http.POST(body);
+    bool ok = (code >= 200 && code < 300);
+    Serial.printf("[SUPABASE] HTTP %d %s\n", code, ok ? "OK" : http.getString().c_str());
+    http.end();
+    return ok;
+}
+
 void setup() {
     Serial.begin(115200);
 
@@ -137,11 +180,15 @@ void loop() {
         dadosNovos     = false;
         alertaSemSinal = false;
 
-        Serial.printf("[DADOS] %.1fcm | %d%% | S1(Bomba): %s | S2(Falha): %s | up %lus\n",
+        Serial.printf("[DADOS] %.1fcm | %d%% | E1(Bomba ligou): %s | E2(Bomba falhou): %s | E3(Falha inversor): %s | E4(Painel sem energia): %s | up %lus\n",
             dados.distancia, dados.nivel,
-            dados.saida1_bombaLigada ? "ON" : "OFF",
-            dados.saida2_falhaBomba  ? "ON" : "OFF",
+            dados.entrada1_bombaLigada      ? "ON" : "OFF",
+            dados.entrada2_bombaFalhou      ? "ON" : "OFF",
+            dados.entrada3_falhaInversor    ? "ON" : "OFF",
+            dados.entrada4_painelSemEnergia ? "ON" : "OFF",
             dados.uptime);
+
+        enviarSupabase();
 
         // Leitura invalida do sensor
         if (!dados.leituraValida) {
@@ -155,24 +202,50 @@ void loop() {
         }
         leituraInvalidaAvisada = false;
 
-        // ── SAIDA 2: Falha na bomba (prioridade maxima) ──
-        if (dados.saida2_falhaBomba && !alertaFalhaEnviado) {
-            String msg = "\xF0\x9F\x9A\xA8 *FALHA NA BOMBA!* (Saida 2 acionada)\n\n";
-            msg += "A bomba ficou ligada mas o nivel nao subiu.\n";
-            msg += "Possiveis causas: bomba queimada, falta d'agua no poco, registro fechado.\n\n";
-            msg += "\xF0\x9F\x93\x8A Nivel atual: *" + String(dados.nivel) + "%*\n";
-            msg += "\xF0\x9F\x94\xA7 Bomba desligada por seguranca.";
+        // ── ENTRADA 2: Bomba falhou (prioridade maxima) ──
+        if (dados.entrada2_bombaFalhou && !alertaBombaFalhouEnviado) {
+            String msg = "\xF0\x9F\x9A\xA8 *FALHA NA BOMBA!* (Entrada 2 acionada)\n\n";
+            msg += "O quadro de comando sinalizou falha na bomba.\n";
+            msg += "Possiveis causas: bomba queimada, falta d'agua no poco, registro fechado, protecao do motor.\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel atual: *" + String(dados.nivel) + "%*";
             enviarWhatsApp(msg);
-            alertaFalhaEnviado = true;
+            alertaBombaFalhouEnviado = true;
         }
-        if (!dados.saida2_falhaBomba) alertaFalhaEnviado = false;
+        if (!dados.entrada2_bombaFalhou && alertaBombaFalhouEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Falha na bomba normalizada* (Entrada 2 desativada).");
+            alertaBombaFalhouEnviado = false;
+        }
 
-        // ── Nivel baixo + SAIDA 1 acionada (Bomba Ligada) ──
-        if (dados.nivel <= NIVEL_ALERTA && dados.saida1_bombaLigada && !alertaNivelEnviado) {
+        // ── ENTRADA 3: Falha no inversor ──
+        if (dados.entrada3_falhaInversor && !alertaInversorEnviado) {
+            String msg = "\xF0\x9F\x9A\xA8 *FALHA NO INVERSOR!* (Entrada 3 acionada)\n\n";
+            msg += "Verifique o inversor/quadro de energia do sistema.";
+            enviarWhatsApp(msg);
+            alertaInversorEnviado = true;
+        }
+        if (!dados.entrada3_falhaInversor && alertaInversorEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Falha no inversor normalizada* (Entrada 3 desativada).");
+            alertaInversorEnviado = false;
+        }
+
+        // ── ENTRADA 4: Painel sem energia ──
+        if (dados.entrada4_painelSemEnergia && !alertaPainelEnviado) {
+            String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *PAINEL SEM ENERGIA!* (Entrada 4 acionada)\n\n";
+            msg += "O quadro esta sem alimentacao da rede eletrica.";
+            enviarWhatsApp(msg);
+            alertaPainelEnviado = true;
+        }
+        if (!dados.entrada4_painelSemEnergia && alertaPainelEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Energia do painel restabelecida!* (Entrada 4 desativada).");
+            alertaPainelEnviado = false;
+        }
+
+        // ── Nivel baixo + ENTRADA 1 acionada (Bomba Ligada) ──
+        if (dados.nivel <= NIVEL_ALERTA && dados.entrada1_bombaLigada && !alertaNivelEnviado) {
             String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *Nivel baixo na caixa d'agua!*\n\n";
             msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dados.nivel) + "%*\n";
             msg += "\xF0\x9F\x93\x8F Distancia: " + String(dados.distancia, 1) + "cm\n";
-            msg += "\xF0\x9F\x9F\xA2 Saida 1 acionada: *Bomba LIGADA*";
+            msg += "\xF0\x9F\x9F\xA2 Entrada 1 acionada: *Bomba LIGADA*";
             enviarWhatsApp(msg);
             alertaNivelEnviado = true;
         }
@@ -192,8 +265,10 @@ void loop() {
         ultimoStatus = agora;
         String msg = "\xF0\x9F\x93\x8B *Status do sistema*\n";
         msg += "Nivel: " + String(dados.nivel) + "%\n";
-        msg += "Saida 1 (Bomba): " + String(dados.saida1_bombaLigada ? "LIGADA" : "DESLIGADA") + "\n";
-        msg += "Saida 2 (Falha): " + String(dados.saida2_falhaBomba ? "ACIONADA" : "normal") + "\n";
+        msg += "Entrada 1 (Bomba ligou): " + String(dados.entrada1_bombaLigada ? "ON" : "OFF") + "\n";
+        msg += "Entrada 2 (Bomba falhou): " + String(dados.entrada2_bombaFalhou ? "ON" : "OFF") + "\n";
+        msg += "Entrada 3 (Falha inversor): " + String(dados.entrada3_falhaInversor ? "ON" : "OFF") + "\n";
+        msg += "Entrada 4 (Painel sem energia): " + String(dados.entrada4_painelSemEnergia ? "ON" : "OFF") + "\n";
         msg += "Sensor online: " + String(dados.uptime / 60) + " min";
         enviarWhatsApp(msg);
     }

@@ -1,11 +1,13 @@
 /*
  * ESP32 #1 - No sensor (caixa d'agua)
- * Funcao: le nivel, controla bomba (SAIDA 1), detecta falha da bomba (SAIDA 2)
- *         e envia dados via ESP-NOW ao gateway
+ * Funcao: le o nivel da caixa, le 4 entradas digitais vindas do quadro/inversor
+ *         da bomba e envia tudo via ESP-NOW ao gateway
  * Sem WiFi necessario neste ESP32
  *
- * SAIDA 1 (GPIO25): Rele da bomba  -> "Bomba Ligada"
- * SAIDA 2 (GPIO26): Falha na bomba -> bomba ligada mas nivel nao sobe
+ * ENTRADA 1 (GPIO27): Bomba ligou
+ * ENTRADA 2 (GPIO14): Bomba falhou
+ * ENTRADA 3 (GPIO13): Falha no inversor
+ * ENTRADA 4 (GPIO4):  Painel sem energia (sem rede CA)
  *
  * Bibliotecas: apenas ESP32 core (nenhuma adicional necessaria)
  */
@@ -18,19 +20,16 @@
 typedef struct {
     float    distancia;
     int      nivel;
-    bool     saida1_bombaLigada;
-    bool     saida2_falhaBomba;
+    bool     entrada1_bombaLigada;
+    bool     entrada2_bombaFalhou;
+    bool     entrada3_falhaInversor;
+    bool     entrada4_painelSemEnergia;
     unsigned long uptime;
     bool     leituraValida;
 } DadosSensor;
 
 DadosSensor dados;
-bool alertaNivelBaixo = false;
 unsigned long ultimaMedicao = 0;
-
-// Controle de deteccao de falha
-unsigned long bombaLigadaDesde = 0;
-float distanciaAoLigarBomba    = 0;
 
 void onDataSent(const uint8_t *mac, esp_now_send_status_t status) {
     bool ok = (status == ESP_NOW_SEND_SUCCESS);
@@ -63,43 +62,25 @@ int distParaPorcento(float dist) {
     return (int)constrain(p, 0, 100);
 }
 
-void ligarBomba(float distAtual) {
-    digitalWrite(SAIDA1_PIN, HIGH);
-    dados.saida1_bombaLigada = true;
-    bombaLigadaDesde      = millis();
-    distanciaAoLigarBomba = distAtual;
-    Serial.println("[SAIDA 1] Bomba LIGADA");
-}
-
-void desligarBomba() {
-    digitalWrite(SAIDA1_PIN, LOW);
-    dados.saida1_bombaLigada = false;
-    bombaLigadaDesde = 0;
-    Serial.println("[SAIDA 1] Bomba DESLIGADA");
-}
-
-void acionarFalha() {
-    digitalWrite(SAIDA2_PIN, HIGH);
-    dados.saida2_falhaBomba = true;
-    Serial.println("[SAIDA 2] FALHA NA BOMBA detectada!");
-    if (DESLIGA_BOMBA_NA_FALHA) desligarBomba();
-}
-
-void limparFalha() {
-    digitalWrite(SAIDA2_PIN, LOW);
-    dados.saida2_falhaBomba = false;
+// Le as 4 entradas digitais (contato seco para GND = ativo, INPUT_PULLUP)
+void lerEntradas() {
+    dados.entrada1_bombaLigada       = (digitalRead(ENTRADA1_PIN) == LOW);
+    dados.entrada2_bombaFalhou       = (digitalRead(ENTRADA2_PIN) == LOW);
+    dados.entrada3_falhaInversor     = (digitalRead(ENTRADA3_PIN) == LOW);
+    dados.entrada4_painelSemEnergia  = (digitalRead(ENTRADA4_PIN) == LOW);
 }
 
 void setup() {
     Serial.begin(115200);
 
-    pinMode(TRIG_PIN,   OUTPUT);
-    pinMode(ECHO_PIN,   INPUT);
-    pinMode(SAIDA1_PIN, OUTPUT);
-    pinMode(SAIDA2_PIN, OUTPUT);
-    pinMode(LED_PIN,    OUTPUT);
-    desligarBomba();
-    limparFalha();
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    pinMode(LED_PIN,  OUTPUT);
+
+    pinMode(ENTRADA1_PIN, INPUT_PULLUP);
+    pinMode(ENTRADA2_PIN, INPUT_PULLUP);
+    pinMode(ENTRADA3_PIN, INPUT_PULLUP);
+    pinMode(ENTRADA4_PIN, INPUT_PULLUP);
 
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
@@ -141,36 +122,15 @@ void loop() {
         dados.nivel         = dados.leituraValida ? distParaPorcento(dist) : 0;
         dados.uptime        = agora / 1000;
 
+        lerEntradas();
+
         if (dados.leituraValida) {
-            Serial.printf("[NIVEL] %.1fcm -> %d%% | S1: %d | S2: %d\n",
+            Serial.printf("[NIVEL] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d\n",
                 dist, dados.nivel,
-                dados.saida1_bombaLigada, dados.saida2_falhaBomba);
-
-            // Nivel baixo -> liga bomba (se nao estiver em falha)
-            if (dist >= DIST_CAIXA_VAZIA && !alertaNivelBaixo && !dados.saida2_falhaBomba) {
-                ligarBomba(dist);
-                alertaNivelBaixo = true;
-            }
-
-            // Nivel ok -> desliga bomba e limpa falha
-            if (dist <= DIST_CAIXA_CHEIA && alertaNivelBaixo) {
-                desligarBomba();
-                limparFalha();
-                alertaNivelBaixo = false;
-            }
-
-            // Deteccao de falha: bomba ligada ha muito tempo sem o nivel subir
-            if (dados.saida1_bombaLigada && bombaLigadaDesde > 0 &&
-                (agora - bombaLigadaDesde >= FALHA_TEMPO_MS)) {
-                float subiu = distanciaAoLigarBomba - dist;  // nivel sobe = distancia diminui
-                if (subiu < FALHA_DELTA_CM) {
-                    acionarFalha();
-                } else {
-                    // nivel esta subindo: reinicia janela de verificacao
-                    bombaLigadaDesde      = agora;
-                    distanciaAoLigarBomba = dist;
-                }
-            }
+                dados.entrada1_bombaLigada,
+                dados.entrada2_bombaFalhou,
+                dados.entrada3_falhaInversor,
+                dados.entrada4_painelSemEnergia);
         } else {
             Serial.println("[SENSOR] Leitura invalida!");
         }

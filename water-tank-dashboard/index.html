@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caixa d'Água · Gestão Condomínio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#262626;
+  --border:#2e2e2e;--text:#f2f2f2;--muted:#888;
+  --sky:#35c8ff;--ok:#4ade80;--warn:#f59e0b;--danger:#ef4444;
+  --radius:12px;--radius-sm:8px;--tr:.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archivo',sans-serif;font-size:15px;line-height:1.6;}
+
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
+.hdr-in{max-width:1200px;margin:0 auto;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(13px,1.8vw,16px);display:flex;align-items:center;gap:8px;}
+.hdr-title span{color:var(--sky);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:1px solid;}
+.chip-ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08);}
+.chip-warn{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08);}
+.chip-fail{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
+.chip-off{color:var(--muted);border-color:var(--border);background:var(--bg3);}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-ok{background:var(--ok);box-shadow:0 0 6px var(--ok);animation:bl 2s infinite;}
+.dot-warn{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:bl 1s infinite;}
+.dot-fail{background:var(--danger);box-shadow:0 0 6px var(--danger);animation:bl .6s infinite;}
+.dot-off{background:var(--muted);}
+@keyframes bl{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:var(--radius-sm);
+  background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:16px;transition:var(--tr);}
+.icon-btn:hover{border-color:var(--sky);color:var(--sky);}
+
+.body{max-width:1200px;margin:0 auto;padding:24px clamp(16px,4vw,44px) 60px;}
+
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:28px 0 12px;}
+
+/* ── TOP GRID: tank + KPIs ── */
+.top-grid{display:grid;grid-template-columns:260px 1fr;gap:20px;}
+@media(max-width:760px){.top-grid{grid-template-columns:1fr;}}
+
+.tank-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+
+.tank{position:relative;width:170px;height:300px;border:3px solid var(--border);
+  border-radius:16px 16px 24px 24px;overflow:hidden;background:var(--bg3);
+  box-shadow:inset 0 0 30px rgba(0,0,0,.5);}
+.tank-water{position:absolute;left:-25%;right:-25%;bottom:0;height:0%;
+  background:linear-gradient(180deg,#35c8ff 0%,#1a7fb0 100%);
+  transition:height 1.4s cubic-bezier(.4,0,.2,1),background 1s ease;}
+.tank-water.lvl-low{background:linear-gradient(180deg,#ff8a65 0%,#ef4444 100%);}
+.tank-water.lvl-mid{background:linear-gradient(180deg,#ffd166 0%,#f59e0b 100%);}
+.tank-water.lvl-ok{background:linear-gradient(180deg,#5eead4 0%,#35c8ff 60%,#1a7fb0 100%);}
+.wave{position:absolute;left:0;width:200%;height:24px;}
+.wave1{top:-12px;fill:rgba(255,255,255,.20);animation:waveMove 7s linear infinite;}
+.wave2{top:-7px;fill:rgba(255,255,255,.12);animation:waveMove 11s linear infinite reverse;}
+@keyframes waveMove{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.tank-scale{position:absolute;inset:0;pointer-events:none;}
+.tank-scale span{position:absolute;right:8px;transform:translateY(50%);
+  font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);}
+.tank-scale i{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,.12);}
+.tank-pct{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:1;}
+.tank-pct .u{font-size:18px;color:var(--muted);font-family:'Archivo',sans-serif;font-weight:700;}
+.tank-label{font-size:12px;color:var(--muted);text-align:center;}
+
+/* ── KPI cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-content:start;}
+.kcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+.klbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:7px;}
+.kval{font-family:'Archivo Black',sans-serif;font-size:clamp(20px,2.6vw,28px);line-height:1.15;margin-bottom:4px;}
+.kunit{font-family:'Archivo',sans-serif;font-size:12px;font-weight:600;color:var(--muted);margin-left:2px;}
+.ksub{font-size:11px;color:var(--muted);}
+
+/* ── Entradas ── */
+.entradas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.entrada-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:all .35s ease;}
+.entrada-card .e-top{display:flex;align-items:center;justify-content:space-between;}
+.entrada-card .e-icon{font-size:22px;}
+.entrada-card .e-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);}
+.entrada-card .e-desc{font-family:'Archivo Black',sans-serif;font-size:15px;}
+.entrada-card .e-state{align-self:flex-start;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:.06em;background:var(--bg3);border:1px solid var(--border);color:var(--muted);}
+.entrada-card.act-info{border-color:rgba(53,200,255,.45);background:rgba(53,200,255,.06);}
+.entrada-card.act-info .e-state{color:var(--sky);border-color:rgba(53,200,255,.3);background:rgba(53,200,255,.1);}
+.entrada-card.act-warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.06);}
+.entrada-card.act-warn .e-state{color:var(--warn);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.1);}
+.entrada-card.act-danger{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06);animation:cardPulse 1.6s ease-in-out infinite;}
+.entrada-card.act-danger .e-state{color:var(--danger);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.1);}
+@keyframes cardPulse{0%,100%{box-shadow:0 0 0 rgba(239,68,68,0);}50%{box-shadow:0 0 18px rgba(239,68,68,.25);}}
+
+/* ── Config panel ── */
+.cfg-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-top:28px;}
+.cfg-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.cfg-head h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+  display:flex;align-items:center;gap:8px;}
+.cfg-body{display:none;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px;}
+.cfg-body.show{display:grid;}
+.fgrp{display:flex;flex-direction:column;gap:5px;}
+.fgrp label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.fctl{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:'Fira Code',monospace;font-size:12px;padding:9px 12px;outline:none;width:100%;transition:var(--tr);}
+.fctl:focus{border-color:var(--sky);}
+.fhint{font-size:10px;color:var(--muted);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);
+  font-family:'Archivo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--tr);border:1px solid;}
+.btn-sky{background:var(--sky);border-color:var(--sky);color:#000;}
+.btn-sky:hover{filter:brightness(1.1);}
+
+.footer{margin-top:32px;text-align:center;font-size:11px;color:var(--muted);}
+.footer a{color:var(--sky);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-title">&#x1F4A7; <span>Gestão Condomínio</span> · Caixa d'Água</div>
+    <div class="hdr-right">
+      <div class="chip chip-off" id="connBadge"><span class="dot dot-off"></span> Conectando...</div>
+      <div class="icon-btn" id="cfgToggle" title="Configuração">&#x2699;</div>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+  <div class="top-grid">
+    <div class="tank-card">
+      <div class="tank">
+        <div class="tank-water lvl-ok" id="tankWater">
+          <svg class="wave wave1" viewBox="0 0 1200 24" preserveAspectRatio="none">
+            <path d="M0,12 C150,24 300,0 450,12 C600,24 750,0 900,12 C1050,24 1150,6 1200,12 V24 H0 Z"/>
+          </svg>
+          <svg class="wave wave2" viewBox="0 0 1200 24" preserveAspectRatio="none">
+            <path d="M0,12 C150,0 300,24 450,12 C600,0 750,24 900,12 C1050,0 1150,18 1200,12 V24 H0 Z"/>
+          </svg>
+        </div>
+        <div class="tank-scale">
+          <i style="bottom:80%"></i><span style="bottom:80%">80%</span>
+          <i style="bottom:20%"></i><span style="bottom:20%">20%</span>
+        </div>
+      </div>
+      <div class="tank-pct" id="tankPct">--<span class="u">%</span></div>
+      <div class="tank-label">Nível da caixa d'água</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kcard">
+        <div class="klbl">Distância do sensor</div>
+        <div class="kval" id="kDist">-- <span class="kunit">cm</span></div>
+        <div class="ksub">JSN-SR04T (ultrassônico)</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Leitura do sensor</div>
+        <div class="kval" id="kValida">--</div>
+        <div class="ksub">Status do JSN-SR04T</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Última atualização</div>
+        <div class="kval" id="kLast" style="font-size:18px">--</div>
+        <div class="ksub" id="kLastRel">aguardando dados...</div>
+      </div>
+      <div class="kcard">
+        <div class="klbl">Sensor ligado há</div>
+        <div class="kval" id="kUptime" style="font-size:18px">--</div>
+        <div class="ksub">desde o último reset (ESP32 #1)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Entradas do Quadro / Inversor</div>
+  <div class="entradas-grid" id="entradasGrid"></div>
+
+  <div class="cfg-panel">
+    <div class="cfg-head" id="cfgHead">
+      <h3>&#x2699; Configuração do Supabase</h3>
+      <span id="cfgChevron" style="color:var(--muted);">&#9662;</span>
+    </div>
+    <div class="cfg-body" id="cfgBody">
+      <div class="fgrp">
+        <label>Supabase URL</label>
+        <input class="fctl" id="cfgUrl" placeholder="https://xxxx.supabase.co">
+        <span class="fhint">Settings &rarr; API &rarr; Project URL</span>
+      </div>
+      <div class="fgrp">
+        <label>Supabase anon key</label>
+        <input class="fctl" id="cfgKey" placeholder="eyJ...">
+        <span class="fhint">Settings &rarr; API &rarr; anon public</span>
+      </div>
+      <div class="fgrp" style="justify-content:flex-end;">
+        <button class="btn btn-sky" id="cfgSave">Salvar e conectar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Dados via ESP-NOW &rarr; ESP32 Gateway &rarr; <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a>.
+    Atualização em tempo real.
+  </div>
+
+</div>
+
+<script>
+// ─── CONFIGURAÇÃO PADRÃO ───────────────────────────────────────────────
+// Edite antes do deploy ou configure pelo painel ⚙ (fica salvo no navegador)
+const DEFAULT_SB_URL = "https://SEU_PROJETO.supabase.co";
+const DEFAULT_SB_KEY = "SUA_SUPABASE_ANON_KEY_AQUI";
+
+// Mesmo valor de TIMEOUT_SENSOR_MS no esp32_gateway/config.h
+const TIMEOUT_SENSOR_MS = 120000;
+
+const ENTRADAS = [
+  { key: "entrada1_bomba_ligada",       icon: "&#x1F4A7;", nome: "Entrada 1", desc: "Bomba ligou",          onLabel: "LIGADA",       offLabel: "desligada", cls: "act-info"   },
+  { key: "entrada2_bomba_falhou",       icon: "&#x26A0;&#xFE0F;", nome: "Entrada 2", desc: "Bomba falhou",         onLabel: "FALHA",        offLabel: "normal",    cls: "act-danger" },
+  { key: "entrada3_falha_inversor",     icon: "&#x1F50C;", nome: "Entrada 3", desc: "Falha no inversor",    onLabel: "FALHA",        offLabel: "normal",    cls: "act-danger" },
+  { key: "entrada4_painel_sem_energia", icon: "&#x1F50B;", nome: "Entrada 4", desc: "Painel sem energia",   onLabel: "SEM ENERGIA",  offLabel: "normal",    cls: "act-warn"   },
+];
+
+let sb = null;
+let lastUpdateTs = 0;
+
+function getCfg() {
+  return {
+    url: localStorage.getItem("sb_url") || DEFAULT_SB_URL,
+    key: localStorage.getItem("sb_key") || DEFAULT_SB_KEY,
+  };
+}
+
+function cfgValido(cfg) {
+  return cfg.url && cfg.key && !cfg.url.includes("SEU_PROJETO") && !cfg.key.includes("SUA_SUPABASE");
+}
+
+function renderEntradas() {
+  const grid = document.getElementById("entradasGrid");
+  grid.innerHTML = ENTRADAS.map(e => `
+    <div class="entrada-card" id="card-${e.key}">
+      <div class="e-top">
+        <span class="e-icon">${e.icon}</span>
+        <span class="e-name">${e.nome}</span>
+      </div>
+      <div class="e-desc">${e.desc}</div>
+      <div class="e-state" id="state-${e.key}">${e.offLabel}</div>
+    </div>
+  `).join("");
+}
+
+function fmtUptime(s) {
+  if (s == null) return "--";
+  s = Number(s);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return `${h}h ${m}min`;
+  return `${m}min`;
+}
+
+function fmtRelTime(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 5) return "agora mesmo";
+  if (diff < 60) return `há ${diff}s`;
+  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`;
+  return `há ${Math.floor(diff / 3600)}h`;
+}
+
+function updateUI(row) {
+  if (!row) return;
+  lastUpdateTs = new Date(row.created_at).getTime() || Date.now();
+
+  const nivel = row.nivel_pct ?? 0;
+  const tank = document.getElementById("tankWater");
+  tank.style.height = Math.max(0, Math.min(100, nivel)) + "%";
+  tank.classList.remove("lvl-low", "lvl-mid", "lvl-ok");
+  if (nivel <= 20) tank.classList.add("lvl-low");
+  else if (nivel <= 40) tank.classList.add("lvl-mid");
+  else tank.classList.add("lvl-ok");
+
+  document.getElementById("tankPct").innerHTML = `${nivel}<span class="u">%</span>`;
+  document.getElementById("kDist").innerHTML = `${row.distancia_cm != null ? Number(row.distancia_cm).toFixed(1) : "--"} <span class="kunit">cm</span>`;
+  document.getElementById("kUptime").textContent = fmtUptime(row.sensor_uptime_s);
+
+  const validaEl = document.getElementById("kValida");
+  if (row.leitura_valida) {
+    validaEl.textContent = "OK";
+    validaEl.style.color = "var(--ok)";
+  } else {
+    validaEl.textContent = "Inválida";
+    validaEl.style.color = "var(--danger)";
+  }
+
+  const last = new Date(row.created_at);
+  document.getElementById("kLast").textContent = last.toLocaleTimeString("pt-BR");
+
+  ENTRADAS.forEach(e => {
+    const ativo = !!row[e.key];
+    const card = document.getElementById(`card-${e.key}`);
+    const state = document.getElementById(`state-${e.key}`);
+    card.classList.remove("act-info", "act-warn", "act-danger");
+    if (ativo) {
+      card.classList.add(e.cls);
+      state.textContent = e.onLabel;
+    } else {
+      state.textContent = e.offLabel;
+    }
+  });
+
+  refreshConn();
+}
+
+function refreshConn() {
+  const badge = document.getElementById("connBadge");
+  const rel = document.getElementById("kLastRel");
+  if (!lastUpdateTs) {
+    badge.className = "chip chip-off";
+    badge.innerHTML = '<span class="dot dot-off"></span> Conectando...';
+    return;
+  }
+  rel.textContent = `Última leitura ${fmtRelTime(lastUpdateTs)}`;
+  const offline = (Date.now() - lastUpdateTs) >= TIMEOUT_SENSOR_MS;
+  if (offline) {
+    badge.className = "chip chip-fail";
+    badge.innerHTML = '<span class="dot dot-fail"></span> Sensor offline';
+  } else {
+    badge.className = "chip chip-ok";
+    badge.innerHTML = '<span class="dot dot-ok"></span> Online';
+  }
+}
+
+async function loadLatest() {
+  if (!sb) return;
+  const { data, error } = await sb
+    .from("leituras")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) {
+    console.error("[Supabase] erro ao buscar leitura:", error.message);
+    return;
+  }
+  if (data && data.length) updateUI(data[0]);
+}
+
+function subscribeRealtime() {
+  if (!sb) return;
+  sb.channel("leituras-rt")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "leituras" }, payload => updateUI(payload.new))
+    .subscribe();
+}
+
+function connect() {
+  const cfg = getCfg();
+  document.getElementById("cfgUrl").value = cfg.url.includes("SEU_PROJETO") ? "" : cfg.url;
+  document.getElementById("cfgKey").value = cfg.key.includes("SUA_SUPABASE") ? "" : cfg.key;
+
+  if (!cfgValido(cfg)) {
+    document.getElementById("connBadge").className = "chip chip-warn";
+    document.getElementById("connBadge").innerHTML = '<span class="dot dot-warn"></span> Configure o Supabase';
+    document.getElementById("cfgBody").classList.add("show");
+    document.getElementById("cfgChevron").textContent = "▴";
+    return;
+  }
+
+  sb = supabase.createClient(cfg.url, cfg.key);
+  loadLatest();
+  subscribeRealtime();
+}
+
+document.getElementById("cfgHead").addEventListener("click", () => {
+  const body = document.getElementById("cfgBody");
+  const open = body.classList.toggle("show");
+  document.getElementById("cfgChevron").textContent = open ? "▴" : "▾";
+});
+
+document.getElementById("cfgToggle").addEventListener("click", () => {
+  const body = document.getElementById("cfgBody");
+  const open = body.classList.toggle("show");
+  document.getElementById("cfgChevron").textContent = open ? "▴" : "▾";
+  document.getElementById("cfgBody").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+document.getElementById("cfgSave").addEventListener("click", () => {
+  const url = document.getElementById("cfgUrl").value.trim();
+  const key = document.getElementById("cfgKey").value.trim();
+  if (url) localStorage.setItem("sb_url", url);
+  if (key) localStorage.setItem("sb_key", key);
+  location.reload();
+});
+
+renderEntradas();
+connect();
+setInterval(refreshConn, 1000);
+setInterval(loadLatest, 30000);
+</script>
+</body>
+</html>
