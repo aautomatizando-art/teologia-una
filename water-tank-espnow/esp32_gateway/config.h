@@ -6,6 +6,15 @@
 // Use um nome diferente em cada gateway instalado!
 #define CONDOMINIO_NOME  "Condominio Park"
 
+// ─── WIFI (configuracao no local via WiFiManager) ───────────────────────────────
+// Nao precisa gravar SSID/senha no codigo: na primeira ligacao (ou se a rede
+// salva nao for encontrada) o ESP32 cria o ponto de acesso abaixo. Conecte pelo
+// celular, o portal abre sozinho, escolha a rede WiFi do condominio e digite a
+// senha. Fica salvo na memoria flash do ESP32.
+#define AP_CONFIG_NOME   "CaixaDagua-Setup"
+#define AP_CONFIG_SENHA  "12345678"          // senha do AP de configuracao (min 8)
+#define PORTAL_TIMEOUT_S 180                 // portal aberto por 3 min, depois reinicia
+
 // ─── EVOLUTION API (WhatsApp no VPS Hostinger) ─────────────────────────────────
 // IP do VPS (srv1745227.hstgr.cloud)
 #define EVO_BASE_URL   "http://2.25.192.72:8080"
@@ -56,8 +65,7 @@
 // Contatos secos (rele) ligados ao GND quando ativos -> usa INPUT_PULLUP
 // (pino em HIGH = inativo, pino em LOW = ativo)
 // As 4 entradas do quadro/inversor da bomba ficam todas neste no.
-#define ENTRADA1_PIN    17   // ENTRADA 1: Bomba ligou (era GPIO27, mas esse pino e usado
-                              // internamente pelo Ethernet do WT32-ETH01 -> remapeado p/ GPIO17)
+#define ENTRADA1_PIN    27   // ENTRADA 1: Bomba ligou
 #define ENTRADA2_PIN    14   // ENTRADA 2: Bomba falhou
 #define ENTRADA3_PIN    13   // ENTRADA 3: Falha no inversor
 #define ENTRADA4_PIN     4   // ENTRADA 4: Painel sem energia (sem rede CA)
