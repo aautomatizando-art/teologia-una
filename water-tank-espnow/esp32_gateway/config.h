@@ -4,7 +4,7 @@
 // ─── CONDOMINIO ──────────────────────────────────────────────────────────────────
 // Identificador deste condominio (aparece na dashboard e nas mensagens do grupo).
 // Use um nome diferente em cada gateway instalado!
-#define CONDOMINIO_NOME  "Condominio Principal"
+#define CONDOMINIO_NOME  "Condominio Park"
 
 // ─── WIFI (configuracao no local via WiFiManager) ───────────────────────────────
 // Nao precisa gravar SSID/senha no codigo: na primeira ligacao (ou se a rede
