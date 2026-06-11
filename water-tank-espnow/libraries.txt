@@ -3,6 +3,7 @@
 
 # Apenas para o ESP32 #2 (Gateway):
 ArduinoJson              by Benoit Blanchon       >= 7.0.0
+WiFiManager              by tzapu                 >= 2.0.0  (configuracao do WiFi no local)
 
 # ESP32 #1 (Sensor): nenhuma biblioteca adicional
 # ESP-NOW, WiFi e HTTPClient ja estao incluidos no ESP32 Arduino Core

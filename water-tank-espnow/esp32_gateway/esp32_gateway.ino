@@ -12,13 +12,19 @@
  *   - Caixa abastecida (nivel OK)
  *   - Sensor sem comunicacao
  *
+ * WiFi: configuravel no local via WiFiManager. Se nao conectar na rede salva,
+ * o ESP32 cria o AP "CaixaDagua-Setup" (senha 12345678) com portal para
+ * escolher a rede e digitar a senha do WiFi do condominio.
+ *
  * Bibliotecas necessarias:
  *   - ArduinoJson by Benoit Blanchon
+ *   - WiFiManager by tzapu
  *   (HTTPClient, WiFiClientSecure e WiFi ja vem no ESP32 core)
  */
 
 #include <esp_now.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -56,23 +62,28 @@ void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int le
     }
 }
 
+// Conecta na rede salva; se falhar, abre o portal de configuracao no local
 void conectarWiFi() {
-    Serial.print("[WiFi] Conectando");
     WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-    int t = 0;
-    while (WiFi.status() != WL_CONNECTED && t < 20) {
-        delay(500); Serial.print("."); t++;
+
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
+    wm.setConnectTimeout(20);
+
+    Serial.println("[WiFi] Conectando na rede salva (ou abrindo portal)...");
+    if (!wm.autoConnect(AP_CONFIG_NOME, AP_CONFIG_SENHA)) {
+        // Sem rede salva e ninguem configurou no portal: reinicia e tenta de novo
+        Serial.println("[WiFi] Portal expirou sem configuracao. Reiniciando...");
+        delay(2000);
+        ESP.restart();
     }
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\n[WiFi] Conectado! IP: " + WiFi.localIP().toString());
-        Serial.println("[WiFi] Canal: " + String(WiFi.channel()));
-    } else {
-        Serial.println("\n[WiFi] Falha na conexao!");
-    }
+
+    Serial.println("[WiFi] Conectado! IP: " + WiFi.localIP().toString());
+    Serial.println("[WiFi] Canal: " + String(WiFi.channel()));
 }
 
 // Envia mensagem de texto ao grupo do WhatsApp via Evolution API
+// (prefixa com o nome do condominio para identificar a origem no grupo)
 bool enviarWhatsApp(const String &texto) {
     if (WiFi.status() != WL_CONNECTED) return false;
 
@@ -85,7 +96,7 @@ bool enviarWhatsApp(const String &texto) {
 
     JsonDocument doc;
     doc["number"] = WHATS_GROUP_ID;
-    doc["text"]   = texto;
+    doc["text"]   = "\xF0\x9F\x8F\xA2 *" + String(CONDOMINIO_NOME) + "*\n" + texto;
     String body;
     serializeJson(doc, body);
 
@@ -115,6 +126,7 @@ bool enviarSupabase() {
     http.setTimeout(10000);
 
     JsonDocument doc;
+    doc["condominio"]                  = CONDOMINIO_NOME;
     doc["distancia_cm"]                = dados.distancia;
     doc["nivel_pct"]                   = dados.nivel;
     doc["entrada1_bomba_ligada"]       = dados.entrada1_bombaLigada;
@@ -160,9 +172,12 @@ void setup() {
 void loop() {
     unsigned long agora = millis();
 
-    if (WiFi.status() != WL_CONNECTED) {
+    // Queda temporaria do WiFi: reconecta na rede salva (sem abrir o portal)
+    static unsigned long ultimaTentativaWiFi = 0;
+    if (WiFi.status() != WL_CONNECTED && agora - ultimaTentativaWiFi >= 15000UL) {
+        ultimaTentativaWiFi = agora;
         Serial.println("[WiFi] Reconectando...");
-        conectarWiFi();
+        WiFi.reconnect();
     }
 
     // Sensor sem comunicacao

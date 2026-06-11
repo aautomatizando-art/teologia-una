@@ -125,6 +125,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Archiv
   <div class="hdr-in">
     <div class="hdr-title">&#x1F4A7; <span>Gestão Condomínio</span> · Caixa d'Água</div>
     <div class="hdr-right">
+      <select class="fctl" id="condoSel" style="width:auto;min-width:150px;padding:6px 10px;cursor:pointer;" title="Condomínio"></select>
       <div class="chip chip-off" id="connBadge"><span class="dot dot-off"></span> Conectando...</div>
       <div class="icon-btn" id="cfgToggle" title="Configuração">&#x2699;</div>
     </div>
@@ -227,6 +228,8 @@ const ENTRADAS = [
 
 let sb = null;
 let lastUpdateTs = 0;
+let currentCondo = localStorage.getItem("condo_sel") || null;
+let condoList = [];
 
 function getCfg() {
   return {
@@ -270,8 +273,28 @@ function fmtRelTime(ts) {
   return `há ${Math.floor(diff / 3600)}h`;
 }
 
+async function loadCondominios() {
+  if (!sb) return;
+  const { data, error } = await sb.from("condominios").select("condominio");
+  if (error) {
+    console.error("[Supabase] erro ao listar condominios:", error.message);
+    return;
+  }
+  condoList = (data || []).map(r => r.condominio);
+  const sel = document.getElementById("condoSel");
+  if (!condoList.length) {
+    sel.innerHTML = '<option>Sem condomínios</option>';
+    return;
+  }
+  if (!currentCondo || !condoList.includes(currentCondo)) currentCondo = condoList[0];
+  sel.innerHTML = condoList.map(c =>
+    `<option value="${c.replace(/"/g, "&quot;")}" ${c === currentCondo ? "selected" : ""}>${c}</option>`
+  ).join("");
+}
+
 function updateUI(row) {
   if (!row) return;
+  if (currentCondo && row.condominio && row.condominio !== currentCondo) return;
   lastUpdateTs = new Date(row.created_at).getTime() || Date.now();
 
   const nivel = row.nivel_pct ?? 0;
@@ -335,11 +358,9 @@ function refreshConn() {
 
 async function loadLatest() {
   if (!sb) return;
-  const { data, error } = await sb
-    .from("leituras")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(1);
+  let q = sb.from("leituras").select("*");
+  if (currentCondo) q = q.eq("condominio", currentCondo);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(1);
   if (error) {
     console.error("[Supabase] erro ao buscar leitura:", error.message);
     return;
@@ -350,7 +371,11 @@ async function loadLatest() {
 function subscribeRealtime() {
   if (!sb) return;
   sb.channel("leituras-rt")
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "leituras" }, payload => updateUI(payload.new))
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "leituras" }, payload => {
+      // Condominio novo aparecendo: atualiza o seletor
+      if (payload.new.condominio && !condoList.includes(payload.new.condominio)) loadCondominios();
+      updateUI(payload.new);
+    })
     .subscribe();
 }
 
@@ -368,9 +393,18 @@ function connect() {
   }
 
   sb = supabase.createClient(cfg.url, cfg.key);
-  loadLatest();
+  loadCondominios().then(loadLatest);
   subscribeRealtime();
 }
+
+document.getElementById("condoSel").addEventListener("change", e => {
+  currentCondo = e.target.value;
+  localStorage.setItem("condo_sel", currentCondo);
+  lastUpdateTs = 0;
+  document.getElementById("connBadge").className = "chip chip-off";
+  document.getElementById("connBadge").innerHTML = '<span class="dot dot-off"></span> Carregando...';
+  loadLatest();
+});
 
 document.getElementById("cfgHead").addEventListener("click", () => {
   const body = document.getElementById("cfgBody");

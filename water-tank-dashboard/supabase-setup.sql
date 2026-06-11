@@ -6,6 +6,7 @@
 -- Tabela de leituras enviadas pelo ESP32 Gateway
 CREATE TABLE IF NOT EXISTS leituras (
   id                          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  condominio                  TEXT NOT NULL DEFAULT 'Condominio Principal',
   distancia_cm                NUMERIC,
   nivel_pct                    INT,
   entrada1_bomba_ligada        BOOLEAN DEFAULT FALSE,  -- Entrada 1: Bomba ligou
@@ -17,7 +18,11 @@ CREATE TABLE IF NOT EXISTS leituras (
   created_at                   TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migracao para tabelas criadas antes do suporte multi-condominio:
+ALTER TABLE leituras ADD COLUMN IF NOT EXISTS condominio TEXT NOT NULL DEFAULT 'Condominio Principal';
+
 CREATE INDEX IF NOT EXISTS idx_leituras_created_at ON leituras(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leituras_condominio ON leituras(condominio, created_at DESC);
 
 -- ─── ROW LEVEL SECURITY ────────────────────────────────
 ALTER TABLE leituras ENABLE ROW LEVEL SECURITY;
@@ -29,6 +34,15 @@ CREATE POLICY "anon_leituras" ON leituras FOR ALL USING (true) WITH CHECK (true)
 -- Necessario para a dashboard atualizar sozinha quando chega leitura nova
 ALTER PUBLICATION supabase_realtime ADD TABLE leituras;
 
--- ─── VIEW: ultima leitura ──────────────────────────────
+-- ─── VIEW: ultima leitura de cada condominio ───────────
 CREATE OR REPLACE VIEW ultima_leitura AS
-SELECT * FROM leituras ORDER BY created_at DESC LIMIT 1;
+SELECT DISTINCT ON (condominio) *
+FROM leituras
+ORDER BY condominio, created_at DESC;
+
+-- ─── VIEW: lista de condominios (para o seletor da dashboard) ──
+CREATE OR REPLACE VIEW condominios AS
+SELECT condominio, MAX(created_at) AS ultima_leitura
+FROM leituras
+GROUP BY condominio
+ORDER BY condominio;

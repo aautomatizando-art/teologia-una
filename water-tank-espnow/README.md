@@ -123,8 +123,7 @@ uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
 
 `esp32_gateway/config.h`:
 ```cpp
-#define WIFI_SSID      "sua_rede"
-#define WIFI_PASS      "senha"
+#define CONDOMINIO_NOME "Condominio Principal"  // nome unico por condominio!
 #define EVO_BASE_URL   "http://SEU_IP_VPS:8080"
 #define EVO_INSTANCE   "sua_instancia"
 #define EVO_APIKEY     "sua_apikey"
@@ -135,12 +134,33 @@ uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
 #define SUPABASE_KEY   "eyJ...sua_anon_key..."
 ```
 
-### Passo 4 - Gravar e verificar
+> O WiFi **nao** vai no codigo: configura-se no local (proximo passo).
 
-1. Grave `esp32_gateway.ino` no ESP32 #2 — deve enviar "Monitor iniciado!" no grupo
-2. Grave `esp32_sensor.ino` no ESP32 #1 — Serial deve mostrar "[ESP-NOW] Enviado com sucesso"
-3. Configure a dashboard ([`water-tank-dashboard`](../water-tank-dashboard/)) para
-   visualizar o nivel e as 4 entradas em tempo real
+### Passo 4 - Gravar e configurar o WiFi no local (WiFiManager)
+
+1. Grave `esp32_gateway.ino` no ESP32 #2 e ligue-o no condominio
+2. Se nao houver rede salva, ele cria o ponto de acesso **CaixaDagua-Setup**
+   (senha `12345678`)
+3. Conecte pelo celular nessa rede — o portal de configuracao abre sozinho
+   (se nao abrir, acesse `192.168.4.1` no navegador)
+4. Toque em **Configure WiFi**, escolha a rede do condominio, digite a senha
+   e salve. O ESP32 reinicia ja conectado (a rede fica salva na memoria flash)
+5. Deve chegar "Monitor iniciado!" no grupo do WhatsApp
+6. Grave `esp32_sensor.ino` no ESP32 #1 — Serial deve mostrar "[ESP-NOW] Enviado com sucesso"
+7. Acesse a dashboard ([`water-tank-dashboard`](../water-tank-dashboard/)) e selecione
+   o condominio no seletor do topo
+
+> Para trocar de rede WiFi depois (ex: mudou a senha do roteador): segure o
+> ESP32 fora do alcance da rede antiga ou aguarde a falha de conexao — o portal
+> reabre automaticamente.
+
+## Varios Condominios
+
+Cada condominio recebe um **par de ESP32** (sensor + gateway). No gateway de
+cada local, defina um `CONDOMINIO_NOME` diferente — todos enviam para o mesmo
+Supabase e aparecem no seletor da mesma dashboard. As mensagens do WhatsApp
+chegam prefixadas com o nome do condominio (pode usar o mesmo grupo ou um
+`WHATS_GROUP_ID` diferente por local).
 
 ## Esquema de Ligacao (ESP32 #1 - Sensor)
 
