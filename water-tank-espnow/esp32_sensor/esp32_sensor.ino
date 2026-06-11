@@ -25,7 +25,7 @@ typedef struct {
 DadosSensor dados;
 unsigned long ultimaMedicao = 0;
 
-void onDataSent(const uint8_t *mac, esp_now_send_status_t status) {
+void onDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
     bool ok = (status == ESP_NOW_SEND_SUCCESS);
     Serial.println(ok ? "[ESP-NOW] Enviado com sucesso" : "[ESP-NOW] Falha no envio");
     digitalWrite(LED_PIN, HIGH); delay(80);
