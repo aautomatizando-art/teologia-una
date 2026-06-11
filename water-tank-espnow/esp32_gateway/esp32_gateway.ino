@@ -177,8 +177,15 @@ void loop() {
     }
 
     if (dadosNovos) {
-        dadosNovos     = false;
-        alertaSemSinal = false;
+        dadosNovos = false;
+
+        // Sensor voltou a comunicar depois de uma queda
+        if (alertaSemSinal) {
+            enviarWhatsApp(
+                "\xE2\x9C\x85 *Sensor online novamente!*\n"
+                "O ESP32 da caixa d'agua voltou a enviar dados.");
+            alertaSemSinal = false;
+        }
 
         Serial.printf("[DADOS] %.1fcm | %d%% | E1(Bomba ligou): %s | E2(Bomba falhou): %s | E3(Falha inversor): %s | E4(Painel sem energia): %s | up %lus\n",
             dados.distancia, dados.nivel,
