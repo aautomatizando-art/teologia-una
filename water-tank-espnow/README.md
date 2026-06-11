@@ -1,46 +1,94 @@
-# Controle de Caixa d'Agua via ESP-NOW + WiFi + Telegram
+# Controle de Caixa d'Agua via ESP-NOW + WiFi + WhatsApp (Evolution API)
 
-Sistema de dois ESP32 para monitorar e controlar o nivel de uma caixa d'agua
-sem necessidade de chip SIM ou GPRS. Comunicacao local via **ESP-NOW**.
+Sistema de dois ESP32 para monitorar e controlar o nivel de uma caixa d'agua.
+Comunicacao local via **ESP-NOW** (sem WiFi no ponto da caixa) e alertas em um
+**grupo do WhatsApp** atraves da **Evolution API** rodando em VPS (Docker).
 
 ## Arquitetura
 
 ```
-[Caixa d'agua - sem WiFi]          [100m de distancia - com WiFi]
+[Caixa d'agua - sem WiFi]        [100m - com WiFi]              [VPS Hostinger]
 
- ESP32 #1 (Sensor)                  ESP32 #2 (Gateway)
- +-------------------+              +-------------------+
- | JSN-SR04T         |              | WiFi              |-----> Internet
- | Rele / Bomba      |  ESP-NOW     | Telegram Bot      |
- | Sem WiFi          | -----------> | Alerta no celular |
- +-------------------+              +-------------------+
-  Alimentado por fonte               Alimentado por fonte
-  ou bateria local                   ou USB
+ ESP32 #1 (Sensor)                ESP32 #2 (Gateway)             Evolution API
+ +--------------------+           +------------------+           +--------------+
+ | JSN-SR04T          |           | WiFi             |   HTTP    | Docker :8080 |
+ | SAIDA 1: Bomba     |  ESP-NOW  | HTTPClient       | --------> | evolution_api|---> Grupo
+ | SAIDA 2: Falha     | --------> | JSON p/ Evo API  |           | postgres     |     WhatsApp
+ +--------------------+           +------------------+           | redis        |
+                                                                 +--------------+
 ```
 
-**Por que ESP-NOW?**
-- Alcance: ate 200-400m em campo aberto
-- Sem mensalidade (sem SIM card)
-- Consumo baixissimo
-- Latencia ~1ms
-- Nao precisa de WiFi no ponto do sensor
+## Saidas do ESP32 Sensor
 
-## Hardware Necessario
+| Saida   | GPIO | Funcao                                                        |
+|---------|------|---------------------------------------------------------------|
+| SAIDA 1 | 25   | Rele da bomba ("Bomba Ligada")                                |
+| SAIDA 2 | 26   | Falha na bomba (ligada por 10min sem o nivel subir 3cm)       |
 
-| Item               | Quantidade | Uso               |
-|--------------------|------------|-------------------|
-| ESP32 DevKit       | 2          | Sensor + Gateway  |
-| JSN-SR04T          | 1          | Sensor de nivel   |
-| Modulo rele 5V     | 1          | Controle da bomba |
-| Fonte 5V 1A        | 2          | Um para cada ESP32|
+**Logica da SAIDA 2 (Falha na Bomba):**
+Se a bomba ficar ligada por `FALHA_TEMPO_MS` (10 min) e o nivel nao subir pelo
+menos `FALHA_DELTA_CM` (3cm), o sistema considera falha (bomba queimada, poco
+seco, registro fechado), aciona a SAIDA 2 e desliga a bomba por seguranca.
 
-## Ordem de Configuracao
+## Alertas no Grupo do WhatsApp
+
+| Evento                                  | Mensagem                                   |
+|-----------------------------------------|--------------------------------------------|
+| Nivel baixo + Saida 1 acionada          | "Nivel baixo! Bomba LIGADA" + nivel/dist  |
+| Saida 2 acionada (Falha na Bomba)       | "FALHA NA BOMBA!" + causas possiveis      |
+| Caixa abastecida (>= 80%)               | "Caixa abastecida! Bomba DESLIGADA"       |
+| Sensor sem comunicacao (2 min)          | "Sensor sem comunicacao!"                 |
+| Leitura invalida do sensor              | "Sensor com leitura invalida!"            |
+| Gateway ligado                          | "Monitor iniciado!"                       |
+
+## Hardware
+
+| Item               | Qtd | Uso                          |
+|--------------------|-----|------------------------------|
+| ESP32 DevKit       | 2   | Sensor + Gateway             |
+| JSN-SR04T          | 1   | Sensor de nivel              |
+| Modulo rele 5V     | 1   | SAIDA 1 - bomba              |
+| LED/sirene (opc.)  | 1   | SAIDA 2 - sinalizacao falha  |
+| Fonte 5V 1A        | 2   | Uma para cada ESP32          |
+
+## Configuracao da Evolution API (VPS)
+
+### 1. Descobrir o ID do grupo do WhatsApp
+
+No terminal do VPS:
+
+```bash
+curl -H "apikey: SUA_APIKEY" \
+  "http://localhost:8080/group/fetchAllGroups/SUA_INSTANCIA?getParticipants=false"
+```
+
+Procure o grupo pelo `subject` (nome) e copie o `id` — formato `120363xxxxxxxxxxx@g.us`.
+
+> A API key e o valor de `AUTHENTICATION_API_KEY` no docker-compose/.env da Evolution API.
+> A instancia e a mesma usada no seu projeto do leitor biometrico.
+
+### 2. Liberar a porta 8080 no firewall do VPS (se ainda nao estiver)
+
+Painel Hostinger > Regras de firewall > permitir TCP 8080
+(ou restrinja a porta apenas ao IP da sua internet local, mais seguro).
+
+### 3. Testar envio manual
+
+```bash
+curl -X POST "http://SEU_IP_VPS:8080/message/sendText/SUA_INSTANCIA" \
+  -H "Content-Type: application/json" \
+  -H "apikey: SUA_APIKEY" \
+  -d '{"number": "120363xxxxxxxxxxx@g.us", "text": "Teste monitor caixa d agua"}'
+```
+
+Se a mensagem chegar no grupo, a API esta pronta.
+
+## Ordem de Configuracao dos ESP32
 
 ### Passo 1 - Obter o MAC do Gateway (ESP32 #2)
 
 1. Grave `get_mac_address/get_mac_address.ino` no **ESP32 #2**
-2. Abra o Serial Monitor (115200 baud)
-3. Anote o MAC exibido:
+2. Serial Monitor (115200) exibe:
 ```
 MAC: AA:BB:CC:DD:EE:FF
 Para o config.h: {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}
@@ -48,50 +96,29 @@ Para o config.h: {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}
 
 ### Passo 2 - Configurar o Sensor (ESP32 #1)
 
-Edite `esp32_sensor/config.h`:
-
+`esp32_sensor/config.h`:
 ```cpp
-// Cole o MAC do Gateway aqui:
-uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-
-// Calibre para sua caixa (distancia em cm sensor -> agua):
-#define DIST_CAIXA_VAZIA  90   // nivel baixo -> liga bomba
-#define DIST_CAIXA_CHEIA  15   // nivel ok    -> desliga bomba
+uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
+#define DIST_CAIXA_VAZIA  90   // calibre para sua caixa
+#define DIST_CAIXA_CHEIA  15
 ```
 
 ### Passo 3 - Configurar o Gateway (ESP32 #2)
 
-Edite `esp32_gateway/config.h`:
-
+`esp32_gateway/config.h`:
 ```cpp
-#define WIFI_SSID  "nome_da_sua_rede"
-#define WIFI_PASS  "senha_da_rede"
-#define BOT_TOKEN  "token_do_bot_telegram"
-#define CHAT_ID    "seu_chat_id"
+#define WIFI_SSID      "sua_rede"
+#define WIFI_PASS      "senha"
+#define EVO_BASE_URL   "http://SEU_IP_VPS:8080"
+#define EVO_INSTANCE   "sua_instancia"
+#define EVO_APIKEY     "sua_apikey"
+#define WHATS_GROUP_ID "120363xxxxxxxxxxx@g.us"
 ```
 
-### Passo 4 - Gravar os sketches
+### Passo 4 - Gravar e verificar
 
-1. Grave `esp32_gateway.ino` no ESP32 #2 (proximo ao WiFi)
-2. Grave `esp32_sensor.ino` no ESP32 #1 (na caixa d'agua)
-
-### Passo 5 - Verificar no Serial Monitor
-
-**ESP32 #2 (Gateway):**
-```
-[WiFi] Conectado! IP: 192.168.1.x
-[WiFi] Canal: 6
-[GATEWAY] MAC: AA:BB:CC:DD:EE:FF
-[SETUP] Gateway pronto!
-```
-
-**ESP32 #1 (Sensor):**
-```
-[SENSOR] MAC: 11:22:33:44:55:66
-[SETUP] Sensor pronto!
-[NIVEL] 35.2cm -> 61%
-[ESP-NOW] Enviado com sucesso
-```
+1. Grave `esp32_gateway.ino` no ESP32 #2 — deve enviar "Monitor iniciado!" no grupo
+2. Grave `esp32_sensor.ino` no ESP32 #1 — Serial deve mostrar "[ESP-NOW] Enviado com sucesso"
 
 ## Esquema de Ligacao (ESP32 #1 - Sensor)
 
@@ -102,43 +129,35 @@ ESP32 #1       JSN-SR04T
   5V      ----> VCC
   GND     ----> GND
 
-ESP32 #1       Rele
+ESP32 #1       Rele (SAIDA 1 - Bomba)
   GPIO25  ----> IN
   5V      ----> VCC
   GND     ----> GND
 
-Rele:
+ESP32 #1       SAIDA 2 (Falha - LED/sirene, opcional)
+  GPIO26  ----> IN do segundo rele ou LED + resistor 220R
+
+Rele 1:
   COM  ----> Fase da bomba
   NO   ----> Fase da rede eletrica
 ```
-
-## Mensagens Telegram
-
-| Evento                     | Mensagem                                 |
-|----------------------------|------------------------------------------|
-| Gateway ligado             | "Gateway iniciado! MAC: ... Canal: ..." |
-| Nivel baixo (<= 20%)       | "ALERTA: Caixa baixa! Bomba LIGADA."    |
-| Caixa cheia (>= 80%)       | "Caixa abastecida! Bomba DESLIGADA."    |
-| Status (a cada 5 min)      | Nivel, bomba, uptime, sinal WiFi        |
-| Sensor sem sinal (2 min)   | "Sensor sem comunicacao!"               |
-| Leitura invalida           | "Sensor com leitura invalida!"          |
 
 ## Calibracao do Sensor
 
 ```
 [JSN-SR04T na tampa da caixa]
-   |  <- 15cm  DIST_CAIXA_CHEIA  -> desliga bomba, avisa Telegram
+   |  <- 15cm  DIST_CAIXA_CHEIA  -> desliga bomba, avisa grupo
    |
    ~  nivel da agua
    |
-   |  <- 90cm  DIST_CAIXA_VAZIA  -> liga bomba, alerta Telegram
+   |  <- 90cm  DIST_CAIXA_VAZIA  -> liga bomba (SAIDA 1), alerta grupo
    |
 [Fundo da caixa]
 ```
 
-## Dicas de Alcance ESP-NOW
+## Dicas de Alcance ESP-NOW (100m)
 
-- Em campo aberto: 200-400m sem obstrucoes
-- Com paredes/arvores: 50-150m
-- Para aumentar o alcance: use antena externa no ESP32 com conector U.FL
-- Posicione o ESP32 #2 (gateway) na janela ou area aberta voltada para a caixa
+- Em campo aberto: 200-400m — seus 100m estao dentro do alcance
+- Posicione o gateway em janela/area aberta voltada para a caixa
+- Evite obstaculos metalicos na linha de visada
+- Se precisar de mais alcance: ESP32 com antena externa (conector U.FL)

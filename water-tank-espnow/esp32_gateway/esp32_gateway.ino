@@ -1,42 +1,48 @@
 /*
  * ESP32 #2 - Gateway (proximo ao WiFi)
- * Funcao: recebe dados via ESP-NOW e envia alertas pelo Telegram
+ * Funcao: recebe dados via ESP-NOW e envia alertas para um GRUPO do WhatsApp
+ *         atraves da Evolution API rodando no VPS (Docker)
+ *
+ * Alertas enviados:
+ *   - Nivel baixo + SAIDA 1 acionada (Bomba Ligada)
+ *   - SAIDA 2 acionada (Falha na Bomba)
+ *   - Caixa abastecida (bomba desligada)
+ *   - Sensor sem comunicacao
  *
  * Bibliotecas necessarias:
- *   - UniversalTelegramBot  by Brian Lough
- *   - ArduinoJson           by Benoit Blanchon
+ *   - ArduinoJson by Benoit Blanchon
+ *   (HTTPClient e WiFi ja vem no ESP32 core)
  */
 
 #include <esp_now.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
+#include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "config.h"
 
-// Estrutura deve ser identica a do esp32_sensor
+// Estrutura identica a do esp32_sensor!
 typedef struct {
     float    distancia;
     int      nivel;
-    bool     bombaLigada;
+    bool     saida1_bombaLigada;
+    bool     saida2_falhaBomba;
     unsigned long uptime;
     bool     leituraValida;
 } DadosSensor;
 
-DadosSensor dadosRecebidos;
-volatile bool dadosNovos       = false;
-bool alertaEnviado             = false;
-bool alertaSemSinal            = false;
-unsigned long ultimoStatus     = 0;
-unsigned long ultimoRecebido   = 0;
+DadosSensor dados;
+volatile bool dadosNovos = false;
 
-WiFiClientSecure client;
-UniversalTelegramBot bot(BOT_TOKEN, client);
+bool alertaNivelEnviado  = false;
+bool alertaFalhaEnviado  = false;
+bool alertaSemSinal      = false;
+bool leituraInvalidaAvisada = false;
+unsigned long ultimoStatus   = 0;
+unsigned long ultimoRecebido = 0;
 
-// Callback ESP-NOW (executa em contexto de interrupcao - manter curto)
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len == sizeof(DadosSensor)) {
-        memcpy(&dadosRecebidos, data, sizeof(DadosSensor));
+        memcpy((void *)&dados, data, sizeof(DadosSensor));
         dadosNovos     = true;
         ultimoRecebido = millis();
     }
@@ -46,11 +52,9 @@ void conectarWiFi() {
     Serial.print("[WiFi] Conectando");
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    int tentativas = 0;
-    while (WiFi.status() != WL_CONNECTED && tentativas < 20) {
-        delay(500);
-        Serial.print(".");
-        tentativas++;
+    int t = 0;
+    while (WiFi.status() != WL_CONNECTED && t < 20) {
+        delay(500); Serial.print("."); t++;
     }
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\n[WiFi] Conectado! IP: " + WiFi.localIP().toString());
@@ -60,12 +64,37 @@ void conectarWiFi() {
     }
 }
 
+// Envia mensagem de texto ao grupo do WhatsApp via Evolution API
+bool enviarWhatsApp(const String &texto) {
+    if (WiFi.status() != WL_CONNECTED) return false;
+
+    HTTPClient http;
+    String url = String(EVO_BASE_URL) + "/message/sendText/" + EVO_INSTANCE;
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("apikey", EVO_APIKEY);
+    http.setTimeout(10000);
+
+    JsonDocument doc;
+    doc["number"] = WHATS_GROUP_ID;
+    doc["text"]   = texto;
+    String body;
+    serializeJson(doc, body);
+
+    int code = http.POST(body);
+    String resp = http.getString();
+    http.end();
+
+    bool ok = (code >= 200 && code < 300);
+    Serial.printf("[WHATSAPP] HTTP %d %s\n", code, ok ? "OK" : resp.c_str());
+    return ok;
+}
+
 void setup() {
     Serial.begin(115200);
 
-    // WiFi DEVE iniciar antes do ESP-NOW para sincronizar o canal
+    // WiFi DEVE iniciar antes do ESP-NOW para fixar o canal
     conectarWiFi();
-    client.setInsecure();
 
     Serial.print("[GATEWAY] MAC: ");
     Serial.println(WiFi.macAddress());  // <- informe este MAC no config.h do sensor!
@@ -78,11 +107,9 @@ void setup() {
 
     ultimoRecebido = millis();
 
-    String msg = "Gateway iniciado!\n";
-    msg += "MAC: " + WiFi.macAddress() + "\n";
-    msg += "Canal WiFi: " + String(WiFi.channel()) + "\n";
-    msg += "Aguardando dados do sensor...";
-    bot.sendMessage(CHAT_ID, msg, "");
+    enviarWhatsApp(
+        "\xF0\x9F\x92\xA7 *Monitor Caixa d'Agua iniciado!*\n"
+        "Gateway online, aguardando dados do sensor...");
 
     Serial.println("[SETUP] Gateway pronto!");
 }
@@ -90,67 +117,84 @@ void setup() {
 void loop() {
     unsigned long agora = millis();
 
-    // Reconecta WiFi se necessario
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[WiFi] Reconectando...");
         conectarWiFi();
     }
 
-    // Verifica timeout do sensor (sem dados por muito tempo)
+    // Sensor sem comunicacao
     if (agora - ultimoRecebido >= TIMEOUT_SENSOR_MS && ultimoRecebido > 0) {
         if (!alertaSemSinal) {
-            bot.sendMessage(CHAT_ID,
-                "ATENCAO: Sensor sem comunicacao ha mais de 2 minutos!\n"
-                "Verifique o ESP32 da caixa d'agua.", "");
+            enviarWhatsApp(
+                "\xE2\x9A\xA0\xEF\xB8\x8F *ATENCAO: Sensor sem comunicacao!*\n"
+                "O ESP32 da caixa d'agua nao envia dados ha mais de 2 minutos.\n"
+                "Verifique alimentacao e alcance do ESP-NOW.");
             alertaSemSinal = true;
         }
     }
 
-    // Processa dados novos recebidos via ESP-NOW
     if (dadosNovos) {
         dadosNovos     = false;
         alertaSemSinal = false;
 
-        Serial.printf("[DADOS] Dist: %.1fcm | Nivel: %d%% | Bomba: %s | Uptime: %lus\n",
-            dadosRecebidos.distancia,
-            dadosRecebidos.nivel,
-            dadosRecebidos.bombaLigada ? "LIGADA" : "DESLIGADA",
-            dadosRecebidos.uptime
-        );
+        Serial.printf("[DADOS] %.1fcm | %d%% | S1(Bomba): %s | S2(Falha): %s | up %lus\n",
+            dados.distancia, dados.nivel,
+            dados.saida1_bombaLigada ? "ON" : "OFF",
+            dados.saida2_falhaBomba  ? "ON" : "OFF",
+            dados.uptime);
 
-        if (!dadosRecebidos.leituraValida) {
-            bot.sendMessage(CHAT_ID, "ATENCAO: Sensor com leitura invalida!", "");
+        // Leitura invalida do sensor
+        if (!dados.leituraValida) {
+            if (!leituraInvalidaAvisada) {
+                enviarWhatsApp(
+                    "\xE2\x9A\xA0\xEF\xB8\x8F *Sensor com leitura invalida!*\n"
+                    "Verifique o JSN-SR04T na caixa d'agua.");
+                leituraInvalidaAvisada = true;
+            }
             return;
         }
+        leituraInvalidaAvisada = false;
 
-        // Nivel baixo -> alerta Telegram
-        if (dadosRecebidos.nivel <= NIVEL_ALERTA && !alertaEnviado) {
-            String msg = "ALERTA: Caixa d'agua baixa!\n";
-            msg += "Nivel   : " + String(dadosRecebidos.nivel) + "%\n";
-            msg += "Distancia: " + String(dadosRecebidos.distancia, 1) + "cm\n";
-            msg += "Bomba   : LIGADA automaticamente.";
-            bot.sendMessage(CHAT_ID, msg, "");
-            alertaEnviado = true;
+        // ── SAIDA 2: Falha na bomba (prioridade maxima) ──
+        if (dados.saida2_falhaBomba && !alertaFalhaEnviado) {
+            String msg = "\xF0\x9F\x9A\xA8 *FALHA NA BOMBA!* (Saida 2 acionada)\n\n";
+            msg += "A bomba ficou ligada mas o nivel nao subiu.\n";
+            msg += "Possiveis causas: bomba queimada, falta d'agua no poco, registro fechado.\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel atual: *" + String(dados.nivel) + "%*\n";
+            msg += "\xF0\x9F\x94\xA7 Bomba desligada por seguranca.";
+            enviarWhatsApp(msg);
+            alertaFalhaEnviado = true;
+        }
+        if (!dados.saida2_falhaBomba) alertaFalhaEnviado = false;
+
+        // ── Nivel baixo + SAIDA 1 acionada (Bomba Ligada) ──
+        if (dados.nivel <= NIVEL_ALERTA && dados.saida1_bombaLigada && !alertaNivelEnviado) {
+            String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *Nivel baixo na caixa d'agua!*\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dados.nivel) + "%*\n";
+            msg += "\xF0\x9F\x93\x8F Distancia: " + String(dados.distancia, 1) + "cm\n";
+            msg += "\xF0\x9F\x9F\xA2 Saida 1 acionada: *Bomba LIGADA*";
+            enviarWhatsApp(msg);
+            alertaNivelEnviado = true;
         }
 
-        // Nivel ok -> aviso Telegram
-        if (dadosRecebidos.nivel >= NIVEL_OK && alertaEnviado) {
-            String msg = "Caixa d'agua abastecida!\n";
-            msg += "Nivel: " + String(dadosRecebidos.nivel) + "%\n";
-            msg += "Bomba: DESLIGADA.";
-            bot.sendMessage(CHAT_ID, msg, "");
-            alertaEnviado = false;
+        // ── Caixa abastecida ──
+        if (dados.nivel >= NIVEL_OK && alertaNivelEnviado) {
+            String msg = "\xE2\x9C\x85 *Caixa d'agua abastecida!*\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dados.nivel) + "%*\n";
+            msg += "\xF0\x9F\x94\xB4 Bomba DESLIGADA.";
+            enviarWhatsApp(msg);
+            alertaNivelEnviado = false;
         }
     }
 
-    // Status periodico
-    if (agora - ultimoStatus >= INTERVALO_STATUS_MS) {
+    // Status periodico (opcional, desativado por padrao)
+    if (INTERVALO_STATUS_MS > 0 && agora - ultimoStatus >= INTERVALO_STATUS_MS) {
         ultimoStatus = agora;
-        String msg = "--- Status do Sistema ---\n";
-        msg += "Nivel  : " + String(dadosRecebidos.nivel) + "%\n";
-        msg += "Bomba  : " + String(dadosRecebidos.bombaLigada ? "LIGADA" : "DESLIGADA") + "\n";
-        msg += "Sensor : " + String(dadosRecebidos.uptime / 60) + " min online\n";
-        msg += "WiFi   : " + String(WiFi.RSSI()) + "dBm";
-        bot.sendMessage(CHAT_ID, msg, "");
+        String msg = "\xF0\x9F\x93\x8B *Status do sistema*\n";
+        msg += "Nivel: " + String(dados.nivel) + "%\n";
+        msg += "Saida 1 (Bomba): " + String(dados.saida1_bombaLigada ? "LIGADA" : "DESLIGADA") + "\n";
+        msg += "Saida 2 (Falha): " + String(dados.saida2_falhaBomba ? "ACIONADA" : "normal") + "\n";
+        msg += "Sensor online: " + String(dados.uptime / 60) + " min";
+        enviarWhatsApp(msg);
     }
 }
