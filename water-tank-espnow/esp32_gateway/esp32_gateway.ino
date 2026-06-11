@@ -84,6 +84,22 @@ bool tiAlertaTemperaturaEnviado = false;
 bool tiAlertaVibracaoEnviado    = false;
 bool tiLeituraInvalidaAvisada   = false;
 
+// ════════════════════════════════════════════════════════════════════════
+// ESTADO DA CONEXAO WIFI (alerta de queda/reconexao)
+// ════════════════════════════════════════════════════════════════════════
+
+bool wifiEstavaConectado = true;   // assume conectado: conectarWiFi() ja confirmou no setup()
+unsigned long wifiQuedaInicio = 0;
+
+// ════════════════════════════════════════════════════════════════════════
+// MONITORAMENTO DA CAMERA (ESP32-CAM, Alarme de Incendio) via Supabase
+// ════════════════════════════════════════════════════════════════════════
+
+String camUltimoCreatedAt    = "";
+int    camChecksSemMudanca   = 0;
+bool   camAlertaOffline      = false;
+unsigned long camUltimaVerificacao = 0;
+
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len == sizeof(DadosSensor)) {
         memcpy((void *)&dadosTS, data, sizeof(DadosSensor));
@@ -234,6 +250,21 @@ void piscarLed() {
     digitalWrite(LED_PIN, LOW);
 }
 
+// Mede o nivel, le as entradas, temperatura e vibracao do Tanque Inferior,
+// atualizando as variaveis globais ti*. Usada tanto no loop (a cada
+// INTERVALO_MEDICAO_MS) quanto uma vez no setup() para a mensagem inicial.
+void medirTanqueInferior() {
+    float dist      = medirMediaCm();
+    tiLeituraValida = (dist > 0 && dist < 400);
+    tiDistanciaCm   = dist;
+    tiNivelPct      = tiLeituraValida ? distParaPorcento(dist) : 0;
+
+    lerEntradas();
+    tiTemperaturaC   = lerTemperatura();
+    tiVibracaoValor  = lerVibracao();
+    tiVibracaoAlerta = (tiVibracaoValor > VIBRACAO_LIMIAR);
+}
+
 // Envia a leitura do Tanque Inferior para o Supabase (tabela "tanque_inferior")
 bool enviarSupabaseTanqueInferior() {
     if (WiFi.status() != WL_CONNECTED) return false;
@@ -277,6 +308,74 @@ bool enviarSupabaseTanqueInferior() {
     return ok;
 }
 
+// Substitui espacos por %20 (uso em query string da PostgREST)
+String urlEncodeCondominio() {
+    String s = String(CONDOMINIO_NOME);
+    s.replace(" ", "%20");
+    return s;
+}
+
+// Consulta a ultima leitura da tabela "alarme_incendio" (ESP32-CAM) no
+// Supabase. Se o "created_at" nao mudar por CAM_TIMEOUT_CHECKS verificacoes
+// seguidas, considera a camera/alarme offline e avisa no WhatsApp (e de
+// novo quando ela voltar a enviar dados).
+void verificarCamera() {
+    if (WiFi.status() != WL_CONNECTED) return;
+
+    WiFiClientSecure client;
+    client.setInsecure();
+
+    HTTPClient http;
+    String url = String(SUPABASE_URL) +
+        "/rest/v1/alarme_incendio?select=created_at&condominio=eq." +
+        urlEncodeCondominio() + "&order=created_at.desc&limit=1";
+    http.begin(client, url);
+    http.addHeader("apikey", SUPABASE_KEY);
+    http.addHeader("Authorization", "Bearer " + String(SUPABASE_KEY));
+    http.setTimeout(10000);
+
+    int code = http.GET();
+    if (code != 200) {
+        Serial.printf("[CAMERA] HTTP %d ao verificar status\n", code);
+        http.end();
+        return;
+    }
+
+    String body = http.getString();
+    http.end();
+
+    JsonDocument doc;
+    if (deserializeJson(doc, body) != DeserializationError::Ok || doc.size() == 0) {
+        return;  // tabela vazia (camera nunca enviou ainda) ou erro de parse
+    }
+
+    String createdAt = doc[0]["created_at"].as<String>();
+
+    if (camUltimoCreatedAt == "") {
+        camUltimoCreatedAt = createdAt;
+        return;
+    }
+
+    if (createdAt == camUltimoCreatedAt) {
+        camChecksSemMudanca++;
+        if (camChecksSemMudanca >= CAM_TIMEOUT_CHECKS && !camAlertaOffline) {
+            enviarWhatsApp(
+                "\xE2\x9A\xA0\xEF\xB8\x8F *ATENCAO: Camera do Alarme de Incendio sem comunicacao!*\n"
+                "O ESP32-CAM nao envia dados ha alguns minutos.\n"
+                "Verifique alimentacao e WiFi do modulo.");
+            camAlertaOffline = true;
+        }
+    } else {
+        camUltimoCreatedAt  = createdAt;
+        camChecksSemMudanca = 0;
+        if (camAlertaOffline) {
+            enviarWhatsApp(
+                "\xE2\x9C\x85 *Camera do Alarme de Incendio online novamente!*");
+            camAlertaOffline = false;
+        }
+    }
+}
+
 void setup() {
     Serial.begin(115200);
 
@@ -304,9 +403,29 @@ void setup() {
 
     tsUltimoRecebido = millis();
 
-    enviarWhatsApp(
-        "\xF0\x9F\x92\xA7 *Monitor Caixa d'Agua + Tanque Inferior iniciado!*\n"
-        "Gateway online, aguardando dados...");
+    // Primeira leitura do Tanque Inferior (sensores locais), para a
+    // mensagem inicial ja sair com o nivel atual
+    medirTanqueInferior();
+    tiUltimaMedicao = millis();
+
+    // Aguarda ate 12s pela primeira leitura do Tanque Superior via ESP-NOW
+    // (o ESP32 #1 envia a cada 30s, entao pode nao chegar a tempo)
+    Serial.println("[SETUP] Aguardando 1a leitura do Tanque Superior (ESP-NOW)...");
+    unsigned long esperaInicio = millis();
+    while (!dadosNovosTS && millis() - esperaInicio < 12000UL) {
+        delay(100);
+    }
+
+    String msgInicial = "\xF0\x9F\x94\x8C *Gateway reiniciado!*\n\n";
+    if (dadosNovosTS) {
+        msgInicial += "\xF0\x9F\x92\xA7 Tanque Superior: *" + String(dadosTS.nivel) + "%*\n";
+    } else {
+        msgInicial += "\xF0\x9F\x92\xA7 Tanque Superior: aguardando sinal do sensor...\n";
+    }
+    msgInicial += "\xF0\x9F\x9A\xB0 Tanque Inferior: *" + String(tiNivelPct) + "%*";
+    enviarWhatsApp(msgInicial);
+    // dadosNovosTS NAO e zerado aqui: o loop() ainda processa essa 1a
+    // leitura normalmente (envia ao Supabase e roda os alertas de nivel)
 
     Serial.println("[SETUP] Gateway pronto!");
 }
@@ -314,12 +433,37 @@ void setup() {
 void loop() {
     unsigned long agora = millis();
 
+    // ════════ WIFI: deteccao de queda/reconexao ════════
+    bool wifiConectado = (WiFi.status() == WL_CONNECTED);
+
+    if (!wifiConectado && wifiEstavaConectado) {
+        // Acabou de cair
+        wifiQuedaInicio    = agora;
+        wifiEstavaConectado = false;
+        Serial.println("[WiFi] Conexao perdida!");
+    }
+
+    if (wifiConectado && !wifiEstavaConectado) {
+        // Reconectou sozinho: avisa quanto tempo ficou offline
+        unsigned long quedaS = (agora - wifiQuedaInicio) / 1000;
+        String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *WiFi do gateway caiu e reconectou sozinho*\n\n";
+        msg += "Ficou offline por aproximadamente " + String(quedaS) + "s.";
+        enviarWhatsApp(msg);
+        wifiEstavaConectado = true;
+    }
+
     // Queda temporaria do WiFi: reconecta na rede salva (sem abrir o portal)
     static unsigned long ultimaTentativaWiFi = 0;
-    if (WiFi.status() != WL_CONNECTED && agora - ultimaTentativaWiFi >= 15000UL) {
+    if (!wifiConectado && agora - ultimaTentativaWiFi >= 15000UL) {
         ultimaTentativaWiFi = agora;
         Serial.println("[WiFi] Reconectando...");
         WiFi.reconnect();
+    }
+
+    // ════════ CAMERA (Alarme de Incendio): verificacao via Supabase ════════
+    if (agora - camUltimaVerificacao >= CAM_CHECK_INTERVALO_MS) {
+        camUltimaVerificacao = agora;
+        verificarCamera();
     }
 
     // ════════ TANQUE SUPERIOR (via ESP-NOW) ════════
@@ -360,7 +504,12 @@ void loop() {
                 tsLeituraInvalidaAvisada = true;
             }
         } else {
-            tsLeituraInvalidaAvisada = false;
+            // Sensor voltou a dar leitura valida depois de invalida
+            if (tsLeituraInvalidaAvisada) {
+                enviarWhatsApp(
+                    "\xE2\x9C\x85 *Leitura do JSN-SR04T normalizada* (caixa d'agua).");
+                tsLeituraInvalidaAvisada = false;
+            }
 
             // ── Nivel baixo ──
             if (dadosTS.nivel <= NIVEL_ALERTA && !tsAlertaNivelEnviado) {
@@ -395,19 +544,11 @@ void loop() {
     if (agora - tiUltimaMedicao >= INTERVALO_MEDICAO_MS) {
         tiUltimaMedicao = agora;
 
-        float dist      = medirMediaCm();
-        tiLeituraValida = (dist > 0 && dist < 400);
-        tiDistanciaCm   = dist;
-        tiNivelPct      = tiLeituraValida ? distParaPorcento(dist) : 0;
-
-        lerEntradas();
-        tiTemperaturaC   = lerTemperatura();
-        tiVibracaoValor  = lerVibracao();
-        tiVibracaoAlerta = (tiVibracaoValor > VIBRACAO_LIMIAR);
+        medirTanqueInferior();
 
         if (tiLeituraValida) {
             Serial.printf("[TANQUE INFERIOR] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f\n",
-                dist, tiNivelPct,
+                tiDistanciaCm, tiNivelPct,
                 tiEntrada1_bombaLigada,
                 tiEntrada2_bombaFalhou,
                 tiEntrada3_falhaInversor,
@@ -431,7 +572,12 @@ void loop() {
             }
             return;
         }
-        tiLeituraInvalidaAvisada = false;
+        // Sensor voltou a dar leitura valida depois de invalida
+        if (tiLeituraInvalidaAvisada) {
+            enviarWhatsApp(
+                "\xE2\x9C\x85 *Leitura do JSN-SR04T normalizada* (Tanque Inferior).");
+            tiLeituraInvalidaAvisada = false;
+        }
 
         // ── ENTRADA 2: Bomba falhou (prioridade maxima) ──
         if (tiEntrada2_bombaFalhou && !tiAlertaBombaFalhouEnviado) {

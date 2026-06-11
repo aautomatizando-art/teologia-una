@@ -78,7 +78,11 @@ os nos do mesmo condominio na dashboard e nas mensagens do WhatsApp (veja
 | Sensor sem comunicacao (2 min)                 | "Sensor sem comunicacao!"                 |
 | Sensor voltou a comunicar                      | "Sensor online novamente!"                |
 | Leitura invalida do sensor                     | "Sensor com leitura invalida!"            |
-| Gateway ligado                                 | "Monitor iniciado!"                       |
+| Leitura voltou ao normal                       | "Leitura do JSN-SR04T normalizada!"       |
+| Gateway ligado/reiniciado                      | "Gateway reiniciado!" + nivel atual do Tanque Superior e do Tanque Inferior |
+| WiFi do gateway caiu e reconectou sozinho      | "WiFi do gateway caiu e reconectou sozinho!" + tempo offline |
+| Camera (Alarme de Incendio) sem comunicacao (~2 min) | "Camera do Alarme de Incendio sem comunicacao!" |
+| Camera voltou a enviar dados                   | "Camera do Alarme de Incendio online novamente!" |
 
 A cada leitura, o gateway tambem envia os dados (nivel e distancia) para o
 Supabase (tabela `leituras`), que alimenta a dashboard em tempo real.
@@ -201,6 +205,7 @@ ESP32 #2 (Gateway)        Sensor de vibracao (saida analogica)
 | Vibracao > `VIBRACAO_LIMIAR`               | "Vibracao excessiva detectada na bomba!"     |
 | Vibracao normalizada                       | "Vibracao da bomba normalizada"              |
 | Leitura invalida do sensor ultrassonico    | "Sensor com leitura invalida!"               |
+| Leitura voltou ao normal                   | "Leitura do JSN-SR04T normalizada!"          |
 
 A cada leitura (a cada `INTERVALO_MEDICAO_MS`, padrao 30s), o Gateway envia os
 dados (nivel, distancia, as 4 entradas, temperatura e vibracao) para o
@@ -498,8 +503,9 @@ uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
 5. Ligue os sensores e entradas do **Tanque Inferior** conforme o esquema da
    secao acima (JSN-SR04T, 4 entradas do quadro/inversor, DS18B20 e sensor
    de vibracao)
-6. Deve chegar "Monitor Caixa d'Agua + Tanque Inferior iniciado!" no grupo do
-   WhatsApp
+6. Deve chegar "Gateway reiniciado!" no grupo do WhatsApp, ja com o nivel
+   atual do Tanque Superior (ou "aguardando sinal do sensor..." se o ESP32 #1
+   ainda nao foi ligado) e do Tanque Inferior
 7. Grave `esp32_sensor.ino` no ESP32 #1 — Serial deve mostrar "[ESP-NOW] Enviado com sucesso"
 8. Acesse a dashboard ([`water-tank-dashboard`](../water-tank-dashboard/)) e selecione
    o condominio no seletor do topo

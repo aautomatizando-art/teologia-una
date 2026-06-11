@@ -101,4 +101,20 @@
 // ─── INTERVALO DE MEDICAO ─────────────────────────────────────────────
 #define INTERVALO_MEDICAO_MS  30000UL   // mede e envia a cada 30 segundos
 
+// ════════════════════════════════════════════════════════════════════════
+// MONITORAMENTO DA CAMERA (ESP32-CAM, Alarme de Incendio)
+// ════════════════════════════════════════════════════════════════════════
+// O gateway tem o unico ESP32 que fica sempre online, entao ele tambem
+// consulta periodicamente a tabela "alarme_incendio" no Supabase: se o
+// "created_at" da ultima leitura nao mudar por CAM_TIMEOUT_CHECKS
+// verificacoes seguidas, considera a camera/alarme offline e avisa no
+// WhatsApp (e novamente quando ela voltar a enviar dados).
+
+// Intervalo entre verificacoes (ms)
+#define CAM_CHECK_INTERVALO_MS  60000UL   // verifica a cada 1 minuto
+
+// Verificacoes seguidas sem mudanca no created_at = camera offline
+// (a camera envia heartbeat a cada 30s, entao 2 x 60s = ~2min sem dados)
+#define CAM_TIMEOUT_CHECKS  2
+
 #endif
