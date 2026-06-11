@@ -84,6 +84,13 @@ bool tiAlertaTemperaturaEnviado = false;
 bool tiAlertaVibracaoEnviado    = false;
 bool tiLeituraInvalidaAvisada   = false;
 
+// ════════════════════════════════════════════════════════════════════════
+// ESTADO DA CONEXAO WIFI (alerta de queda/reconexao)
+// ════════════════════════════════════════════════════════════════════════
+
+bool wifiEstavaConectado = true;   // assume conectado: conectarWiFi() ja confirmou no setup()
+unsigned long wifiQuedaInicio = 0;
+
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len == sizeof(DadosSensor)) {
         memcpy((void *)&dadosTS, data, sizeof(DadosSensor));
@@ -234,6 +241,21 @@ void piscarLed() {
     digitalWrite(LED_PIN, LOW);
 }
 
+// Mede o nivel, le as entradas, temperatura e vibracao do Tanque Inferior,
+// atualizando as variaveis globais ti*. Usada tanto no loop (a cada
+// INTERVALO_MEDICAO_MS) quanto uma vez no setup() para a mensagem inicial.
+void medirTanqueInferior() {
+    float dist      = medirMediaCm();
+    tiLeituraValida = (dist > 0 && dist < 400);
+    tiDistanciaCm   = dist;
+    tiNivelPct      = tiLeituraValida ? distParaPorcento(dist) : 0;
+
+    lerEntradas();
+    tiTemperaturaC   = lerTemperatura();
+    tiVibracaoValor  = lerVibracao();
+    tiVibracaoAlerta = (tiVibracaoValor > VIBRACAO_LIMIAR);
+}
+
 // Envia a leitura do Tanque Inferior para o Supabase (tabela "tanque_inferior")
 bool enviarSupabaseTanqueInferior() {
     if (WiFi.status() != WL_CONNECTED) return false;
@@ -304,9 +326,29 @@ void setup() {
 
     tsUltimoRecebido = millis();
 
-    enviarWhatsApp(
-        "\xF0\x9F\x92\xA7 *Monitor Caixa d'Agua + Tanque Inferior iniciado!*\n"
-        "Gateway online, aguardando dados...");
+    // Primeira leitura do Tanque Inferior (sensores locais), para a
+    // mensagem inicial ja sair com o nivel atual
+    medirTanqueInferior();
+    tiUltimaMedicao = millis();
+
+    // Aguarda ate 12s pela primeira leitura do Tanque Superior via ESP-NOW
+    // (o ESP32 #1 envia a cada 30s, entao pode nao chegar a tempo)
+    Serial.println("[SETUP] Aguardando 1a leitura do Tanque Superior (ESP-NOW)...");
+    unsigned long esperaInicio = millis();
+    while (!dadosNovosTS && millis() - esperaInicio < 12000UL) {
+        delay(100);
+    }
+
+    String msgInicial = "\xF0\x9F\x94\x8C *Gateway reiniciado!*\n\n";
+    if (dadosNovosTS) {
+        msgInicial += "\xF0\x9F\x92\xA7 Tanque Superior: *" + String(dadosTS.nivel) + "%*\n";
+    } else {
+        msgInicial += "\xF0\x9F\x92\xA7 Tanque Superior: aguardando sinal do sensor...\n";
+    }
+    msgInicial += "\xF0\x9F\x9A\xB0 Tanque Inferior: *" + String(tiNivelPct) + "%*";
+    enviarWhatsApp(msgInicial);
+    // dadosNovosTS NAO e zerado aqui: o loop() ainda processa essa 1a
+    // leitura normalmente (envia ao Supabase e roda os alertas de nivel)
 
     Serial.println("[SETUP] Gateway pronto!");
 }
@@ -314,9 +356,28 @@ void setup() {
 void loop() {
     unsigned long agora = millis();
 
+    // ════════ WIFI: deteccao de queda/reconexao ════════
+    bool wifiConectado = (WiFi.status() == WL_CONNECTED);
+
+    if (!wifiConectado && wifiEstavaConectado) {
+        // Acabou de cair
+        wifiQuedaInicio    = agora;
+        wifiEstavaConectado = false;
+        Serial.println("[WiFi] Conexao perdida!");
+    }
+
+    if (wifiConectado && !wifiEstavaConectado) {
+        // Reconectou sozinho: avisa quanto tempo ficou offline
+        unsigned long quedaS = (agora - wifiQuedaInicio) / 1000;
+        String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *WiFi do gateway caiu e reconectou sozinho*\n\n";
+        msg += "Ficou offline por aproximadamente " + String(quedaS) + "s.";
+        enviarWhatsApp(msg);
+        wifiEstavaConectado = true;
+    }
+
     // Queda temporaria do WiFi: reconecta na rede salva (sem abrir o portal)
     static unsigned long ultimaTentativaWiFi = 0;
-    if (WiFi.status() != WL_CONNECTED && agora - ultimaTentativaWiFi >= 15000UL) {
+    if (!wifiConectado && agora - ultimaTentativaWiFi >= 15000UL) {
         ultimaTentativaWiFi = agora;
         Serial.println("[WiFi] Reconectando...");
         WiFi.reconnect();
@@ -395,19 +456,11 @@ void loop() {
     if (agora - tiUltimaMedicao >= INTERVALO_MEDICAO_MS) {
         tiUltimaMedicao = agora;
 
-        float dist      = medirMediaCm();
-        tiLeituraValida = (dist > 0 && dist < 400);
-        tiDistanciaCm   = dist;
-        tiNivelPct      = tiLeituraValida ? distParaPorcento(dist) : 0;
-
-        lerEntradas();
-        tiTemperaturaC   = lerTemperatura();
-        tiVibracaoValor  = lerVibracao();
-        tiVibracaoAlerta = (tiVibracaoValor > VIBRACAO_LIMIAR);
+        medirTanqueInferior();
 
         if (tiLeituraValida) {
             Serial.printf("[TANQUE INFERIOR] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f\n",
-                dist, tiNivelPct,
+                tiDistanciaCm, tiNivelPct,
                 tiEntrada1_bombaLigada,
                 tiEntrada2_bombaFalhou,
                 tiEntrada3_falhaInversor,
