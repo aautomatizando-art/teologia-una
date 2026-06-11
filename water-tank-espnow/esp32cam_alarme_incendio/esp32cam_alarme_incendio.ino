@@ -330,9 +330,26 @@ void setup() {
     // NTP em UTC (sem offset) — Postgres TIMESTAMPTZ trata UTC corretamente
     configTime(0, 0, "pool.ntp.org");
 
+    // Aguarda ate 5s pela sincronizacao do NTP, para a 1a foto ja sair com
+    // foto_atualizada_em preenchido
+    struct tm timeinfo;
+    unsigned long ntpInicio = millis();
+    while (!getLocalTime(&timeinfo) && millis() - ntpInicio < 5000UL) {
+        delay(100);
+    }
+
     lerEntradas();
     alertaAlarmeEnviado = entrada1_alarmeAcionado;
     alertaAvariaEnviado = entrada2_centralAvaria;
+
+    String statusInicial = entrada1_alarmeAcionado ? "alarme"
+                          : entrada2_centralAvaria  ? "avaria"
+                          : "normal";
+
+    // Foto inicial da central (mesmo com status normal), para a dashboard
+    // ja mostrar a imagem em vez de "Aguardando foto da central..."
+    capturarEEnviarFoto();
+    enviarSupabase(statusInicial);
 
     enviarWhatsApp(
         "🔥 *Monitor de Alarme de Incendio iniciado!*\n"
@@ -417,8 +434,11 @@ void loop() {
     // prioridade do alarme (ex: avaria some enquanto alarme ainda ativo)
     if (entrada1_alarmeAcionado) alertaAvariaEnviado = entrada2_centralAvaria;
 
-    // Atualizacao horaria da foto enquanto o status nao estiver "normal"
-    if (status != "normal" && agora - ultimoEnvioFoto >= FOTO_INTERVALO_MS) {
+    // Atualizacao periodica da foto: a cada FOTO_INTERVALO_MS (1h) se
+    // alarme/avaria, a cada FOTO_INTERVALO_NORMAL_MS (6h) se normal — assim
+    // a foto da dashboard nunca fica muito desatualizada
+    unsigned long fotoIntervalo = (status != "normal") ? FOTO_INTERVALO_MS : FOTO_INTERVALO_NORMAL_MS;
+    if (agora - ultimoEnvioFoto >= fotoIntervalo) {
         if (capturarEEnviarFoto()) {
             enviarSupabase(status);
         }
