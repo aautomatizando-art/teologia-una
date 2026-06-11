@@ -1,5 +1,5 @@
 /*
- * ESP32 #2 - Gateway (proximo ao WiFi)
+ * ESP32 #2 - Gateway (modulo WT32-ETH01, conexao via cabo de rede)
  * Funcao: recebe o nivel da caixa via ESP-NOW, envia alertas para um GRUPO
  *         do WhatsApp atraves da Evolution API e publica os dados no
  *         Supabase para a dashboard web (Vercel)
@@ -13,23 +13,33 @@
  * Falha no inversor / Painel sem energia) NAO sao tratadas neste gateway —
  * sao lidas e alertadas pelo ESP32 do Tanque Inferior.
  *
- * WiFi: configuravel no local via WiFiManager. Se nao conectar na rede salva,
- * o ESP32 cria o AP "CaixaDagua-Setup" (senha 12345678) com portal para
- * escolher a rede e digitar a senha do WiFi do condominio.
+ * Rede: WT32-ETH01 com PHY LAN8720 (RJ45), conexao via DHCP — sem WiFi/portal.
+ * O radio WiFi continua ativo (modo STA, sem se conectar a nenhuma rede)
+ * apenas para o ESP-NOW falar com o ESP32 #1 (sensor).
+ *
+ * Placa no Arduino IDE: "WT32-ETH01"
  *
  * Bibliotecas necessarias:
  *   - ArduinoJson by Benoit Blanchon
- *   - WiFiManager by tzapu
- *   (HTTPClient, WiFiClientSecure e WiFi ja vem no ESP32 core)
+ *   (ETH, HTTPClient, WiFiClientSecure e WiFi ja vem no ESP32 core)
  */
 
 #include <esp_now.h>
 #include <WiFi.h>
-#include <WiFiManager.h>
+#include <ETH.h>
+#include "esp_wifi.h"
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "config.h"
+
+// ─── PINOS ETHERNET (WT32-ETH01 + LAN8720) ──────────────────────────────────
+#define ETH_PHY_TYPE   ETH_PHY_LAN8720
+#define ETH_PHY_ADDR   1
+#define ETH_PHY_MDC    23
+#define ETH_PHY_MDIO   18
+#define ETH_PHY_POWER  16
+#define ETH_CLK_MODE   ETH_CLOCK_GPIO0_IN
 
 // Estrutura identica a do esp32_sensor!
 typedef struct {
@@ -48,6 +58,8 @@ bool leituraInvalidaAvisada = false;
 unsigned long ultimoStatus   = 0;
 unsigned long ultimoRecebido = 0;
 
+volatile bool ethConectado = false;
+
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len == sizeof(DadosSensor)) {
         memcpy((void *)&dados, data, sizeof(DadosSensor));
@@ -56,30 +68,51 @@ void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int le
     }
 }
 
-// Conecta na rede salva; se falhar, abre o portal de configuracao no local
-void conectarWiFi() {
+void onEthEvent(WiFiEvent_t event) {
+    switch (event) {
+        case ARDUINO_EVENT_ETH_START:
+            ETH.setHostname("gateway-caixa-dagua");
+            break;
+        case ARDUINO_EVENT_ETH_GOT_IP:
+            Serial.print("[ETH] Conectado! IP: ");
+            Serial.println(ETH.localIP());
+            ethConectado = true;
+            break;
+        case ARDUINO_EVENT_ETH_DISCONNECTED:
+        case ARDUINO_EVENT_ETH_STOP:
+            ethConectado = false;
+            break;
+        default:
+            break;
+    }
+}
+
+// Liga o cabo de rede (Ethernet); mantem o radio WiFi em modo STA sem se
+// conectar a nenhuma rede, apenas para o ESP-NOW falar com o ESP32 #1
+void conectarRede() {
+    WiFi.onEvent(onEthEvent);
+
     WiFi.mode(WIFI_STA);
+    esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 
-    WiFiManager wm;
-    wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
-    wm.setConnectTimeout(20);
+    Serial.println("[ETH] Conectando via cabo de rede...");
+    ETH.begin(ETH_PHY_TYPE, ETH_PHY_ADDR, ETH_PHY_MDC, ETH_PHY_MDIO, ETH_PHY_POWER, ETH_CLK_MODE);
 
-    Serial.println("[WiFi] Conectando na rede salva (ou abrindo portal)...");
-    if (!wm.autoConnect(AP_CONFIG_NOME, AP_CONFIG_SENHA)) {
-        // Sem rede salva e ninguem configurou no portal: reinicia e tenta de novo
-        Serial.println("[WiFi] Portal expirou sem configuracao. Reiniciando...");
+    unsigned long inicio = millis();
+    while (!ethConectado && millis() - inicio < 20000UL) {
+        delay(200);
+    }
+    if (!ethConectado) {
+        Serial.println("[ETH] Sem conexao apos 20s. Reiniciando...");
         delay(2000);
         ESP.restart();
     }
-
-    Serial.println("[WiFi] Conectado! IP: " + WiFi.localIP().toString());
-    Serial.println("[WiFi] Canal: " + String(WiFi.channel()));
 }
 
 // Envia mensagem de texto ao grupo do WhatsApp via Evolution API
 // (prefixa com o nome do condominio para identificar a origem no grupo)
 bool enviarWhatsApp(const String &texto) {
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (!ethConectado) return false;
 
     HTTPClient http;
     String url = String(EVO_BASE_URL) + "/message/sendText/" + EVO_INSTANCE;
@@ -105,7 +138,7 @@ bool enviarWhatsApp(const String &texto) {
 
 // Envia a leitura atual para o Supabase (dashboard web)
 bool enviarSupabase() {
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (!ethConectado) return false;
 
     WiFiClientSecure client;
     client.setInsecure();
@@ -138,8 +171,8 @@ bool enviarSupabase() {
 void setup() {
     Serial.begin(115200);
 
-    // WiFi DEVE iniciar antes do ESP-NOW para fixar o canal
-    conectarWiFi();
+    // Rede (Ethernet) DEVE iniciar antes do ESP-NOW para fixar o canal WiFi
+    conectarRede();
 
     Serial.print("[GATEWAY] MAC: ");
     Serial.println(WiFi.macAddress());  // <- informe este MAC no config.h do sensor!
@@ -161,14 +194,6 @@ void setup() {
 
 void loop() {
     unsigned long agora = millis();
-
-    // Queda temporaria do WiFi: reconecta na rede salva (sem abrir o portal)
-    static unsigned long ultimaTentativaWiFi = 0;
-    if (WiFi.status() != WL_CONNECTED && agora - ultimaTentativaWiFi >= 15000UL) {
-        ultimaTentativaWiFi = agora;
-        Serial.println("[WiFi] Reconectando...");
-        WiFi.reconnect();
-    }
 
     // Sensor sem comunicacao
     if (agora - ultimoRecebido >= TIMEOUT_SENSOR_MS && ultimoRecebido > 0) {
