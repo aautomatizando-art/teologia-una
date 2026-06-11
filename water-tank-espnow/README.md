@@ -248,8 +248,12 @@ para a dashboard e para o grupo do WhatsApp.
   `x-upsert: true`), sem precisar apagar manualmente.
 - A URL publica da foto e gravada na tabela `alarme_incendio`
   (`foto_url` / `foto_atualizada_em`) para a dashboard exibir.
-- Enquanto o status nao for "normal", uma nova foto e enviada a cada
-  `FOTO_INTERVALO_MS` (padrao 1 hora) para manter a foto atualizada.
+- Ja na inicializacao (boot), uma foto da central e capturada e enviada,
+  para a dashboard nunca ficar travada em "Aguardando foto da central...".
+- Depois disso, a foto e atualizada periodicamente: a cada
+  `FOTO_INTERVALO_MS` (padrao 1 hora) enquanto o status nao for "normal",
+  ou a cada `FOTO_INTERVALO_NORMAL_MS` (padrao 6 horas) quando o status for
+  "normal" — assim a foto da dashboard nunca fica muito desatualizada.
 - A cada `INTERVALO_MEDICAO_MS` (padrao 30s) o status atual e enviado ao
   Supabase (heartbeat), mesmo sem mudanca.
 

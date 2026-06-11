@@ -66,4 +66,8 @@
 // foto da central periodicamente para manter a foto da dashboard atualizada.
 #define FOTO_INTERVALO_MS  3600000UL     // 1 hora
 
+// Com o status "normal", tira uma nova foto com menos frequencia — so para
+// a foto da dashboard nao ficar muito antiga (ex: de meses atras).
+#define FOTO_INTERVALO_NORMAL_MS  21600000UL   // 6 horas
+
 #endif
