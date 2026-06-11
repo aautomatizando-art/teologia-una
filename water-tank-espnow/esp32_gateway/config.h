@@ -21,11 +21,10 @@
 
 // ─── SUPABASE (Dashboard web) ───────────────────────────────────────────────────
 // URL do projeto: Supabase -> Settings -> API -> Project URL
-#define SUPABASE_URL  "https://SEU_PROJETO.supabase.co"
+#define SUPABASE_URL  "https://odnjbvsjqteqapppkkpc.supabase.co"
 
-// Chave anon/public: Supabase -> Settings -> API -> anon public
-// NAO comitar a chave real no GitHub — preencha apenas localmente!
-#define SUPABASE_KEY  "SUA_SUPABASE_ANON_KEY_AQUI"
+// Chave anon/public (chave publica, protegida por RLS — nunca use a service_role!)
+#define SUPABASE_KEY  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kbmpidnNqcXRlcWFwcHBra3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0Mjk4NDQsImV4cCI6MjA5NjAwNTg0NH0.YWEzDGBl-045TPfp66drFkFwo8eeILxEu6Ex8n3pO2M"
 
 // ─── LIMITES DE ALERTA ──────────────────────────────────────────────────────────
 #define NIVEL_ALERTA  20   // % abaixo disto -> alerta de nivel baixo
