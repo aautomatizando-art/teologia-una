@@ -5,7 +5,8 @@
  *
  * As 4 entradas do quadro/inversor da bomba (Bomba ligou / Bomba falhou /
  * Falha no inversor / Painel sem energia) NAO ficam neste no — sao lidas
- * pelo ESP32 do Tanque Inferior (que fica na casa de bombas, com WiFi).
+ * pelo proprio ESP32 #2 (Gateway/WT32-ETH01), que tambem cuida do Tanque
+ * Inferior.
  *
  * Bibliotecas: apenas ESP32 core (nenhuma adicional necessaria)
  */

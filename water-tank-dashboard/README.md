@@ -16,16 +16,20 @@ todos os módulos de monitoramento do condomínio:
 - **Água da Rua** — vazão (L/min) e status do fluxo (ativo / parado)
 
 ```
-[Tanque Superior] -ESP-NOW-> [ESP32 Gateway] --\
-[Tanque Inferior] ------------- WiFi direto ----\
-[Alarme Incêndio (ESP32-CAM)] -- WiFi direto -----\   HTTPS (REST + Storage)
-[Bombas Incêndio] -------------- WiFi direto ------>  Supabase  ---->  Dashboard (Vercel)
-[Cancela Portaria] -------------- WiFi direto ----/   (tabelas + bucket      realtime / polling
-[Água da Rua] -------------------- WiFi direto --/     "fotos-incendio")
+[Tanque Superior] -ESP-NOW-\
+[Tanque Inferior] -- GPIOs -+-> [ESP32 Gateway WT32-ETH01] -- Ethernet --\
+[Alarme Incêndio (ESP32-CAM)] ---------------- WiFi direto ---------------\   HTTPS (REST + Storage)
+[Bombas Incêndio] ------------------------------ WiFi direto -------------->  Supabase  ---->  Dashboard (Vercel)
+[Cancela Portaria] ------------------------------ WiFi direto ------------/   (tabelas + bucket      realtime / polling
+[Água da Rua] ------------------------------------ WiFi direto ----------/     "fotos-incendio")
                                                   (todos também enviam
                                                    alertas para o grupo
                                                    do WhatsApp via Evolution API)
 ```
+
+> **Tanque Inferior**: os sensores (nível, 4 entradas da bomba, temperatura
+> e vibração) ficam ligados nos GPIOs livres do próprio ESP32 Gateway
+> (WT32-ETH01) — não há um ESP32 dedicado para o Tanque Inferior.
 
 ## 1. Criar o projeto no Supabase
 

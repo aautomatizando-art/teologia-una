@@ -1,26 +1,26 @@
 /*
- * ESP32 #2 - Gateway (modulo WT32-ETH01, conexao via cabo de rede)
- * Funcao: recebe o nivel da caixa via ESP-NOW, envia alertas para um GRUPO
- *         do WhatsApp atraves da Evolution API e publica os dados no
- *         Supabase para a dashboard web (Vercel)
+ * ESP32 #2 - Gateway (WT32-ETH01, Ethernet RJ45) + Tanque Inferior
+ * Funcao: ESP unico que substitui o Gateway do Tanque Superior e o ESP32
+ *         do Tanque Inferior:
  *
- * Alertas enviados ao WhatsApp:
- *   - Nivel baixo
- *   - Caixa abastecida (nivel OK)
- *   - Sensor sem comunicacao
- *
- * As 4 entradas do quadro/inversor da bomba (Bomba ligou / Bomba falhou /
- * Falha no inversor / Painel sem energia) NAO sao tratadas neste gateway —
- * sao lidas e alertadas pelo ESP32 do Tanque Inferior.
+ *   1) Recebe o nivel da caixa do Tanque Superior via ESP-NOW (ESP32 #1,
+ *      sem WiFi), publica no Supabase (tabela "leituras") e dispara
+ *      alertas no grupo do WhatsApp via Evolution API
+ *   2) Le localmente os sensores do Tanque Inferior (nivel via JSN-SR04T,
+ *      4 entradas do quadro/inversor da bomba, temperatura DS18B20 e
+ *      vibracao), publica no Supabase (tabela "tanque_inferior") e
+ *      dispara alertas no WhatsApp
  *
  * Rede: WT32-ETH01 com PHY LAN8720 (RJ45), conexao via DHCP — sem WiFi/portal.
  * O radio WiFi continua ativo (modo STA, sem se conectar a nenhuma rede)
- * apenas para o ESP-NOW falar com o ESP32 #1 (sensor).
+ * apenas para o ESP-NOW falar com o ESP32 #1 (sensor do Tanque Superior).
  *
  * Placa no Arduino IDE: "WT32-ETH01"
  *
  * Bibliotecas necessarias:
- *   - ArduinoJson by Benoit Blanchon
+ *   - ArduinoJson       by Benoit Blanchon
+ *   - OneWire           by Jim Studt / Paul Stoffregen
+ *   - DallasTemperature by Miles Burton
  *   (ETH, HTTPClient, WiFiClientSecure e WiFi ja vem no ESP32 core)
  */
 
@@ -31,6 +31,8 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include "config.h"
 
 // ─── PINOS ETHERNET (WT32-ETH01 + LAN8720) ──────────────────────────────────
@@ -41,6 +43,10 @@
 #define ETH_PHY_POWER  16
 #define ETH_CLK_MODE   ETH_CLOCK_GPIO0_IN
 
+// ════════════════════════════════════════════════════════════════════════
+// TANQUE SUPERIOR (recebido via ESP-NOW do ESP32 #1)
+// ════════════════════════════════════════════════════════════════════════
+
 // Estrutura identica a do esp32_sensor!
 typedef struct {
     float    distancia;
@@ -49,22 +55,54 @@ typedef struct {
     bool     leituraValida;
 } DadosSensor;
 
-DadosSensor dados;
-volatile bool dadosNovos = false;
+DadosSensor dadosTS;
+volatile bool dadosNovosTS = false;
 
-bool alertaNivelEnviado    = false;
-bool alertaSemSinal      = false;
-bool leituraInvalidaAvisada = false;
-unsigned long ultimoStatus   = 0;
-unsigned long ultimoRecebido = 0;
+bool tsAlertaNivelEnviado     = false;
+bool tsAlertaSemSinal         = false;
+bool tsLeituraInvalidaAvisada = false;
+unsigned long ultimoStatus     = 0;
+unsigned long tsUltimoRecebido = 0;
+
+// ════════════════════════════════════════════════════════════════════════
+// TANQUE INFERIOR (sensores e entradas ligados neste mesmo ESP32)
+// ════════════════════════════════════════════════════════════════════════
+
+OneWire oneWire(TEMP_PIN);
+DallasTemperature sensoresTemp(&oneWire);
+
+float tiDistanciaCm = -1;
+int   tiNivelPct    = 0;
+bool  tiEntrada1_bombaLigada      = false;
+bool  tiEntrada2_bombaFalhou      = false;
+bool  tiEntrada3_falhaInversor    = false;
+bool  tiEntrada4_painelSemEnergia = false;
+float tiTemperaturaC  = NAN;
+float tiVibracaoValor = 0;
+bool  tiVibracaoAlerta = false;
+bool  tiLeituraValida  = false;
+
+unsigned long tiUltimaMedicao = 0;
+
+bool tiAlertaBombaFalhouEnviado = false;
+bool tiAlertaInversorEnviado    = false;
+bool tiAlertaPainelEnviado      = false;
+bool tiAlertaNivelBaixoEnviado  = false;
+bool tiAlertaTemperaturaEnviado = false;
+bool tiAlertaVibracaoEnviado    = false;
+bool tiLeituraInvalidaAvisada   = false;
+
+// ════════════════════════════════════════════════════════════════════════
+// REDE (Ethernet + WiFi so para ESP-NOW)
+// ════════════════════════════════════════════════════════════════════════
 
 volatile bool ethConectado = false;
 
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if (len == sizeof(DadosSensor)) {
-        memcpy((void *)&dados, data, sizeof(DadosSensor));
-        dadosNovos     = true;
-        ultimoRecebido = millis();
+        memcpy((void *)&dadosTS, data, sizeof(DadosSensor));
+        dadosNovosTS    = true;
+        tsUltimoRecebido = millis();
     }
 }
 
@@ -109,6 +147,10 @@ void conectarRede() {
     }
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// WHATSAPP / SUPABASE
+// ════════════════════════════════════════════════════════════════════════
+
 // Envia mensagem de texto ao grupo do WhatsApp via Evolution API
 // (prefixa com o nome do condominio para identificar a origem no grupo)
 bool enviarWhatsApp(const String &texto) {
@@ -136,8 +178,8 @@ bool enviarWhatsApp(const String &texto) {
     return ok;
 }
 
-// Envia a leitura atual para o Supabase (dashboard web)
-bool enviarSupabase() {
+// Envia a leitura do Tanque Superior para o Supabase (tabela "leituras")
+bool enviarSupabaseTanqueSuperior() {
     if (!ethConectado) return false;
 
     WiFiClientSecure client;
@@ -154,10 +196,112 @@ bool enviarSupabase() {
 
     JsonDocument doc;
     doc["condominio"]      = CONDOMINIO_NOME;
-    doc["distancia_cm"]    = dados.distancia;
-    doc["nivel_pct"]       = dados.nivel;
-    doc["sensor_uptime_s"] = dados.uptime;
-    doc["leitura_valida"]  = dados.leituraValida;
+    doc["distancia_cm"]    = dadosTS.distancia;
+    doc["nivel_pct"]       = dadosTS.nivel;
+    doc["sensor_uptime_s"] = dadosTS.uptime;
+    doc["leitura_valida"]  = dadosTS.leituraValida;
+    String body;
+    serializeJson(doc, body);
+
+    int code = http.POST(body);
+    bool ok = (code >= 200 && code < 300);
+    Serial.printf("[SUPABASE] HTTP %d %s\n", code, ok ? "OK" : http.getString().c_str());
+    http.end();
+    return ok;
+}
+
+// Mede a distancia (cm) ate a superficie da agua, com varias amostras
+float medirMediaCm(int amostras = 5) {
+    float soma  = 0;
+    int validas = 0;
+    for (int i = 0; i < amostras; i++) {
+        digitalWrite(TRIG_PIN, LOW);
+        delayMicroseconds(2);
+        digitalWrite(TRIG_PIN, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(TRIG_PIN, LOW);
+        long dur = pulseIn(ECHO_PIN, HIGH, 30000);
+        if (dur > 0) {
+            float d = dur * 0.034f / 2.0f;
+            if (d > 0 && d < 400) { soma += d; validas++; }
+        }
+        delay(100);
+    }
+    return validas > 0 ? soma / validas : -1;
+}
+
+// Converte distancia (cm) em porcentagem de nivel (0-100%)
+int distParaPorcento(float dist) {
+    long p = map((long)dist, DIST_CAIXA_VAZIA, DIST_CAIXA_CHEIA, 0, 100);
+    return (int)constrain(p, 0, 100);
+}
+
+// Le as 4 entradas digitais (contato seco para GND = ativo, INPUT_PULLUP)
+void lerEntradas() {
+    tiEntrada1_bombaLigada      = (digitalRead(ENTRADA1_PIN) == LOW);
+    tiEntrada2_bombaFalhou      = (digitalRead(ENTRADA2_PIN) == LOW);
+    tiEntrada3_falhaInversor    = (digitalRead(ENTRADA3_PIN) == LOW);
+    tiEntrada4_painelSemEnergia = (digitalRead(ENTRADA4_PIN) == LOW);
+}
+
+// Le a temperatura da bomba via DS18B20. Retorna NAN se o sensor
+// estiver desconectado ou com erro de leitura.
+float lerTemperatura() {
+    sensoresTemp.requestTemperatures();
+    float t = sensoresTemp.getTempCByIndex(0);
+    if (t == DEVICE_DISCONNECTED_C) return NAN;
+    return t;
+}
+
+// Le o sensor de vibracao (saida analogica), com varias amostras
+float lerVibracao(int amostras = 5) {
+    long soma = 0;
+    for (int i = 0; i < amostras; i++) {
+        soma += analogRead(VIBRACAO_PIN);
+        delay(20);
+    }
+    return (float)soma / amostras;
+}
+
+// Pisca o LED onboard rapidamente (indica envio realizado)
+void piscarLed() {
+    digitalWrite(LED_PIN, HIGH); delay(80);
+    digitalWrite(LED_PIN, LOW);
+}
+
+// Envia a leitura do Tanque Inferior para o Supabase (tabela "tanque_inferior")
+bool enviarSupabaseTanqueInferior() {
+    if (!ethConectado) return false;
+
+    WiFiClientSecure client;
+    client.setInsecure();
+
+    HTTPClient http;
+    String url = String(SUPABASE_URL) + "/rest/v1/tanque_inferior";
+    http.begin(client, url);
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("apikey", SUPABASE_KEY);
+    http.addHeader("Authorization", "Bearer " + String(SUPABASE_KEY));
+    http.addHeader("Prefer", "return=minimal");
+    http.setTimeout(10000);
+
+    JsonDocument doc;
+    doc["condominio"]                  = CONDOMINIO_NOME;
+    doc["distancia_cm"]                = tiDistanciaCm;
+    doc["nivel_pct"]                   = tiNivelPct;
+    doc["entrada1_bomba_ligada"]       = tiEntrada1_bombaLigada;
+    doc["entrada2_bomba_falhou"]       = tiEntrada2_bombaFalhou;
+    doc["entrada3_falha_inversor"]     = tiEntrada3_falhaInversor;
+    doc["entrada4_painel_sem_energia"] = tiEntrada4_painelSemEnergia;
+    if (isnan(tiTemperaturaC)) {
+        doc["temperatura_c"] = nullptr;
+    } else {
+        doc["temperatura_c"] = tiTemperaturaC;
+    }
+    doc["vibracao_valor"]   = tiVibracaoValor;
+    doc["vibracao_alerta"]  = tiVibracaoAlerta;
+    doc["sensor_uptime_s"]  = millis() / 1000;
+    doc["leitura_valida"]   = tiLeituraValida;
     String body;
     serializeJson(doc, body);
 
@@ -171,6 +315,16 @@ bool enviarSupabase() {
 void setup() {
     Serial.begin(115200);
 
+    // Pinos do Tanque Inferior (sensores e entradas locais)
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    pinMode(LED_PIN,  OUTPUT);
+    pinMode(ENTRADA1_PIN, INPUT_PULLUP);
+    pinMode(ENTRADA2_PIN, INPUT_PULLUP);
+    pinMode(ENTRADA3_PIN, INPUT_PULLUP);
+    pinMode(ENTRADA4_PIN, INPUT_PULLUP);
+    sensoresTemp.begin();
+
     // Rede (Ethernet) DEVE iniciar antes do ESP-NOW para fixar o canal WiFi
     conectarRede();
 
@@ -183,11 +337,11 @@ void setup() {
     }
     esp_now_register_recv_cb(onDataReceived);
 
-    ultimoRecebido = millis();
+    tsUltimoRecebido = millis();
 
     enviarWhatsApp(
-        "\xF0\x9F\x92\xA7 *Monitor Caixa d'Agua iniciado!*\n"
-        "Gateway online, aguardando dados do sensor...");
+        "\xF0\x9F\x92\xA7 *Monitor Caixa d'Agua + Tanque Inferior iniciado!*\n"
+        "Gateway online, aguardando dados...");
 
     Serial.println("[SETUP] Gateway pronto!");
 }
@@ -195,60 +349,62 @@ void setup() {
 void loop() {
     unsigned long agora = millis();
 
+    // ════════ TANQUE SUPERIOR (via ESP-NOW) ════════
+
     // Sensor sem comunicacao
-    if (agora - ultimoRecebido >= TIMEOUT_SENSOR_MS && ultimoRecebido > 0) {
-        if (!alertaSemSinal) {
+    if (agora - tsUltimoRecebido >= TIMEOUT_SENSOR_MS && tsUltimoRecebido > 0) {
+        if (!tsAlertaSemSinal) {
             enviarWhatsApp(
                 "\xE2\x9A\xA0\xEF\xB8\x8F *ATENCAO: Sensor sem comunicacao!*\n"
                 "O ESP32 da caixa d'agua nao envia dados ha mais de 2 minutos.\n"
                 "Verifique alimentacao e alcance do ESP-NOW.");
-            alertaSemSinal = true;
+            tsAlertaSemSinal = true;
         }
     }
 
-    if (dadosNovos) {
-        dadosNovos = false;
+    if (dadosNovosTS) {
+        dadosNovosTS = false;
 
         // Sensor voltou a comunicar depois de uma queda
-        if (alertaSemSinal) {
+        if (tsAlertaSemSinal) {
             enviarWhatsApp(
                 "\xE2\x9C\x85 *Sensor online novamente!*\n"
                 "O ESP32 da caixa d'agua voltou a enviar dados.");
-            alertaSemSinal = false;
+            tsAlertaSemSinal = false;
         }
 
-        Serial.printf("[DADOS] %.1fcm | %d%% | up %lus\n",
-            dados.distancia, dados.nivel, dados.uptime);
+        Serial.printf("[CAIXA SUPERIOR] %.1fcm | %d%% | up %lus\n",
+            dadosTS.distancia, dadosTS.nivel, dadosTS.uptime);
 
-        enviarSupabase();
+        enviarSupabaseTanqueSuperior();
 
         // Leitura invalida do sensor
-        if (!dados.leituraValida) {
-            if (!leituraInvalidaAvisada) {
+        if (!dadosTS.leituraValida) {
+            if (!tsLeituraInvalidaAvisada) {
                 enviarWhatsApp(
                     "\xE2\x9A\xA0\xEF\xB8\x8F *Sensor com leitura invalida!*\n"
                     "Verifique o JSN-SR04T na caixa d'agua.");
-                leituraInvalidaAvisada = true;
+                tsLeituraInvalidaAvisada = true;
             }
-            return;
-        }
-        leituraInvalidaAvisada = false;
+        } else {
+            tsLeituraInvalidaAvisada = false;
 
-        // ── Nivel baixo ──
-        if (dados.nivel <= NIVEL_ALERTA && !alertaNivelEnviado) {
-            String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *Nivel baixo na caixa d'agua!*\n\n";
-            msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dados.nivel) + "%*\n";
-            msg += "\xF0\x9F\x93\x8F Distancia: " + String(dados.distancia, 1) + "cm";
-            enviarWhatsApp(msg);
-            alertaNivelEnviado = true;
-        }
+            // ── Nivel baixo ──
+            if (dadosTS.nivel <= NIVEL_ALERTA && !tsAlertaNivelEnviado) {
+                String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *Nivel baixo na caixa d'agua!*\n\n";
+                msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dadosTS.nivel) + "%*\n";
+                msg += "\xF0\x9F\x93\x8F Distancia: " + String(dadosTS.distancia, 1) + "cm";
+                enviarWhatsApp(msg);
+                tsAlertaNivelEnviado = true;
+            }
 
-        // ── Caixa abastecida ──
-        if (dados.nivel >= NIVEL_OK && alertaNivelEnviado) {
-            String msg = "\xE2\x9C\x85 *Caixa d'agua abastecida!*\n\n";
-            msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dados.nivel) + "%*";
-            enviarWhatsApp(msg);
-            alertaNivelEnviado = false;
+            // ── Caixa abastecida ──
+            if (dadosTS.nivel >= NIVEL_OK && tsAlertaNivelEnviado) {
+                String msg = "\xE2\x9C\x85 *Caixa d'agua abastecida!*\n\n";
+                msg += "\xF0\x9F\x93\x8A Nivel: *" + String(dadosTS.nivel) + "%*";
+                enviarWhatsApp(msg);
+                tsAlertaNivelEnviado = false;
+            }
         }
     }
 
@@ -256,8 +412,138 @@ void loop() {
     if (INTERVALO_STATUS_MS > 0 && agora - ultimoStatus >= INTERVALO_STATUS_MS) {
         ultimoStatus = agora;
         String msg = "\xF0\x9F\x93\x8B *Status do sistema*\n";
-        msg += "Nivel: " + String(dados.nivel) + "%\n";
-        msg += "Sensor online: " + String(dados.uptime / 60) + " min";
+        msg += "Caixa Superior: " + String(dadosTS.nivel) + "%\n";
+        msg += "Sensor online: " + String(dadosTS.uptime / 60) + " min";
         enviarWhatsApp(msg);
+    }
+
+    // ════════ TANQUE INFERIOR (sensores locais) ════════
+
+    if (agora - tiUltimaMedicao >= INTERVALO_MEDICAO_MS) {
+        tiUltimaMedicao = agora;
+
+        float dist     = medirMediaCm();
+        tiLeituraValida = (dist > 0 && dist < 400);
+        tiDistanciaCm   = dist;
+        tiNivelPct      = tiLeituraValida ? distParaPorcento(dist) : 0;
+
+        lerEntradas();
+        tiTemperaturaC  = lerTemperatura();
+        tiVibracaoValor = lerVibracao();
+        tiVibracaoAlerta = (tiVibracaoValor > VIBRACAO_LIMIAR);
+
+        if (tiLeituraValida) {
+            Serial.printf("[TANQUE INFERIOR] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f\n",
+                dist, tiNivelPct,
+                tiEntrada1_bombaLigada,
+                tiEntrada2_bombaFalhou,
+                tiEntrada3_falhaInversor,
+                tiEntrada4_painelSemEnergia,
+                tiTemperaturaC,
+                tiVibracaoValor);
+        } else {
+            Serial.println("[TANQUE INFERIOR] Leitura invalida!");
+        }
+
+        enviarSupabaseTanqueInferior();
+        piscarLed();
+
+        // Leitura invalida do sensor ultrassonico
+        if (!tiLeituraValida) {
+            if (!tiLeituraInvalidaAvisada) {
+                enviarWhatsApp(
+                    "\xE2\x9A\xA0\xEF\xB8\x8F *Sensor com leitura invalida!*\n"
+                    "Verifique o JSN-SR04T no Tanque Inferior.");
+                tiLeituraInvalidaAvisada = true;
+            }
+            return;
+        }
+        tiLeituraInvalidaAvisada = false;
+
+        // ── ENTRADA 2: Bomba falhou (prioridade maxima) ──
+        if (tiEntrada2_bombaFalhou && !tiAlertaBombaFalhouEnviado) {
+            String msg = "\xF0\x9F\x9A\xA8 *FALHA NA BOMBA!* (Tanque Inferior - Entrada 2 acionada)\n\n";
+            msg += "O quadro de comando sinalizou falha na bomba do Tanque Inferior.\n";
+            msg += "Possiveis causas: bomba queimada, falta d'agua no poco, registro fechado, protecao do motor.\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel atual: *" + String(tiNivelPct) + "%*";
+            enviarWhatsApp(msg);
+            tiAlertaBombaFalhouEnviado = true;
+        }
+        if (!tiEntrada2_bombaFalhou && tiAlertaBombaFalhouEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Falha na bomba normalizada* (Tanque Inferior).");
+            tiAlertaBombaFalhouEnviado = false;
+        }
+
+        // ── ENTRADA 3: Falha no inversor ──
+        if (tiEntrada3_falhaInversor && !tiAlertaInversorEnviado) {
+            String msg = "\xF0\x9F\x9A\xA8 *FALHA NO INVERSOR!* (Tanque Inferior - Entrada 3 acionada)\n\n";
+            msg += "Verifique o inversor/quadro de energia da bomba do Tanque Inferior.";
+            enviarWhatsApp(msg);
+            tiAlertaInversorEnviado = true;
+        }
+        if (!tiEntrada3_falhaInversor && tiAlertaInversorEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Falha no inversor normalizada* (Tanque Inferior).");
+            tiAlertaInversorEnviado = false;
+        }
+
+        // ── ENTRADA 4: Painel sem energia ──
+        if (tiEntrada4_painelSemEnergia && !tiAlertaPainelEnviado) {
+            String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *PAINEL SEM ENERGIA!* (Tanque Inferior - Entrada 4 acionada)\n\n";
+            msg += "O quadro da bomba do Tanque Inferior esta sem alimentacao da rede eletrica.";
+            enviarWhatsApp(msg);
+            tiAlertaPainelEnviado = true;
+        }
+        if (!tiEntrada4_painelSemEnergia && tiAlertaPainelEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Energia do painel restabelecida!* (Tanque Inferior).");
+            tiAlertaPainelEnviado = false;
+        }
+
+        // ── Nivel baixo ──
+        if (tiNivelPct <= TI_NIVEL_ALERTA && !tiAlertaNivelBaixoEnviado) {
+            String msg = "\xE2\x9A\xA0\xEF\xB8\x8F *Nivel baixo no Tanque Inferior!*\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel: *" + String(tiNivelPct) + "%*\n";
+            msg += "\xF0\x9F\x93\x8F Distancia: " + String(tiDistanciaCm, 1) + "cm";
+            if (tiEntrada1_bombaLigada) {
+                msg += "\n\xF0\x9F\x9F\xA2 Entrada 1 acionada: Bomba LIGADA";
+            }
+            enviarWhatsApp(msg);
+            tiAlertaNivelBaixoEnviado = true;
+        }
+
+        // ── Tanque abastecido ──
+        if (tiNivelPct >= TI_NIVEL_OK && tiAlertaNivelBaixoEnviado) {
+            String msg = "\xE2\x9C\x85 *Tanque Inferior abastecido!*\n\n";
+            msg += "\xF0\x9F\x93\x8A Nivel: *" + String(tiNivelPct) + "%*";
+            enviarWhatsApp(msg);
+            tiAlertaNivelBaixoEnviado = false;
+        }
+
+        // ── Temperatura da bomba ──
+        if (!isnan(tiTemperaturaC)) {
+            if (tiTemperaturaC > TEMP_ALERTA_C && !tiAlertaTemperaturaEnviado) {
+                String msg = "\xF0\x9F\x8C\xA1\xEF\xB8\x8F *Temperatura alta na bomba (Tanque Inferior)!*\n\n";
+                msg += "\xF0\x9F\x8C\xA1\xEF\xB8\x8F Temperatura: *" + String(tiTemperaturaC, 1) + " C*\n";
+                msg += "Verifique o funcionamento e a refrigeracao da bomba.";
+                enviarWhatsApp(msg);
+                tiAlertaTemperaturaEnviado = true;
+            }
+            if (tiTemperaturaC <= TEMP_ALERTA_C && tiAlertaTemperaturaEnviado) {
+                enviarWhatsApp("\xE2\x9C\x85 *Temperatura da bomba normalizada* (Tanque Inferior).");
+                tiAlertaTemperaturaEnviado = false;
+            }
+        }
+
+        // ── Vibracao excessiva ──
+        if (tiVibracaoAlerta && !tiAlertaVibracaoEnviado) {
+            String msg = "\xF0\x9F\x93\xB3 *Vibracao excessiva detectada na bomba (Tanque Inferior)!*\n\n";
+            msg += "Leitura do sensor: *" + String(tiVibracaoValor, 0) + "*\n";
+            msg += "Verifique fixacao, rolamentos e alinhamento da bomba.";
+            enviarWhatsApp(msg);
+            tiAlertaVibracaoEnviado = true;
+        }
+        if (!tiVibracaoAlerta && tiAlertaVibracaoEnviado) {
+            enviarWhatsApp("\xE2\x9C\x85 *Vibracao da bomba normalizada* (Tanque Inferior).");
+            tiAlertaVibracaoEnviado = false;
+        }
     }
 }

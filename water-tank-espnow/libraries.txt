@@ -1,19 +1,19 @@
 # Bibliotecas necessarias
 # Instalar via Arduino IDE: Sketch > Incluir Biblioteca > Gerenciar Bibliotecas
 
-# ESP32 #2 (Gateway), Tanque Inferior, Bombas de Incendio, Cancela da
-# Portaria, Agua da Rua e ESP32-CAM (Alarme de Incendio):
+# ESP32 #2 (Gateway + Tanque Inferior, WT32-ETH01), Bombas de Incendio,
+# Cancela da Portaria, Agua da Rua e ESP32-CAM (Alarme de Incendio):
 ArduinoJson              by Benoit Blanchon       >= 7.0.0
 
-# Tanque Inferior, Bombas de Incendio, Cancela da Portaria, Agua da Rua e
+# Bombas de Incendio, Cancela da Portaria, Agua da Rua e
 # ESP32-CAM (Alarme de Incendio) - configuracao do WiFi no local:
 WiFiManager              by tzapu                 >= 2.0.0
 
-# Apenas para o ESP32 Tanque Inferior (sensor de temperatura DS18B20):
+# Apenas para o ESP32 #2 (Gateway + Tanque Inferior) - sensor de temperatura DS18B20:
 OneWire                  by Jim Studt / Paul Stoffregen >= 2.3.0
 DallasTemperature        by Miles Burton          >= 3.9.0
 
-# ESP32 #1 (Sensor) e ESP32 #2 (Gateway, WT32-ETH01): nenhuma biblioteca adicional
+# ESP32 #1 (Sensor): nenhuma biblioteca adicional
 # ESP-NOW, WiFi, ETH e HTTPClient ja estao incluidos no ESP32 Arduino Core
 
 # ESP32-CAM (Alarme de Incendio): nenhuma biblioteca adicional alem das acima
@@ -24,7 +24,6 @@ DallasTemperature        by Miles Burton          >= 3.9.0
 # https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 # Ferramentas > Placa > Gerenciador de Placas > "ESP32 by Espressif Systems" >= 2.0.0
 # Selecionar placa:
-#   - ESP32 #1, Tanque Inferior, Bombas de Incendio, Cancela da
-#     Portaria, Agua da Rua: "ESP32 Dev Module"
-#   - ESP32 #2 (Gateway): "WT32-ETH01"
+#   - ESP32 #1, Bombas de Incendio, Cancela da Portaria, Agua da Rua: "ESP32 Dev Module"
+#   - ESP32 #2 (Gateway + Tanque Inferior): "WT32-ETH01"
 #   - Alarme de Incendio: "AI Thinker ESP32-CAM"
