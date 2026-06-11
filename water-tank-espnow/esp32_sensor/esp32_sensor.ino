@@ -5,15 +5,13 @@
  *
  * As 4 entradas do quadro/inversor da bomba (Bomba ligou / Bomba falhou /
  * Falha no inversor / Painel sem energia) NAO ficam neste no — sao lidas
- * pelo proprio ESP32 #2 (Gateway/WT32-ETH01), que tambem cuida do Tanque
- * Inferior.
+ * pelo proprio ESP32 #2 (Gateway), que tambem cuida do Tanque Inferior.
  *
  * Bibliotecas: apenas ESP32 core (nenhuma adicional necessaria)
  */
 
 #include <esp_now.h>
 #include <WiFi.h>
-#include "esp_wifi.h"
 #include "config.h"
 
 // Estrutura de dados enviada via ESP-NOW (identica no gateway!)
@@ -67,7 +65,6 @@ void setup() {
 
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
-    esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 
     Serial.print("[SENSOR] MAC: ");
     Serial.println(WiFi.macAddress());
