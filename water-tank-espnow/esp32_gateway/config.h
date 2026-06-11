@@ -1,9 +1,19 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// ─── WIFI ────────────────────────────────────────────────────────────────────────
-#define WIFI_SSID  "SUA_REDE_WIFI"
-#define WIFI_PASS  "SUA_SENHA_WIFI"
+// ─── CONDOMINIO ──────────────────────────────────────────────────────────────────
+// Identificador deste condominio (aparece na dashboard e nas mensagens do grupo).
+// Use um nome diferente em cada gateway instalado!
+#define CONDOMINIO_NOME  "Condominio Principal"
+
+// ─── WIFI (configuracao no local via WiFiManager) ───────────────────────────────
+// Nao precisa gravar SSID/senha no codigo: na primeira ligacao (ou se a rede
+// salva nao for encontrada) o ESP32 cria o ponto de acesso abaixo. Conecte pelo
+// celular, o portal abre sozinho, escolha a rede WiFi do condominio e digite a
+// senha. Fica salvo na memoria flash do ESP32.
+#define AP_CONFIG_NOME   "CaixaDagua-Setup"
+#define AP_CONFIG_SENHA  "12345678"          // senha do AP de configuracao (min 8)
+#define PORTAL_TIMEOUT_S 180                 // portal aberto por 3 min, depois reinicia
 
 // ─── EVOLUTION API (WhatsApp no VPS Hostinger) ─────────────────────────────────
 // IP do VPS (srv1745227.hstgr.cloud)

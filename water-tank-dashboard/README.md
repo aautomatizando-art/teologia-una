@@ -65,6 +65,21 @@ chave — ficam salvas no `localStorage` do navegador.
 4. Deploy. A URL gerada (`https://seu-projeto.vercel.app`) é o link da
    dashboard.
 
+## Vários condomínios
+
+A mesma dashboard atende quantos condomínios você quiser:
+
+1. Cada condomínio tem seu par de ESP32 (sensor + gateway)
+2. No `config.h` do gateway de cada local, defina um `CONDOMINIO_NOME` único
+   (ex: `"Residencial Sol"`, `"Condominio Park"`)
+3. Todos os gateways apontam para o **mesmo** Supabase (mesma URL e anon key)
+4. O seletor no topo da dashboard lista automaticamente os condomínios que já
+   enviaram leituras — a escolha fica salva no navegador
+
+O SQL de setup já cria a view `condominios` usada pelo seletor. Se a tabela
+`leituras` foi criada numa versão antiga, basta rodar o `supabase-setup.sql`
+de novo: ele adiciona a coluna `condominio` sem perder dados.
+
 ## Funcionamento
 
 - Ao abrir, a dashboard busca a última leitura da tabela `leituras`.
