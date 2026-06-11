@@ -28,11 +28,20 @@ CREATE INDEX IF NOT EXISTS idx_leituras_condominio ON leituras(condominio, creat
 ALTER TABLE leituras ENABLE ROW LEVEL SECURITY;
 
 -- Permite leitura (dashboard) e escrita (ESP32 Gateway) via chave anon
+DROP POLICY IF EXISTS "anon_leituras" ON leituras;
 CREATE POLICY "anon_leituras" ON leituras FOR ALL USING (true) WITH CHECK (true);
 
 -- ─── REALTIME ──────────────────────────────────────────
 -- Necessario para a dashboard atualizar sozinha quando chega leitura nova
-ALTER PUBLICATION supabase_realtime ADD TABLE leituras;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'leituras'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE leituras;
+  END IF;
+END $$;
 
 -- ─── VIEW: ultima leitura de cada condominio ───────────
 CREATE OR REPLACE VIEW ultima_leitura AS
