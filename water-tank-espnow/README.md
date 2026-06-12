@@ -56,7 +56,7 @@ os nos do mesmo condominio na dashboard e nas mensagens do WhatsApp (veja
                                    | JSN-SR04T (nivel)|
                                    | 4 entradas bomba |
                                    | DS18B20 (temp)   |
-                                   | Vibracao (ADC)   |
+                                   | MPU-6050 (vibr.) |
                                    +------------------+
 ```
 
@@ -142,7 +142,8 @@ ESP-NOW.
 | ENTRADA 3                       | 13   | Falha no inversor                            |
 | ENTRADA 4                       | 4    | Painel sem energia (sem rede CA)            |
 | Sensor de temperatura (DS18B20) | 15   | Temperatura da bomba (OneWire)               |
-| Sensor de vibracao (analogico)  | 35   | Vibracao da bomba (ADC1)                     |
+| MPU-6050 SDA (I2C)              | 21   | Acelerometro de vibracao da bomba (dados)    |
+| MPU-6050 SCL (I2C)              | 22   | Acelerometro de vibracao da bomba (clock)    |
 | LED onboard                     | 2    | Pisca apos cada envio                        |
 
 ### Esquema de Ligacao
@@ -166,11 +167,17 @@ ESP32 #2 (Gateway)        DS18B20 (temperatura)
   3V3     ----> VCC
   GND     ----> GND
 
-ESP32 #2 (Gateway)        Sensor de vibracao (saida analogica)
-  GPIO35  <---- AOUT (ADC1, somente leitura)
-  3V3/5V  ----> VCC (conforme o modulo)
+ESP32 #2 (Gateway)        MPU-6050 / GY-521 (vibracao, fixado na bomba)
+  GPIO21  <---> SDA (I2C)
+  GPIO22  ----> SCL (I2C)
+  3V3     ----> VCC
   GND     ----> GND
+                AD0 -> GND (ou solto) = endereco I2C 0x68
 ```
+
+> Fixe o MPU-6050 **rigido na carcaca da bomba** (parafuso, epoxi ou fita
+> VHB — fita comum amortece a vibracao). Cabo curto ou par trancado, longe
+> dos cabos de forca.
 
 ### Calibracao
 
@@ -181,12 +188,14 @@ ESP32 #2 (Gateway)        Sensor de vibracao (saida analogica)
 #define TI_NIVEL_ALERTA   20   // % - dispara alerta de nivel baixo
 #define TI_NIVEL_OK       80   // % - considera "abastecido"
 #define TEMP_ALERTA_C     60   // graus C - alerta de temperatura alta na bomba
-#define VIBRACAO_LIMIAR   2500 // leitura ADC acima disso = vibracao excessiva
+#define VIBRACAO_LIMIAR   300.0 // mg RMS acima disso = vibracao excessiva
 ```
 
-> O sensor de vibracao precisa ser calibrado no local: registre a leitura
-> (`tiVibracaoValor`, exibida no Serial Monitor) com a bomba funcionando
-> normalmente e ajuste `VIBRACAO_LIMIAR` acima desse valor.
+> A vibracao e medida pelo MPU-6050 em **mili-g RMS** (desvio da aceleracao
+> em torno da media — a gravidade se cancela sozinha). Calibre no local:
+> registre a leitura ("Vibracao: X mg" no Serial Monitor) com a bomba
+> funcionando normalmente e use ~2x esse valor em `VIBRACAO_LIMIAR`.
+> Referencia: bomba parada ~5-20 mg (ruido do sensor), bomba ok ~30-150 mg.
 
 ### Alertas no Grupo do WhatsApp (Tanque Inferior)
 
@@ -492,7 +501,7 @@ uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
 #define TI_NIVEL_ALERTA   20
 #define TI_NIVEL_OK       80
 #define TEMP_ALERTA_C     60
-#define VIBRACAO_LIMIAR   2500
+#define VIBRACAO_LIMIAR   300.0   // mg RMS (MPU-6050)
 ```
 
 ### Passo 4 - Gravar o Gateway e configurar o WiFi no local (WiFiManager)
@@ -505,8 +514,8 @@ uint8_t GATEWAY_MAC[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // MAC do gateway
    WiFi**, escolha a rede do condominio, digite a senha e salve
 4. O Serial deve mostrar `[WiFi] Conectado! IP: ...`
 5. Ligue os sensores e entradas do **Tanque Inferior** conforme o esquema da
-   secao acima (JSN-SR04T, 4 entradas do quadro/inversor, DS18B20 e sensor
-   de vibracao)
+   secao acima (JSN-SR04T, 4 entradas do quadro/inversor, DS18B20 e
+   MPU-6050 de vibracao)
 6. Deve chegar "Gateway reiniciado!" no grupo do WhatsApp, ja com o nivel
    atual do Tanque Superior (ou "aguardando sinal do sensor..." se o ESP32 #1
    ainda nao foi ligado) e do Tanque Inferior

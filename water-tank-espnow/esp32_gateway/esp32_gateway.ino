@@ -8,8 +8,8 @@
  *      alertas no grupo do WhatsApp via Evolution API
  *   2) Le localmente os sensores do Tanque Inferior (nivel via JSN-SR04T,
  *      4 entradas do quadro/inversor da bomba, temperatura DS18B20 e
- *      vibracao), publica no Supabase (tabela "tanque_inferior") e
- *      dispara alertas no WhatsApp
+ *      vibracao via acelerometro MPU-6050/I2C), publica no Supabase
+ *      (tabela "tanque_inferior") e dispara alertas no WhatsApp
  *
  * WiFi: configuravel no local via WiFiManager. Se nao conectar na rede salva,
  * o ESP32 cria o AP "CaixaDagua-Setup" (senha 12345678) com portal para
@@ -22,7 +22,8 @@
  *   - WiFiManager       by tzapu
  *   - OneWire           by Jim Studt / Paul Stoffregen
  *   - DallasTemperature by Miles Burton
- *   (HTTPClient, WiFiClientSecure e WiFi ja vem no ESP32 core)
+ *   (HTTPClient, WiFiClientSecure, WiFi e Wire ja vem no ESP32 core;
+ *    o MPU-6050 e lido direto pelos registradores I2C, sem biblioteca extra)
  */
 
 #include <esp_now.h>
@@ -33,6 +34,7 @@
 #include <ArduinoJson.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Wire.h>
 #include "config.h"
 
 // ════════════════════════════════════════════════════════════════════════
@@ -70,8 +72,9 @@ bool  tiEntrada2_bombaFalhou      = false;
 bool  tiEntrada3_falhaInversor    = false;
 bool  tiEntrada4_painelSemEnergia = false;
 float tiTemperaturaC  = NAN;
-float tiVibracaoValor = 0;
+float tiVibracaoValor = -1;   // vibracao RMS em mili-g (MPU-6050); -1 = sensor ausente
 bool  tiVibracaoAlerta = false;
+bool  mpuOk = false;          // MPU-6050 detectado e inicializado no I2C
 bool  tiLeituraValida  = false;
 
 unsigned long tiUltimaMedicao = 0;
@@ -234,14 +237,64 @@ float lerTemperatura() {
     return t;
 }
 
-// Le o sensor de vibracao (saida analogica), com varias amostras
-float lerVibracao(int amostras = 5) {
-    long soma = 0;
-    for (int i = 0; i < amostras; i++) {
-        soma += analogRead(VIBRACAO_PIN);
-        delay(20);
+// ─── MPU-6050 (acelerometro I2C na carcaca da bomba) ────────────────────
+// Leitura direta pelos registradores, sem biblioteca extra. Faixa padrao
+// de ±2g -> 16384 LSB por g.
+
+// Acorda o MPU-6050 (sai do sleep de fabrica). Retorna true se respondeu.
+bool iniciarMPU() {
+    Wire.beginTransmission(MPU_I2C_ADDR);
+    Wire.write(0x6B);   // PWR_MGMT_1
+    Wire.write(0x00);   // clock interno, sleep desligado
+    mpuOk = (Wire.endTransmission() == 0);
+    if (mpuOk) {
+        Serial.println("[MPU6050] Acelerometro detectado e inicializado!");
+    } else {
+        Serial.println("[MPU6050] NAO detectado! Verifique SDA/SCL/VCC/GND.");
     }
-    return (float)soma / amostras;
+    return mpuOk;
+}
+
+// Le uma amostra bruta do acelerometro (registradores 0x3B-0x40)
+bool lerAcelRaw(int16_t &ax, int16_t &ay, int16_t &az) {
+    Wire.beginTransmission(MPU_I2C_ADDR);
+    Wire.write(0x3B);   // ACCEL_XOUT_H
+    if (Wire.endTransmission(false) != 0) return false;
+    if (Wire.requestFrom((int)MPU_I2C_ADDR, 6) != 6) return false;
+    ax = (Wire.read() << 8) | Wire.read();
+    ay = (Wire.read() << 8) | Wire.read();
+    az = (Wire.read() << 8) | Wire.read();
+    return true;
+}
+
+// Mede a vibracao com o MPU-6050: coleta varias amostras da magnitude da
+// aceleracao e calcula o RMS do desvio em torno da media (assim a gravidade
+// e a inclinacao do sensor se cancelam — sobra so a vibracao). Retorna o
+// valor em mili-g, ou -1 se o sensor nao estiver respondendo.
+float lerVibracao(int amostras = 200) {
+    if (!mpuOk && !iniciarMPU()) return -1;   // tenta religar se caiu
+
+    float soma = 0, somaQuad = 0;
+    int validas = 0;
+    for (int i = 0; i < amostras; i++) {
+        int16_t ax, ay, az;
+        if (lerAcelRaw(ax, ay, az)) {
+            float mag = sqrtf((float)ax * ax + (float)ay * ay + (float)az * az);
+            soma     += mag;
+            somaQuad += mag * mag;
+            validas++;
+        }
+        delay(2);   // ~200 amostras em ~0,5s
+    }
+    if (validas < amostras / 2) {   // maioria das leituras falhou
+        mpuOk = false;
+        return -1;
+    }
+    float media    = soma / validas;
+    float variancia = somaQuad / validas - media * media;
+    if (variancia < 0) variancia = 0;
+    // desvio RMS em LSB -> mili-g (±2g = 16384 LSB/g)
+    return sqrtf(variancia) / 16384.0f * 1000.0f;
 }
 
 // Pisca o LED onboard rapidamente (indica envio realizado)
@@ -262,7 +315,7 @@ void medirTanqueInferior() {
     lerEntradas();
     tiTemperaturaC   = lerTemperatura();
     tiVibracaoValor  = lerVibracao();
-    tiVibracaoAlerta = (tiVibracaoValor > VIBRACAO_LIMIAR);
+    tiVibracaoAlerta = (tiVibracaoValor >= 0 && tiVibracaoValor > VIBRACAO_LIMIAR);
 }
 
 // Envia a leitura do Tanque Inferior para o Supabase (tabela "tanque_inferior")
@@ -294,7 +347,11 @@ bool enviarSupabaseTanqueInferior() {
     } else {
         doc["temperatura_c"] = tiTemperaturaC;
     }
-    doc["vibracao_valor"]   = tiVibracaoValor;
+    if (tiVibracaoValor < 0) {
+        doc["vibracao_valor"] = nullptr;   // MPU-6050 ausente/sem resposta
+    } else {
+        doc["vibracao_valor"] = tiVibracaoValor;
+    }
     doc["vibracao_alerta"]  = tiVibracaoAlerta;
     doc["sensor_uptime_s"]  = millis() / 1000;
     doc["leitura_valida"]   = tiLeituraValida;
@@ -388,6 +445,10 @@ void setup() {
     pinMode(ENTRADA3_PIN, INPUT_PULLUP);
     pinMode(ENTRADA4_PIN, INPUT_PULLUP);
     sensoresTemp.begin();
+
+    // Acelerometro MPU-6050 (vibracao da bomba) via I2C
+    Wire.begin(MPU_SDA_PIN, MPU_SCL_PIN);
+    iniciarMPU();
 
     // WiFi DEVE conectar antes do ESP-NOW para fixar o canal
     conectarWiFi();
@@ -547,7 +608,7 @@ void loop() {
         medirTanqueInferior();
 
         if (tiLeituraValida) {
-            Serial.printf("[TANQUE INFERIOR] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f\n",
+            Serial.printf("[TANQUE INFERIOR] %.1fcm -> %d%% | E1(Bomba ligou): %d | E2(Bomba falhou): %d | E3(Falha inversor): %d | E4(Painel sem energia): %d | Temp: %.1fC | Vibracao: %.0f mg\n",
                 tiDistanciaCm, tiNivelPct,
                 tiEntrada1_bombaLigada,
                 tiEntrada2_bombaFalhou,
@@ -655,7 +716,7 @@ void loop() {
         // ── Vibracao excessiva ──
         if (tiVibracaoAlerta && !tiAlertaVibracaoEnviado) {
             String msg = "\xF0\x9F\x93\xB3 *Vibracao excessiva detectada na bomba (Tanque Inferior)!*\n\n";
-            msg += "Leitura do sensor: *" + String(tiVibracaoValor, 0) + "*\n";
+            msg += "Vibracao: *" + String(tiVibracaoValor, 0) + " mg RMS* (limite: " + String((float)VIBRACAO_LIMIAR, 0) + " mg)\n";
             msg += "Verifique fixacao, rolamentos e alinhamento da bomba.";
             enviarWhatsApp(msg);
             tiAlertaVibracaoEnviado = true;
