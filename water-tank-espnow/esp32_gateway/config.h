@@ -73,8 +73,13 @@
 // ─── TEMPERATURA (DS18B20 via OneWire) ───────────────────────────────
 #define TEMP_PIN        15   // barramento OneWire do sensor DS18B20
 
-// ─── VIBRACAO (sensor analogico) ─────────────────────────────────────
-#define VIBRACAO_PIN    35   // ADC1 (pino somente leitura) — saida analogica do sensor
+// ─── VIBRACAO (MPU-6050 / GY-521 via I2C) ────────────────────────────
+// Acelerometro fixado na carcaca da bomba. Ligacao:
+//   VCC -> 3V3 | GND -> GND | SDA -> GPIO21 | SCL -> GPIO22
+//   AD0 -> GND (ou solto) = endereco I2C 0x68
+#define MPU_SDA_PIN     21   // I2C SDA (padrao do ESP32 DevKit)
+#define MPU_SCL_PIN     22   // I2C SCL (padrao do ESP32 DevKit)
+#define MPU_I2C_ADDR    0x68 // 0x68 com AD0 no GND; 0x69 com AD0 no 3V3
 
 // ─── CALIBRACAO DA CAIXA ─────────────────────────────────────────────
 // Distancia (cm) do sensor ate a superficie da agua:
@@ -96,7 +101,10 @@
 #define TI_NIVEL_OK      80   // % acima disto  -> aviso de tanque abastecido
 
 #define TEMP_ALERTA_C   60     // alerta se temperatura da bomba ultrapassar este valor (°C)
-#define VIBRACAO_LIMIAR 2500   // leitura ADC (0-4095) acima disto = vibracao excessiva
+// Vibracao RMS em mili-g (1000 mg = 1 g). Referencia: bomba parada ~5-20 mg
+// (ruido do sensor), bomba ok ~30-150 mg. Calibre com a bomba real: anote a
+// leitura "bomba ligada normal" no Serial Monitor e use ~2x esse valor.
+#define VIBRACAO_LIMIAR 300.0  // mg RMS acima disto = vibracao excessiva
 
 // ─── INTERVALO DE MEDICAO ─────────────────────────────────────────────
 #define INTERVALO_MEDICAO_MS  30000UL   // mede e envia a cada 30 segundos
