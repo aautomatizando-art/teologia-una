@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard-producao",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "D:\\Automação\\Cloud Ai\\dashboard-producao",
+      "port": 3000
+    }
+  ]
+}
