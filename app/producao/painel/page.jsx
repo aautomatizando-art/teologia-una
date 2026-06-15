@@ -90,6 +90,7 @@ function PainelColuna({ dados, cor, titulo, linhas }) {
   });
   const produzido = acc;
   const produzidoCx = produzido * (o.caixasPorPalete || 1);
+  const pct = o.meta_paletes ? Math.min(100, Math.round((produzidoCx / o.meta_paletes) * 100)) : 0;
 
   const perdas = agruparPorTipo((dados?.perdasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
   const problemas = agruparPorTipo((dados?.problemasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
@@ -113,6 +114,24 @@ function PainelColuna({ dados, cor, titulo, linhas }) {
           <div style={{ textAlign: "right" }}>
             <div className="kpi" style={{ fontSize: 24 }}>{produzido.toLocaleString("pt-BR")} <small>paletes</small></div>
             <div className="muted" style={{ fontSize: 11 }}>{produzidoCx.toLocaleString("pt-BR")} cx</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <span className="muted" style={{ fontSize: 11 }}>
+              {produzidoCx.toLocaleString("pt-BR")} / {(o.meta_paletes || 0).toLocaleString("pt-BR")} cx
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: cor }}>{pct}%</span>
+          </div>
+          <div style={{ width: "100%", height: 10, background: "#26305c", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{
+              height: "100%",
+              width: `${pct}%`,
+              background: `linear-gradient(90deg, ${cor}99, ${cor})`,
+              borderRadius: 99,
+              transition: "width 0.6s ease",
+              boxShadow: pct > 0 ? `0 0 8px ${cor}88` : "none",
+            }} />
           </div>
         </div>
       </div>
