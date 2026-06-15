@@ -217,18 +217,29 @@ export default function PaginaProducao() {
 
       {o && (
         <>
-          <div className="grid g4" style={{ marginBottom: 18 }}>
-            <div className="card"><h3>Produto</h3><div style={{ fontWeight: 700, fontSize: 15 }}>{o.produto || "—"}</div></div>
-            <div className="card"><h3>Meta</h3><div className="kpi">{o.meta_paletes} <small>paletes</small></div></div>
-            <div className="card">
-              <h3>Produzido</h3>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                <div className="kpi" style={{ fontSize: 26 }}>{((o.produzido || 0) * (o.caixasPorPalete || 1)).toLocaleString("pt-BR")} <small>cx</small></div>
-                <div className="kpi" style={{ fontSize: 26 }}>{(o.produzido || 0).toLocaleString("pt-BR")} <small>paletes</small></div>
+          {(() => {
+            const produzidoCx = (o.produzido || 0) * (o.caixasPorPalete || 1);
+            const metaAlcancada = o.meta_paletes ? produzidoCx >= o.meta_paletes : false;
+            const estiloMeta = metaAlcancada ? { borderColor: "rgba(34,197,94,.4)", background: "rgba(34,197,94,.1)" } : undefined;
+            const corMeta = metaAlcancada ? { color: "#86efac" } : undefined;
+            return (
+              <div className="grid g4" style={{ marginBottom: 18 }}>
+                <div className="card"><h3>Produto</h3><div style={{ fontWeight: 700, fontSize: 15 }}>{o.produto || "—"}</div></div>
+                <div className="card" style={estiloMeta}>
+                  <h3>{metaAlcancada ? "Meta Alcançada" : "Meta"}</h3>
+                  <div className="kpi" style={corMeta}>{o.meta_paletes} <small>caixas</small></div>
+                </div>
+                <div className="card">
+                  <h3>Produzido</h3>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <div className="kpi" style={{ fontSize: 26 }}>{produzidoCx.toLocaleString("pt-BR")} <small>cx</small></div>
+                    <div className="kpi" style={{ fontSize: 26 }}>{(o.produzido || 0).toLocaleString("pt-BR")} <small>paletes</small></div>
+                  </div>
+                </div>
+                <div className="card"><h3>Status</h3><span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span></div>
               </div>
-            </div>
-            <div className="card"><h3>Status</h3><span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span></div>
-          </div>
+            );
+          })()}
 
           {/* ── BLOCO DE PRODUÇÃO POR PEDIDO ── */}
           {pedidos.length > 0 && (
