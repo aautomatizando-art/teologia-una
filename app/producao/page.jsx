@@ -32,6 +32,9 @@ export default function PaginaProducao() {
   return (
     <div className="shell">
       <TopBar />
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 18 }}>
+        <a href="/producao/painel" className="btn sec" style={{ textDecoration: "none" }}>📺 Modo Visualização</a>
+      </div>
       {PAINEIS.map((p, i) => (
         <PainelOP key={p.titulo} titulo={p.titulo} cor={p.cor} indice={i} />
       ))}
