@@ -17,8 +17,8 @@ export async function GET() {
 
     for (const pedido of pedidosNaoEntregues || []) {
       try {
-        // Busca o produto via código do pedido (PC-{id})
-        const pedidoId = Number(pedido.codigo_pedido.replace("PC-", ""));
+        // Busca o produto via código do pedido (PD-{id})
+        const pedidoId = Number(pedido.codigo_pedido.replace("PD-", ""));
         const { data: pedidoCompra } = await supabase
           .from("pedidos_compra")
           .select("produto_id")

@@ -27,6 +27,10 @@ export default function PaginaCompras() {
     hora: agoraHora(),
     solicitante: "",
     criticidade: "MODERADO",
+    nome_cliente: "",
+    regiao: "",
+    comprador: "",
+    vendedor: "",
   });
 
   // ── Gerar ordem de produção ──
@@ -35,6 +39,9 @@ export default function PaginaCompras() {
   const [criandoOp, setCriandoOp] = useState(false);
   const [okOp, setOkOp] = useState("");
   const [erroOp, setErroOp] = useState("");
+  const [filtroData, setFiltroData] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroOP, setFiltroOP] = useState("");
 
   async function carregar() {
     try {
@@ -75,9 +82,9 @@ export default function PaginaCompras() {
     }
   }
 
-  // pedidos que ainda não estão em nenhuma OP (vínculo PC-<id>)
+  // pedidos que ainda não estão em nenhuma OP (vínculo PD-<id>)
   const idsVinculados = new Set(
-    ordens.flatMap((o) => o.pedidos.map((p) => p.codigo)).filter((c) => c?.startsWith("PC-")).map((c) => Number(c.slice(3)))
+    ordens.flatMap((o) => o.pedidos.map((p) => p.codigo)).filter((c) => c?.startsWith("PD-")).map((c) => Number(c.slice(3)))
   );
   const pedidosDisponiveis = (pedidos || []).filter((p) => !idsVinculados.has(p.id) && !opSelecionados.some((s) => s.id === p.id));
 
@@ -242,7 +249,7 @@ export default function PaginaCompras() {
               onChange={(e) => setForm({ ...form, solicitante: e.target.value })} />
           </div>
           <div className="campo" style={{ maxWidth: 170 }}>
-            <label>Pedido *</label>
+            <label>Prioridade *</label>
             <select value={form.criticidade} onChange={(e) => setForm({ ...form, criticidade: e.target.value })}>
               <option value="EMERGENCIAL">🟣 EMERGENCIAL</option>
               <option value="URGENTE">🔴 URGENTE</option>
@@ -251,6 +258,28 @@ export default function PaginaCompras() {
           </div>
           <button className="btn" disabled={salvando}>{salvando ? "Criando..." : "Criar pedido"}</button>
         </form>
+        <div className="linha" style={{ marginTop: 12, gap: 12 }}>
+          <div className="campo" style={{ flex: 1 }}>
+            <label>Nome do Cliente</label>
+            <input value={form.nome_cliente} placeholder="Cliente"
+              onChange={(e) => setForm({ ...form, nome_cliente: e.target.value })} />
+          </div>
+          <div className="campo" style={{ flex: 1 }}>
+            <label>Região</label>
+            <input value={form.regiao} placeholder="Região"
+              onChange={(e) => setForm({ ...form, regiao: e.target.value })} />
+          </div>
+          <div className="campo" style={{ flex: 1 }}>
+            <label>Comprador</label>
+            <input value={form.comprador} placeholder="Comprador"
+              onChange={(e) => setForm({ ...form, comprador: e.target.value })} />
+          </div>
+          <div className="campo" style={{ flex: 1 }}>
+            <label>Vendedor</label>
+            <input value={form.vendedor} placeholder="Vendedor"
+              onChange={(e) => setForm({ ...form, vendedor: e.target.value })} />
+          </div>
+        </div>
       </div>
 
       {/* ── Gerar ordem de produção ── */}
@@ -330,7 +359,7 @@ export default function PaginaCompras() {
       {pedidos && (
         <div className="kanban" style={{ marginBottom: 18 }}>
           {COLUNAS.map((c) => {
-            const itens = pedidos.filter((p) => p.criticidade === c.chave);
+            const itens = pedidos.filter((p) => p.criticidade === c.chave && p.status_rastreio !== 6);
             return (
               <div key={c.chave} className={`coluna ${c.classe}`}>
                 <div className="cab">
@@ -358,6 +387,31 @@ export default function PaginaCompras() {
       {pedidos && (
         <div className="card">
           <h3>📋 Ordens de produção ({ordens.length})</h3>
+
+          {/* Filtros */}
+          {ordens.length > 0 && (
+            <div className="linha" style={{ marginBottom: 16, gap: 12 }}>
+              <div className="campo" style={{ flex: 1, minWidth: 150 }}>
+                <label>Filtrar por OP</label>
+                <input value={filtroOP} onChange={(e) => setFiltroOP(e.target.value)} placeholder="Ex: OP-1010" />
+              </div>
+              <div className="campo" style={{ flex: 1, minWidth: 150 }}>
+                <label>Filtrar por Data</label>
+                <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)} />
+              </div>
+              <div className="campo" style={{ flex: 1, minWidth: 150 }}>
+                <label>Filtrar por Status</label>
+                <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                  <option value="">— Todos —</option>
+                  <option value="ABERTA">ABERTA</option>
+                  <option value="CONCLUIDA">CONCLUIDA</option>
+                  <option value="ENTREGUE">ENTREGUE</option>
+                  <option value="CANCELADA">CANCELADA</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {ordens.length === 0 && <p className="muted">Nenhuma ordem criada ainda.</p>}
           {ordens.length > 0 && (
             <div style={{ overflowX: "auto" }}>
@@ -368,7 +422,13 @@ export default function PaginaCompras() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ordens.map((o) => (
+                  {ordens.filter((o) => {
+                    // Aplicar filtros
+                    if (filtroOP && !o.numero.toLowerCase().includes(filtroOP.toLowerCase())) return false;
+                    if (filtroData && !new Date(o.criado_em).toISOString().startsWith(filtroData)) return false;
+                    if (filtroStatus && o.status !== filtroStatus) return false;
+                    return true;
+                  }).map((o) => (
                     <tr key={o.id}>
                       <td style={{ fontWeight: 700 }}>{o.numero}</td>
                       <td>{o.produto || "—"}</td>

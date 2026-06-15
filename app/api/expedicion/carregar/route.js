@@ -7,7 +7,7 @@ export async function POST(req) {
   if (!supabase) return supabaseIndisponivel();
 
   const body = await req.json();
-  const { codigo_pedido, quantidade_carregada, responsavel_expedicao, nome_motorista, nome_ajudante } = body;
+  const { codigo_pedido, quantidade_carregada, responsavel_expedicao, nome_motorista, nome_ajudante, veiculo } = body;
 
   if (!codigo_pedido) {
     return Response.json({ error: "codigo_pedido é obrigatório. Recebido: " + JSON.stringify(body) }, { status: 400 });
@@ -23,6 +23,9 @@ export async function POST(req) {
   }
   if (!nome_ajudante) {
     return Response.json({ error: "nome_ajudante é obrigatório." }, { status: 400 });
+  }
+  if (!veiculo) {
+    return Response.json({ error: "veiculo é obrigatório." }, { status: 400 });
   }
 
   try {
@@ -41,11 +44,12 @@ export async function POST(req) {
         responsavel_expedicao,
         nome_motorista,
         nome_ajudante,
+        veiculo,
       });
     }
 
     // Busca dados do pedido para WhatsApp
-    const pedidoId = Number(codigo_pedido.replace("PC-", ""));
+    const pedidoId = Number(codigo_pedido.replace("PD-", ""));
     const { data: pedidoCompra } = await supabase
       .from("pedidos_compra")
       .select("id, produtos(nome), solicitante")
@@ -66,6 +70,7 @@ export async function POST(req) {
       `Quantidade: ${quantidade_carregada} un.\n` +
       `Motorista: ${nome_motorista}\n` +
       `Ajudante: ${nome_ajudante}\n` +
+      `Veículo: ${veiculo}\n` +
       `Status: 🚛 EM ROTA PARA ENTREGA`
     );
 

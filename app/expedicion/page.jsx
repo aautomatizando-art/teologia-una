@@ -29,6 +29,7 @@ export default function PaginaExpedicion() {
     responsavel_expedicao: "",
     nome_motorista: "",
     nome_ajudante: "",
+    veiculo: "",
   });
   const [finalizandoCarregamento, setFinalizandoCarregamento] = useState(false);
 
@@ -41,7 +42,7 @@ export default function PaginaExpedicion() {
     if (pedidosCarregamento.length > 0) {
       Promise.all(
         pedidosCarregamento.map((p) =>
-          fetch(`/api/expedicion/retirada-info?codigo_pedido=PC-${p.id}`)
+          fetch(`/api/expedicion/retirada-info?codigo_pedido=PD-${p.id}`)
             .then((r) => r.json())
             .then((d) => ({ id: p.id, ...d }))
         )
@@ -62,7 +63,7 @@ export default function PaginaExpedicion() {
     if (pedidosCarregados.length > 0) {
       Promise.all(
         pedidosCarregados.map((p) =>
-          fetch(`/api/expedicion/carregamento-info?codigo_pedido=PC-${p.id}`)
+          fetch(`/api/expedicion/carregamento-info?codigo_pedido=PD-${p.id}`)
             .then((r) => r.json())
             .then((d) => ({ id: p.id, ...d }))
         )
@@ -72,6 +73,10 @@ export default function PaginaExpedicion() {
             ...p,
             data_carregamento: infos.find((i) => i.id === p.id)?.data,
             hora_carregamento: infos.find((i) => i.id === p.id)?.hora,
+            conferido_por: infos.find((i) => i.id === p.id)?.responsavel_expedicao,
+            nome_motorista_carregamento: infos.find((i) => i.id === p.id)?.nome_motorista,
+            nome_ajudante_carregamento: infos.find((i) => i.id === p.id)?.nome_ajudante,
+            veiculo_carregamento: infos.find((i) => i.id === p.id)?.veiculo,
           }))
         );
       });
@@ -146,6 +151,7 @@ export default function PaginaExpedicion() {
           responsavel_expedicao: carregamentoForm.responsavel_expedicao,
           nome_motorista: carregamentoForm.nome_motorista,
           nome_ajudante: carregamentoForm.nome_ajudante,
+          veiculo: carregamentoForm.veiculo,
         }),
       });
 
@@ -159,6 +165,7 @@ export default function PaginaExpedicion() {
           responsavel_expedicao: "",
           nome_motorista: "",
           nome_ajudante: "",
+          veiculo: "",
         });
         carregar();
       }
@@ -202,7 +209,7 @@ export default function PaginaExpedicion() {
                           setModalRetirada({
                             ...p,
                             quantidade: p.quantidade,
-                            codigo_pedido: `PC-${p.id}`,
+                            codigo_pedido: `PD-${p.id}`,
                           });
                           setRetiradaForm({ nome: p.solicitante, senha: "" });
                         }}
@@ -247,12 +254,13 @@ export default function PaginaExpedicion() {
                 onClick={() => {
                   setModalCarregamento({
                     ...p,
-                    codigo_pedido: `PC-${p.id}`,
+                    codigo_pedido: `PD-${p.id}`,
                   });
                   setCarregamentoForm({
                     responsavel_expedicao: "",
                     nome_motorista: "",
                     nome_ajudante: "",
+                    veiculo: "",
                   });
                 }}
               >
@@ -278,7 +286,7 @@ export default function PaginaExpedicion() {
                   style={{ marginTop: 8, width: "100%" }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setModalCarregamento({ ...p, codigo_pedido: `PC-${p.id}` });
+                    setModalCarregamento({ ...p, codigo_pedido: `PD-${p.id}` });
                   }}
                 >
                   📋 Carregar
@@ -335,7 +343,7 @@ export default function PaginaExpedicion() {
                   <div>{modalRetirada.localizacao.numero_lote}</div>
                 </div>
                 <div className="campo">
-                  <label>Rua</label>
+                  <label>Rua (Local do Estoque)</label>
                   <div>{modalRetirada.localizacao.rua}</div>
                 </div>
                 <div className="campo">
@@ -404,10 +412,10 @@ export default function PaginaExpedicion() {
 
         {(() => {
           const pedidosFiltrados = filtroData
-            ? pedidosCarregados.filter((p) => p.data_retirada === filtroData)
+            ? pedidosCarregados.filter((p) => p.data_carregamento === filtroData)
             : pedidosCarregados.sort((a, b) =>
-                new Date(`${b.data_retirada} ${b.hora_retirada}`) -
-                new Date(`${a.data_retirada} ${a.hora_retirada}`)
+                new Date(`${b.data_carregamento} ${b.hora_carregamento}`) -
+                new Date(`${a.data_carregamento} ${a.hora_carregamento}`)
               ).slice(0, 5);
 
           return pedidosFiltrados.length === 0 ? (
@@ -435,9 +443,39 @@ export default function PaginaExpedicion() {
                   <p style={{ margin: "4px 0", fontSize: 13, color: "#a5b4fc" }}>
                     Solicitante: {p.solicitante}
                   </p>
+                  {p.nome_cliente && (
+                    <p style={{ margin: "4px 0", fontSize: 12, color: "#a5b4fc" }}>
+                      Cliente: {p.nome_cliente}
+                    </p>
+                  )}
+                  {p.regiao && (
+                    <p style={{ margin: "4px 0", fontSize: 12, color: "#a5b4fc" }}>
+                      Região: {p.regiao}
+                    </p>
+                  )}
                   {p.data_carregamento && p.hora_carregamento && (
                     <p style={{ margin: "4px 0", fontSize: 12, color: "#86efac" }}>
                       📅 Carregado: {p.data_carregamento} às {p.hora_carregamento}
+                    </p>
+                  )}
+                  {p.conferido_por && (
+                    <p style={{ margin: "4px 0", fontSize: 12, color: "#fbbf24" }}>
+                      ✓ Conferido por: {p.conferido_por}
+                    </p>
+                  )}
+                  {p.nome_motorista_carregamento && (
+                    <p style={{ margin: "4px 0", fontSize: 12, color: "#fbbf24" }}>
+                      🚗 Motorista: {p.nome_motorista_carregamento}
+                    </p>
+                  )}
+                  {p.nome_ajudante_carregamento && (
+                    <p style={{ margin: "4px 0", fontSize: 12, color: "#fbbf24" }}>
+                      👤 Ajudante: {p.nome_ajudante_carregamento}
+                    </p>
+                  )}
+                  {p.veiculo_carregamento && (
+                    <p style={{ margin: "4px 0", fontSize: 12, color: "#fbbf24" }}>
+                      🚛 Veículo: {p.veiculo_carregamento}
                     </p>
                   )}
                   <p style={{ margin: "4px 0", fontSize: 12, color: "#86efac" }}>
@@ -525,6 +563,22 @@ export default function PaginaExpedicion() {
               />
             </div>
 
+            <div className="campo">
+              <label>Veículo *</label>
+              <select
+                value={carregamentoForm.veiculo}
+                onChange={(e) =>
+                  setCarregamentoForm({ ...carregamentoForm, veiculo: e.target.value })
+                }
+                required
+              >
+                <option value="">Selecione um veículo...</option>
+                {Array.from({ length: 10 }, (_, i) => (
+                  <option key={i + 1} value={`Caminhão ${i + 1}`}>Caminhão {i + 1}</option>
+                ))}
+              </select>
+            </div>
+
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 className="btn"
@@ -533,7 +587,8 @@ export default function PaginaExpedicion() {
                   finalizandoCarregamento ||
                   !carregamentoForm.responsavel_expedicao ||
                   !carregamentoForm.nome_motorista ||
-                  !carregamentoForm.nome_ajudante
+                  !carregamentoForm.nome_ajudante ||
+                  !carregamentoForm.veiculo
                 }
                 style={{ flex: 1 }}
               >

@@ -21,12 +21,12 @@ export async function POST(req) {
 
   try {
     // Extrai ID do pedido do código (PC-11 → 11)
-    const pedidoId = Number(codigo_pedido.replace("PC-", ""));
+    const pedidoId = Number(codigo_pedido.replace("PD-", ""));
 
     // Busca dados do pedido_compra
     const { data: pedidoCompra } = await supabase
       .from("pedidos_compra")
-      .select("id, produto_id, produtos(nome), solicitante")
+      .select("id, produto_id, produtos(nome), solicitante, nome_cliente, regiao")
       .eq("id", pedidoId)
       .single();
 
@@ -84,11 +84,13 @@ export async function POST(req) {
 
     // Enviar WhatsApp
     await enviarWhatsApp(
-      `📦 *RETIRADA DO ESTOQUE - EXPEDIÇÃO*\n` +
+      `📦 *BAIXA DO ESTOQUE - PCP*\n` +
       `Pedido: #${pedidoCompra.id}\n` +
       `Produto: ${pedidoCompra.produtos?.nome}\n` +
+      `Cliente: ${pedidoCompra.nome_cliente || "—"}\n` +
+      `Região: ${pedidoCompra.regiao || "—"}\n` +
       `Quantidade: ${quantidade} un.\n` +
-      `Retirado por: ${nome}\n` +
+      `Baixado por: ${nome}\n` +
       `Status: 🚚 AGUARDANDO CARREGAMENTO`
     );
 

@@ -122,7 +122,10 @@ export default function PaginaProducao() {
       } else {
         setOkPedido(`✅ ${j.status} — ${j.novaQtd} caixas registradas`);
         setPedidoForm({ quantidade: "", senha: "", numero_lote: "", rua: "", prateleira: "" });
-        buscar();
+        // Aguarda um pouco para garantir que o banco foi atualizado
+        setTimeout(() => {
+          buscar();
+        }, 500);
       }
     } catch {
       setErroPedido("Erro de conexão.");
@@ -279,7 +282,7 @@ export default function PaginaProducao() {
                       />
                     </div>
                     <div className="campo">
-                      <label>Rua *</label>
+                      <label>Rua (Local do Estoque) *</label>
                       <input
                         type="text"
                         required
@@ -324,7 +327,7 @@ export default function PaginaProducao() {
                   <h3 style={{ fontSize: 13, color: "#8b96c0", marginBottom: 10 }}>Status dos pedidos da OP:</h3>
                   <table className="tab">
                     <thead>
-                      <tr><th>Pedido</th><th>Planejado</th><th>Produzido</th><th>%</th><th>Status</th></tr>
+                      <tr><th>Pedido</th><th>Planejado</th><th>Produzido</th><th>Estoque</th><th>Total</th><th>%</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                       {pedidos.map((p) => (
@@ -332,6 +335,8 @@ export default function PaginaProducao() {
                           <td style={{ fontWeight: 700 }}>{p.codigo}</td>
                           <td>{p.qtd_planejada} caixas</td>
                           <td>{p.produzido} caixas</td>
+                          <td style={{ color: "#86efac" }}>{p.estoque} caixas</td>
+                          <td style={{ fontWeight: 700, color: "#fbbf24" }}>{p.totalDisponivel} caixas</td>
                           <td>{p.percentual}%</td>
                           <td><span className={`badge ${p.status === "FINALIZADO" ? "ok" : "alto"}`}>{p.status}</span></td>
                         </tr>

@@ -7,8 +7,9 @@ const ETAPAS = [
   { rotulo: "GERADO ORDEM DE PRODUÇÃO", icone: "📋" },
   { rotulo: "PRODUZINDO", icone: "🏭" },
   { rotulo: "ENTRADO NO ESTOQUE", icone: "📦" },
-  { rotulo: "NA EXPEDIÇÃO", icone: "🚛" },
+  { rotulo: "EM SEPARAÇÃO", icone: "🚛" },
   { rotulo: "EM ROTA PARA ENTREGA", icone: "🛣️" },
+  { rotulo: "ENTREGUE / FINALIZADO", icone: "✅" },
 ];
 
 function Rastreio() {

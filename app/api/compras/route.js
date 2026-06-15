@@ -20,7 +20,7 @@ export async function POST(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { produto_id, quantidade, data, hora, solicitante, criticidade } = await req.json();
+  const { produto_id, quantidade, data, hora, solicitante, criticidade, nome_cliente, regiao, comprador, vendedor } = await req.json();
   if (!produto_id || !solicitante || !criticidade) {
     return Response.json({ error: "Preencha produto, nome e criticidade." }, { status: 400 });
   }
@@ -38,6 +38,10 @@ export async function POST(req) {
       hora: hora || agora.toTimeString().slice(0, 5),
       solicitante,
       criticidade,
+      nome_cliente: nome_cliente || null,
+      regiao: regiao || null,
+      comprador: comprador || null,
+      vendedor: vendedor || null,
     })
     .select("id, produtos(nome)")
     .single();
@@ -45,8 +49,10 @@ export async function POST(req) {
 
   const emoji = { EMERGENCIAL: "🟣", URGENTE: "🔴", MODERADO: "🟢" }[criticidade];
   const whatsapp = await enviarWhatsApp(
-    `${emoji} *NOVO PEDIDO DE COMPRA #${novo.id}* — ${criticidade}\n` +
+    `${emoji} *NOVO PEDIDO DE VENDA #${novo.id}*\n` +
       `Produto: ${novo.produtos?.nome}\n` +
+      `Cliente: ${nome_cliente || "—"}\n` +
+      `Região: ${regiao || "—"}\n` +
       `Qtd: ${Number(quantidade) || 0}\n` +
       `Solicitante: ${solicitante}\n` +
       `Data: ${data || agora.toISOString().slice(0, 10)} ${hora || agora.toTimeString().slice(0, 5)}`

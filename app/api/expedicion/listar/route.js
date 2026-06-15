@@ -11,7 +11,7 @@ export async function GET(req) {
     // Busca pedidos_compra com status específico
     const { data: pedidos, error } = await supabase
       .from("pedidos_compra")
-      .select("id, quantidade, criticidade, solicitante, produtos(nome), status_rastreio")
+      .select("id, quantidade, criticidade, solicitante, produtos(nome), status_rastreio, nome_cliente, regiao")
       .eq("status_rastreio", Number(status))
       .order("criado_em", { ascending: false });
 
@@ -24,7 +24,7 @@ export async function GET(req) {
         const { data: pedidosOp, error: ePedidoOp } = await supabase
           .from("pedidos_op")
           .select("id, quantidade_produzida, localizacao_id")
-          .eq("codigo_pedido", `PC-${p.id}`);
+          .eq("codigo_pedido", `PD-${p.id}`);
 
         const pedidoOp = pedidosOp?.[0]; // Pega o primeiro se houver múltiplos
 

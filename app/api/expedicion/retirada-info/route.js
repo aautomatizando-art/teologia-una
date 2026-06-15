@@ -1,6 +1,6 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 
-// GET /api/expedicion/retirada-info?codigo_pedido=PC-11 — Retorna data/hora da retirada
+// GET /api/expedicion/retirada-info?codigo_pedido=PD-11 — Retorna data/hora da retirada
 export async function GET(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();

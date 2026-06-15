@@ -88,7 +88,7 @@ export async function POST(req) {
   }
 
   const { error: eVinc } = await supabase.from("pedidos_op").insert(
-    pedidos.map((p) => ({ ordem_id: nova.id, codigo_pedido: `PC-${p.id}`, qtd_planejada: p.quantidade || 0 }))
+    pedidos.map((p) => ({ ordem_id: nova.id, codigo_pedido: `PD-${p.id}`, qtd_planejada: p.quantidade || 0 }))
   );
   if (eVinc) return Response.json({ error: eVinc.message }, { status: 500 });
 

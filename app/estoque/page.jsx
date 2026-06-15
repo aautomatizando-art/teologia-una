@@ -17,8 +17,13 @@ export default function PaginaEstoque() {
   const [form, setForm] = useState({});
   const [salvando, setSalvando] = useState(false);
   const [msgOk, setMsgOk] = useState("");
+  const [pedindoSenha, setPedindoSenha] = useState(false);
+  const [senhaADM, setSenhaADM] = useState("");
+  const [produtoParaEditar, setProdutoParaEditar] = useState(null);
+  const [carregando, setCarregando] = useState(false);
 
   async function carregar() {
+    setCarregando(true);
     try {
       const res = await fetch("/api/estoque");
       const j = await res.json();
@@ -26,9 +31,21 @@ export default function PaginaEstoque() {
       else setDados(j);
     } catch {
       setErro("Erro de conexão.");
+    } finally {
+      setCarregando(false);
     }
   }
+
+  // Carregar dados iniciais
   useEffect(() => { carregar(); }, []);
+
+  // Refresh automático a cada 30 segundos
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      carregar();
+    }, 30000);
+    return () => clearInterval(intervalo);
+  }, []);
 
   const lista = useMemo(() => {
     let l = dados?.produtos || [];
@@ -37,36 +54,61 @@ export default function PaginaEstoque() {
     return l;
   }, [dados, filtro, soCriticos]);
 
-  function abrirReserva(p) {
-    const agora = new Date();
-    setForm({
-      produto_id: p.id,
-      quantidade: "",
-      pedido: "",
-      ordem_producao: "",
-      solicitante: "",
-      data: agora.toISOString().slice(0, 10),
-      hora: agora.toTimeString().slice(0, 5),
-    });
-    setModal(p);
-    setMsgOk("");
+  function abrirEditar(p) {
+    setPedindoSenha(true);
+    setProdutoParaEditar(p);
+    setSenhaADM("");
     setErro("");
   }
 
-  async function reservar(e) {
+  async function confirmarSenhaADM() {
+    setErro("");
+    try {
+      const res = await fetch("/api/validar-senha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senha: senhaADM, tipo: "adm" }),
+      });
+
+      if (!res.ok) {
+        setErro("Senha ADM incorreta.");
+        return;
+      }
+
+      setPedindoSenha(false);
+      setSenhaADM("");
+
+      const agora = new Date();
+      setForm({
+        produto_id: produtoParaEditar.id,
+        nome_produto: produtoParaEditar.nome,
+        quantidade_maxima: produtoParaEditar.qtd_maxima || 500,
+        quantidade_minima: produtoParaEditar.qtd_minima || 50,
+        caixas_por_palete: produtoParaEditar.caixas_por_palete || 1,
+        data: agora.toISOString().slice(0, 10),
+        hora: agora.toTimeString().slice(0, 5),
+      });
+      setModal(produtoParaEditar);
+      setMsgOk("");
+    } catch {
+      setErro("Erro ao validar senha.");
+    }
+  }
+
+  async function editar(e) {
     e.preventDefault();
     setSalvando(true);
     setErro("");
     try {
-      const res = await fetch("/api/reservas", {
+      const res = await fetch("/api/estoque/editar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const j = await res.json();
-      if (!res.ok) setErro(j.error || "Erro ao reservar.");
+      if (!res.ok) setErro(j.error || "Erro ao editar produto.");
       else {
-        setMsgOk(`Reserva registrada! Novo saldo: ${j.nova_quantidade}`);
+        setMsgOk(`Produto editado com sucesso!`);
         setModal(null);
         carregar();
       }
@@ -99,7 +141,9 @@ export default function PaginaEstoque() {
           <button className={`btn ${soCriticos ? "" : "sec"}`} onClick={() => setSoCriticos(!soCriticos)}>
             {soCriticos ? "Mostrando críticos ⚠️" : "Só críticos"}
           </button>
-          <button className="btn sec" onClick={carregar}>↻ Atualizar</button>
+          <button className="btn sec" onClick={carregar} disabled={carregando}>
+            {carregando ? "Carregando..." : "↻ Atualizar"}
+          </button>
         </div>
       </div>
 
@@ -124,54 +168,63 @@ export default function PaginaEstoque() {
               <div className="barra"><div style={{ width: `${pctBarra}%`, background: cor.barra }} /></div>
               <div className="rodape">
                 <span className="muted" style={{ fontSize: 12 }}>{pctBarra}% da capacidade</span>
-                <button className="btn mini" onClick={() => abrirReserva(p)}>Reservar</button>
+                <button className="btn mini" onClick={() => abrirEditar(p)}>Editar</button>
               </div>
             </div>
           );
         })}
       </div>
 
+      {pedindoSenha && (
+        <div className="modal-fundo" onClick={(e) => e.target === e.currentTarget && setPedindoSenha(false)}>
+          <div className="modal" style={{ maxWidth: 300 }}>
+            <h2>Verificação ADM</h2>
+            <p className="sub">Digite a senha ADM para editar este produto</p>
+            {erro && <div className="erro">{erro}</div>}
+            <div className="campo">
+              <label>Senha ADM *</label>
+              <input type="password" value={senhaADM} placeholder="••••••••"
+                onChange={(e) => setSenhaADM(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmarSenhaADM()} />
+            </div>
+            <div className="acoes">
+              <button type="button" className="btn sec" onClick={() => setPedindoSenha(false)}>Cancelar</button>
+              <button className="btn" onClick={confirmarSenhaADM}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modal && (
         <div className="modal-fundo" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
-          <form className="modal" onSubmit={reservar}>
-            <h2>Reservar estoque</h2>
+          <form className="modal" onSubmit={editar}>
+            <h2>Editar Produto</h2>
             <p className="sub">{modal.nome} — saldo atual: {modal.quantidade} un.</p>
             {erro && <div className="erro">{erro}</div>}
             <div className="campo">
-              <label>Reservar quantidade *</label>
-              <input type="number" min="1" max={modal.quantidade} required value={form.quantidade}
-                onChange={(e) => setForm({ ...form, quantidade: e.target.value })} />
+              <label>Nome do Produto *</label>
+              <input required value={form.nome_produto}
+                onChange={(e) => setForm({ ...form, nome_produto: e.target.value })}
+                placeholder="Nome do produto" />
             </div>
             <div className="campo">
-              <label>Pedido</label>
-              <input value={form.pedido} placeholder="Ex.: PED-501"
-                onChange={(e) => setForm({ ...form, pedido: e.target.value })} />
+              <label>Quantidade máxima *</label>
+              <input type="number" min="1" required value={form.quantidade_maxima}
+                onChange={(e) => setForm({ ...form, quantidade_maxima: parseInt(e.target.value) || 0 })} />
             </div>
             <div className="campo">
-              <label>Ordem de produção</label>
-              <input value={form.ordem_producao} placeholder="Ex.: OP-1001"
-                onChange={(e) => setForm({ ...form, ordem_producao: e.target.value })} />
+              <label>Quantidade mínima *</label>
+              <input type="number" min="1" required value={form.quantidade_minima}
+                onChange={(e) => setForm({ ...form, quantidade_minima: parseInt(e.target.value) || 0 })} />
             </div>
             <div className="campo">
-              <label>Pessoa que está solicitando *</label>
-              <input required value={form.solicitante} placeholder="Nome completo"
-                onChange={(e) => setForm({ ...form, solicitante: e.target.value })} />
-            </div>
-            <div className="linha">
-              <div className="campo">
-                <label>Data *</label>
-                <input type="date" required value={form.data}
-                  onChange={(e) => setForm({ ...form, data: e.target.value })} />
-              </div>
-              <div className="campo">
-                <label>Hora *</label>
-                <input type="time" required value={form.hora}
-                  onChange={(e) => setForm({ ...form, hora: e.target.value })} />
-              </div>
+              <label>Quantidade caixa por palete *</label>
+              <input type="number" min="1" required value={form.caixas_por_palete}
+                onChange={(e) => setForm({ ...form, caixas_por_palete: parseInt(e.target.value) || 1 })} />
             </div>
             <div className="acoes">
               <button type="button" className="btn sec" onClick={() => setModal(null)}>Cancelar</button>
-              <button className="btn" disabled={salvando}>{salvando ? "Reservando..." : "Confirmar reserva"}</button>
+              <button className="btn" disabled={salvando}>{salvando ? "Salvando..." : "Confirmar Edição"}</button>
             </div>
           </form>
         </div>
