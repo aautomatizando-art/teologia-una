@@ -6,7 +6,6 @@ const LINKS = [
   { href: "/estoque", rotulo: "📦 Estoque" },
   { href: "/compras", rotulo: "📋 Pedidos" },
   { href: "/expedicion", rotulo: "🚚 Expedição" },
-  { href: "/entrega", rotulo: "✅ Entrega" },
   { href: "/rastreio", rotulo: "📍 Rastreio" },
   { href: "/backup", rotulo: "💾 Backup" },
 ];
