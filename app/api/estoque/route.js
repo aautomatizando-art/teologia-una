@@ -11,10 +11,18 @@ export async function GET() {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("produtos")
-    .select("id, nome, categoria, quantidade, qtd_minima, qtd_maxima")
+    .select("id, nome, categoria, quantidade, qtd_minima, qtd_maxima, rua, prateleira, lote")
     .order("nome");
+
+  // Colunas de localização podem não existir ainda (migration pendente)
+  if (error?.code === "PGRST204" || /rua|prateleira|lote/.test(error?.message || "")) {
+    ({ data, error } = await supabase
+      .from("produtos")
+      .select("id, nome, categoria, quantidade, qtd_minima, qtd_maxima")
+      .order("nome"));
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
