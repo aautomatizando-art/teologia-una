@@ -1,5 +1,6 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 import { enviarWhatsApp } from "@/lib/whatsapp";
+import { SENHA_PEDIDOS } from "@/lib/senhas";
 
 // GET /api/ordens → lista ordens de produção com progresso e pedidos vinculados
 export async function GET() {
@@ -45,7 +46,10 @@ export async function POST(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { numero, data, hora, solicitante, meta_paletes, pedido_ids } = await req.json();
+  const { numero, data, hora, solicitante, meta_paletes, pedido_ids, senha } = await req.json();
+  if (senha !== SENHA_PEDIDOS) {
+    return Response.json({ error: "Senha de pedidos inválida." }, { status: 403 });
+  }
   if (!solicitante || !Array.isArray(pedido_ids) || pedido_ids.length === 0) {
     return Response.json({ error: "Selecione ao menos um pedido e informe o solicitante." }, { status: 400 });
   }
@@ -117,7 +121,10 @@ export async function PATCH(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { id, status } = await req.json();
+  const { id, status, senha } = await req.json();
+  if (senha !== SENHA_PEDIDOS) {
+    return Response.json({ error: "Senha de pedidos inválida." }, { status: 403 });
+  }
   if (!id || !["ABERTA", "CONCLUIDA", "CANCELADA"].includes(status)) {
     return Response.json({ error: "Informe id e status válido." }, { status: 400 });
   }

@@ -66,8 +66,6 @@ CALLMEBOT_PHONE=+5511999999999
 CALLMEBOT_APIKEY=123456
 ```
 
-Teste com: `POST https://seu-app.vercel.app/api/whatsapp-teste`
-
 Notificações enviadas automaticamente:
 - 📦 Nova reserva de estoque (com alerta de **ESTOQUE BAIXO** quando aplicável)
 - 🟣🔴🟢 Novo pedido de compra (com criticidade)

@@ -1,4 +1,5 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
+import { SENHA_BACKUP } from "@/lib/senhas";
 
 const BUCKET = "backups-producao";
 const TABELAS = [
@@ -66,7 +67,12 @@ export async function DELETE(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const arquivo = new URL(req.url).searchParams.get("arquivo");
+  const url = new URL(req.url);
+  const arquivo = url.searchParams.get("arquivo");
+  const senha = url.searchParams.get("senha");
+  if (senha !== SENHA_BACKUP) {
+    return Response.json({ error: "Senha de backup inválida." }, { status: 403 });
+  }
   if (!arquivo || arquivo.includes("/") || arquivo.includes("..")) {
     return Response.json({ error: "Arquivo inválido." }, { status: 400 });
   }

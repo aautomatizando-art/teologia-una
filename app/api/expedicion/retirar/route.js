@@ -14,8 +14,8 @@ export async function POST(req) {
     return Response.json({ error: "Informe todos os campos." }, { status: 400 });
   }
 
-  // Validar senha (aceita "expediacacao123" ou "expedicao123")
-  if (senha !== "expedicao123" && senha !== "expediacacao123") {
+  // Validar senha (padrão: "Expedicaofrit")
+  if (senha !== "Expedicaofrit") {
     return Response.json({ error: "Senha de expedição inválida." }, { status: 403 });
   }
 

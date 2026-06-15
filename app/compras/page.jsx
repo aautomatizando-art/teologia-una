@@ -20,6 +20,7 @@ export default function PaginaCompras() {
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [senhaPedidos, setSenhaPedidos] = useState("");
   const [form, setForm] = useState({
     produto_id: "",
     quantidade: "",
@@ -66,7 +67,7 @@ export default function PaginaCompras() {
       const res = await fetch("/api/compras", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, senha: senhaPedidos }),
       });
       const j = await res.json();
       if (!res.ok) setErro(j.error || "Erro ao criar pedido.");
@@ -159,6 +160,7 @@ export default function PaginaCompras() {
             solicitante: opForm.solicitante,
             data: opForm.data,
             hora: opForm.hora,
+            senha: senhaPedidos,
           }),
         });
         const j = await res.json();
@@ -181,6 +183,7 @@ export default function PaginaCompras() {
             solicitante: opForm.solicitante,
             meta_paletes: opForm.meta,
             pedido_ids: opSelecionados.map((p) => p.id),
+            senha: senhaPedidos,
           }),
         });
         const j = await res.json();
@@ -204,7 +207,7 @@ export default function PaginaCompras() {
     const res = await fetch("/api/ordens", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
+      body: JSON.stringify({ id, status, senha: senhaPedidos }),
     });
     const j = await res.json();
     if (!res.ok) setErroOp(j.error || "Erro ao mudar status.");
@@ -216,6 +219,19 @@ export default function PaginaCompras() {
   return (
     <div className="shell">
       <TopBar />
+
+      {/* ── Senha de ações da página ── */}
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="campo" style={{ maxWidth: 280 }}>
+          <label>🔒 Senha de Pedidos</label>
+          <input
+            type="password"
+            value={senhaPedidos}
+            onChange={(e) => setSenhaPedidos(e.target.value)}
+            placeholder="Necessária para criar/alterar pedidos e ordens"
+          />
+        </div>
+      </div>
 
       {/* ── Novo pedido de venda ── */}
       <div className="card" style={{ marginBottom: 18 }}>

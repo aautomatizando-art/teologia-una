@@ -4,13 +4,16 @@ import { verificarToken, COOKIE } from "@/lib/auth";
 // Regras de acesso:
 //  /producao            -> papel "producao" ou "admin"
 //  /estoque, /compras,
-//  /rastreio            -> papel "estoque" ou "admin"
+//  /rastreio, /backup,
+//  /entrega, /expedicion -> papel "estoque" ou "admin"
 const REGRAS = [
   { prefixo: "/producao", papeis: ["producao", "admin"], login: "/" },
   { prefixo: "/estoque", papeis: ["estoque", "admin"], login: "/login-estoque" },
   { prefixo: "/compras", papeis: ["estoque", "admin"], login: "/login-estoque" },
   { prefixo: "/rastreio", papeis: ["estoque", "admin"], login: "/login-estoque" },
   { prefixo: "/backup", papeis: ["estoque", "admin"], login: "/login-estoque" },
+  { prefixo: "/entrega", papeis: ["estoque", "admin"], login: "/login-estoque" },
+  { prefixo: "/expedicion", papeis: ["estoque", "admin"], login: "/login-estoque" },
 ];
 
 export async function middleware(req) {
@@ -31,5 +34,13 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ["/producao/:path*", "/estoque/:path*", "/compras/:path*", "/rastreio/:path*", "/backup/:path*"],
+  matcher: [
+    "/producao/:path*",
+    "/estoque/:path*",
+    "/compras/:path*",
+    "/rastreio/:path*",
+    "/backup/:path*",
+    "/entrega/:path*",
+    "/expedicion/:path*",
+  ],
 };

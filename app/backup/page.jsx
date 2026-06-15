@@ -9,6 +9,7 @@ export default function PaginaBackup() {
   const [gerando, setGerando] = useState(false);
   const [confirmar, setConfirmar] = useState(null); // arquivo a restaurar
   const [textoConfirma, setTextoConfirma] = useState("");
+  const [senhaRestaurar, setSenhaRestaurar] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
   async function carregar() {
@@ -39,27 +40,30 @@ export default function PaginaBackup() {
 
   async function excluir(arquivo) {
     if (!window.confirm(`Excluir o backup "${arquivo}"?`)) return;
+    const senha = window.prompt("Digite a senha de Backup para excluir:");
+    if (senha === null) return;
     setErro(""); setOk("");
-    const res = await fetch(`/api/backup?arquivo=${encodeURIComponent(arquivo)}`, { method: "DELETE" });
+    const res = await fetch(`/api/backup?arquivo=${encodeURIComponent(arquivo)}&senha=${encodeURIComponent(senha)}`, { method: "DELETE" });
     const j = await res.json();
     if (!res.ok) setErro(j.error || "Erro ao excluir.");
     else { setOk(`Backup "${arquivo}" excluído.`); carregar(); }
   }
 
   async function restaurar() {
-    if (textoConfirma !== "RESTAURAR") return;
+    if (textoConfirma !== "RESTAURAR" || !senhaRestaurar) return;
     setOcupado(true); setErro(""); setOk("");
     try {
       const res = await fetch("/api/backup/restaurar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ arquivo: confirmar }),
+        body: JSON.stringify({ arquivo: confirmar, senha: senhaRestaurar }),
       });
       const j = await res.json();
       if (!res.ok) setErro(j.error || "Erro ao restaurar.");
       else setOk(`Estoque restaurado: ${j.restaurados} produtos voltaram ao estado do backup.`);
       setConfirmar(null);
       setTextoConfirma("");
+      setSenhaRestaurar("");
     } catch {
       setErro("Erro de conexão.");
     } finally {
@@ -106,7 +110,7 @@ export default function PaginaBackup() {
                       <a className="btn mini sec" style={{ marginRight: 6 }} href={`/api/backup/download?arquivo=${encodeURIComponent(b.arquivo)}`}>
                         ⬇️ Baixar
                       </a>
-                      <button className="btn mini sec" style={{ marginRight: 6 }} onClick={() => { setConfirmar(b.arquivo); setTextoConfirma(""); }}>
+                      <button className="btn mini sec" style={{ marginRight: 6 }} onClick={() => { setConfirmar(b.arquivo); setTextoConfirma(""); setSenhaRestaurar(""); }}>
                         ♻️ Restaurar estoque
                       </button>
                       <button className="btn mini sec" style={{ color: "#fca5a5" }} onClick={() => excluir(b.arquivo)}>
@@ -130,12 +134,16 @@ export default function PaginaBackup() {
               salvo em <b>{confirmar}</b>. O histórico de reservas, pedidos e produção não é alterado.
             </p>
             <div className="campo">
+              <label>Senha de Backup</label>
+              <input type="password" value={senhaRestaurar} onChange={(e) => setSenhaRestaurar(e.target.value)} placeholder="Senha de Backup" autoFocus />
+            </div>
+            <div className="campo">
               <label>Digite RESTAURAR para confirmar</label>
-              <input value={textoConfirma} onChange={(e) => setTextoConfirma(e.target.value.toUpperCase())} placeholder="RESTAURAR" autoFocus />
+              <input value={textoConfirma} onChange={(e) => setTextoConfirma(e.target.value.toUpperCase())} placeholder="RESTAURAR" />
             </div>
             <div className="acoes">
               <button className="btn sec" onClick={() => setConfirmar(null)}>Cancelar</button>
-              <button className="btn" disabled={ocupado || textoConfirma !== "RESTAURAR"} onClick={restaurar}>
+              <button className="btn" disabled={ocupado || textoConfirma !== "RESTAURAR" || !senhaRestaurar} onClick={restaurar}>
                 {ocupado ? "Restaurando..." : "Confirmar restauração"}
               </button>
             </div>

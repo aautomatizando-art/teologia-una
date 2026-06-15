@@ -1,5 +1,6 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 import { enviarWhatsApp } from "@/lib/whatsapp";
+import { SENHA_BACKUP } from "@/lib/senhas";
 
 const BUCKET = "backups-producao";
 
@@ -11,7 +12,10 @@ export async function POST(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { arquivo } = await req.json();
+  const { arquivo, senha } = await req.json();
+  if (senha !== SENHA_BACKUP) {
+    return Response.json({ error: "Senha de backup inválida." }, { status: 403 });
+  }
   if (!arquivo || arquivo.includes("/") || arquivo.includes("..")) {
     return Response.json({ error: "Arquivo inválido." }, { status: 400 });
   }

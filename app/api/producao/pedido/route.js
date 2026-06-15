@@ -2,8 +2,8 @@ import { createHash } from "crypto";
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 import { enviarWhatsApp } from "@/lib/whatsapp";
 
-// Senha de produção (SHA-256) — padrão: "producao123"
-const SENHA_HASH = "247c5a87c4292ac36590492c216e8f565e56b85584892b89fb45dd3a9b6fd2ab";
+// Senha de produção (SHA-256) — padrão: "Fritisco"
+const SENHA_HASH = "4a1f3b89ad7abd6a0639e7582a916f8f0ee286976a68a6a45362696874fdb3a8";
 
 const COLS_INSUMOS = "kg_batata_por_caixa, caixa_por_caixa, kg_filme_bopp_por_caixa, kg_condimento_por_caixa, kg_oleo_por_caixa, cm_fita_adesiva_por_caixa";
 const INSUMOS_VAZIOS = {

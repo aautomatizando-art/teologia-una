@@ -1,5 +1,6 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 import { enviarWhatsApp } from "@/lib/whatsapp";
+import { SENHA_PEDIDOS } from "@/lib/senhas";
 
 // GET /api/compras → pedidos de compra agrupáveis por criticidade
 export async function GET() {
@@ -28,7 +29,10 @@ export async function POST(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { produto_id, quantidade, data, hora, solicitante, criticidade, nome_cliente, regiao, comprador, vendedor } = await req.json();
+  const { produto_id, quantidade, data, hora, solicitante, criticidade, nome_cliente, regiao, comprador, vendedor, senha } = await req.json();
+  if (senha !== SENHA_PEDIDOS) {
+    return Response.json({ error: "Senha de pedidos inválida." }, { status: 403 });
+  }
   if (!produto_id || !solicitante || !criticidade) {
     return Response.json({ error: "Preencha produto, nome e criticidade." }, { status: 400 });
   }

@@ -1,12 +1,16 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 import { enviarWhatsApp } from "@/lib/whatsapp";
+import { SENHA_PEDIDOS } from "@/lib/senhas";
 
 // POST /api/retirar-estoque — retirar pedidos direto do estoque (sem produção)
 export async function POST(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { pedido_ids, solicitante, data, hora } = await req.json();
+  const { pedido_ids, solicitante, data, hora, senha } = await req.json();
+  if (senha !== SENHA_PEDIDOS) {
+    return Response.json({ error: "Senha de pedidos inválida." }, { status: 403 });
+  }
   if (!Array.isArray(pedido_ids) || pedido_ids.length === 0) {
     return Response.json({ error: "Informe ao menos um pedido." }, { status: 400 });
   }

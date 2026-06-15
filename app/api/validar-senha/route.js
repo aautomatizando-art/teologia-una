@@ -7,8 +7,8 @@ export async function POST(req) {
   }
 
   try {
-    // Validar senha ADM (padrão: "admin123")
-    if (tipo === "adm" && senha === "admin123") {
+    // Validar senha ADM (padrão: "Estoquefrit")
+    if (tipo === "adm" && senha === "Estoquefrit") {
       return Response.json({ ok: true }, { status: 200 });
     }
 
