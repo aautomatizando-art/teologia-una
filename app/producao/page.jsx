@@ -23,9 +23,9 @@ const INSUMOS_CONFIG = [
 const LINHAS_DISPONIVEIS = [1, 2, 3, 4, 5, 6];
 
 const PAINEIS = [
-  { titulo: "Painel 1", cor: "#6366f1" },
-  { titulo: "Painel 2", cor: "#06b6d4" },
-  { titulo: "Painel 3", cor: "#a855f7" },
+  { titulo: "Painel 1", cor: "#6366f1", linhas: [1, 2] },
+  { titulo: "Painel 2", cor: "#06b6d4", linhas: [3, 4] },
+  { titulo: "Painel 3", cor: "#a855f7", linhas: [5, 6] },
 ];
 
 export default function PaginaProducao() {
@@ -36,13 +36,13 @@ export default function PaginaProducao() {
         <a href="/producao/painel" className="btn sec" style={{ textDecoration: "none" }}>📺 Modo Visualização</a>
       </div>
       {PAINEIS.map((p, i) => (
-        <PainelOP key={p.titulo} titulo={p.titulo} cor={p.cor} indice={i} />
+        <PainelOP key={p.titulo} titulo={p.titulo} cor={p.cor} linhas={p.linhas} indice={i} />
       ))}
     </div>
   );
 }
 
-function PainelOP({ titulo, cor, indice }) {
+function PainelOP({ titulo, cor, linhas, indice }) {
   const [op, setOp] = useState("");
   const [dados, setDados] = useState(null);
   const [ordens, setOrdens] = useState([]);
@@ -195,7 +195,7 @@ function PainelOP({ titulo, cor, indice }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <span style={{ width: 10, height: 10, borderRadius: "50%", background: cor, display: "inline-block" }} />
         <h2 style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a5b4fc", margin: 0 }}>
-          🏭 {titulo}
+          🏭 {titulo} <span style={{ fontWeight: 600, letterSpacing: "normal", textTransform: "none", color: "#8b96c0" }}>(Linhas {linhas.join(" e ")})</span>
         </h2>
       </div>
 
