@@ -51,10 +51,12 @@ export async function GET(req) {
     return Object.entries(m).map(([tipo, quantidade]) => ({ tipo, quantidade }));
   };
 
-  // Soma produção de paletes diretos + produção de pedidos (em caixas, consideradas como unidade de palete)
+  // Soma produção de paletes diretos (já em paletes) + produção de pedidos (em caixas, convertida para paletes)
+  const caixasPorPalete = ordem.produtos?.caixas_por_palete || 1;
   const produzidoPaletes = (registros.data || []).reduce((s, r) => s + r.paletes, 0);
   const produzidoPedidos = (pedidos.data || []).reduce((s, p) => s + (p.quantidade_produzida || 0), 0);
-  const produzido = produzidoPaletes + produzidoPedidos;
+  const produzido = produzidoPaletes + produzidoPedidos / caixasPorPalete;
+  const produzidoCx = produzido * caixasPorPalete;
 
   return Response.json({
     ordem: {
@@ -63,8 +65,8 @@ export async function GET(req) {
       meta_paletes: ordem.meta_paletes,
       status: ordem.status,
       produzido,
-      caixasPorPalete: ordem.produtos?.caixas_por_palete || 1,
-      percentual: ordem.meta_paletes ? Math.min(100, Math.round((produzido / ordem.meta_paletes) * 100)) : 0,
+      caixasPorPalete,
+      percentual: ordem.meta_paletes ? Math.min(100, Math.round((produzidoCx / ordem.meta_paletes) * 100)) : 0,
     },
     pedidos: pedidos.data || [],
     registros: registros.data || [],
