@@ -160,7 +160,7 @@ export default function PaginaEstoque() {
 
       {dados && (
         <div className="grid g4" style={{ marginBottom: 18 }}>
-          <div className="card"><h3>📦 Total em estoque</h3><div className="kpi">{dados.total.toLocaleString("pt-BR")} <small>un.</small></div></div>
+          <div className="card"><h3>📦 Total em estoque</h3><div className="kpi">{dados.total.toLocaleString("pt-BR")} <small>cx</small></div></div>
           <div className="card"><h3>🗂️ Produtos</h3><div className="kpi">{dados.produtos.length}</div></div>
           <div className="card"><h3>🔴 Estoque baixo</h3><div className="kpi" style={{ color: "#ef4444" }}>{dados.baixos}</div></div>
           <div className="card"><h3>🟠 Estoque alto</h3><div className="kpi" style={{ color: "#f59e0b" }}>{dados.altos}</div></div>
@@ -178,7 +178,7 @@ export default function PaginaEstoque() {
                   <CartesianGrid stroke="#26305c" strokeDasharray="3 3" />
                   <XAxis dataKey="nome" tick={{ fill: "#8b96c0", fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={90} />
                   <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} />
-                  <Tooltip contentStyle={TOOLTIP} itemStyle={{ color: "#fff" }} cursor={{ fill: "rgba(99,102,241,0.08)" }} separator="" formatter={(v) => [`${v.toLocaleString("pt-BR")} un.`, ""]} />
+                  <Tooltip contentStyle={TOOLTIP} itemStyle={{ color: "#fff" }} cursor={{ fill: "rgba(99,102,241,0.08)" }} separator="" formatter={(v) => [`${v.toLocaleString("pt-BR")} cx`, ""]} />
                   <Bar dataKey="quantidade" name="Quantidade" radius={[6, 6, 0, 0]} onClick={(data) => setInfoProduto(data.payload)}>
                     {lista.map((p) => <Cell key={p.id} fill={corStatus(p.status).barra} />)}
                   </Bar>
@@ -228,7 +228,7 @@ export default function PaginaEstoque() {
               </div>
               <div className="nome">{p.nome}</div>
               <div className="qtd">
-                {p.quantidade.toLocaleString("pt-BR")} <small>un. • mín {p.qtd_minima} / máx {p.qtd_maxima}</small>
+                {p.quantidade.toLocaleString("pt-BR")} <small>cx • mín {p.qtd_minima} / máx {p.qtd_maxima}</small>
               </div>
               <div className="barra"><div style={{ width: `${pctBarra}%`, background: cor.barra }} /></div>
               <div className="rodape">
@@ -269,7 +269,7 @@ export default function PaginaEstoque() {
             </div>
             <h2>{infoProduto.nome}</h2>
             <div className="qtd" style={{ margin: "10px 0" }}>
-              {infoProduto.quantidade.toLocaleString("pt-BR")} <small>un. • mín {infoProduto.qtd_minima} / máx {infoProduto.qtd_maxima}</small>
+              {infoProduto.quantidade.toLocaleString("pt-BR")} <small>cx • mín {infoProduto.qtd_minima} / máx {infoProduto.qtd_maxima}</small>
             </div>
             <div className="barra" style={{ marginBottom: 18 }}>
               <div style={{
@@ -292,7 +292,7 @@ export default function PaginaEstoque() {
         <div className="modal-fundo" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
           <form className="modal" onSubmit={editar}>
             <h2>Editar Produto</h2>
-            <p className="sub">{modal.nome} — saldo atual: {modal.quantidade} un.</p>
+            <p className="sub">{modal.nome} — saldo atual: {modal.quantidade} cx</p>
             {erro && <div className="erro">{erro}</div>}
             <div className="campo">
               <label>Nome do Produto *</label>
