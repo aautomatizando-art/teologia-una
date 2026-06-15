@@ -320,7 +320,6 @@ function PainelOP({ titulo, cor, linhas, indice }) {
                         type="number"
                         min="0"
                         step="1"
-                        max={pedidoSelecionado.qtd_planejada - pedidoSelecionado.produzido}
                         required
                         disabled={pedidoSelecionado.status === "FINALIZADO"}
                         value={pedidoForm.quantidade}

@@ -129,12 +129,6 @@ export async function POST(req) {
   if (!pedido) return Response.json({ error: "Pedido não encontrado." }, { status: 404 });
 
   const novaQtd = (pedido.quantidade_produzida || 0) + Number(quantidade);
-  if (novaQtd > pedido.qtd_planejada) {
-    return Response.json(
-      { error: `Excede a quantidade planejada (${pedido.qtd_planejada}). Já produzido: ${pedido.quantidade_produzida}.` },
-      { status: 400 }
-    );
-  }
 
   const { error: eUpd } = await supabase
     .from("pedidos_op")
