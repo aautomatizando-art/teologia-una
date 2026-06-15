@@ -1,5 +1,28 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 
+// Faz um select com fallback caso a coluna "linhas" ainda não exista (migration pendente)
+async function selecionarComLinhas(supabase, tabela, colunas, ordem_id, orderBy) {
+  let q = supabase.from(tabela).select(`${colunas}, linhas`).eq("ordem_id", ordem_id);
+  if (orderBy) q = q.order(orderBy, { ascending: true });
+  let { data, error } = await q;
+  if (error) {
+    let q2 = supabase.from(tabela).select(colunas).eq("ordem_id", ordem_id);
+    if (orderBy) q2 = q2.order(orderBy, { ascending: true });
+    ({ data } = await q2);
+  }
+  return data || [];
+}
+
+// Faz um insert com fallback caso a coluna "linhas" ainda não exista (migration pendente)
+async function inserirComLinhas(supabase, tabela, dados) {
+  let { error } = await supabase.from(tabela).insert(dados);
+  if (error && /linhas/.test(error.message)) {
+    const { linhas, ...semLinhas } = dados;
+    ({ error } = await supabase.from(tabela).insert(semLinhas));
+  }
+  return error;
+}
+
 // GET /api/producao?op=OP-1001  → dados completos da ordem de produção
 export async function GET(req) {
   const supabase = getSupabase();
@@ -36,13 +59,9 @@ export async function GET(req) {
 
   const [pedidos, registros, perdas, problemas] = await Promise.all([
     supabase.from("pedidos_op").select("codigo_pedido, qtd_planejada, quantidade_produzida").eq("ordem_id", ordem.id),
-    supabase
-      .from("producao_registros")
-      .select("paletes, registrado_em")
-      .eq("ordem_id", ordem.id)
-      .order("registrado_em", { ascending: true }),
-    supabase.from("perdas_embalagem").select("tipo, quantidade").eq("ordem_id", ordem.id),
-    supabase.from("problemas_qualidade").select("tipo, quantidade").eq("ordem_id", ordem.id),
+    selecionarComLinhas(supabase, "producao_registros", "paletes, registrado_em", ordem.id, "registrado_em"),
+    selecionarComLinhas(supabase, "perdas_embalagem", "tipo, quantidade, registrado_em", ordem.id),
+    selecionarComLinhas(supabase, "problemas_qualidade", "tipo, quantidade, registrado_em", ordem.id),
   ]);
 
   const agrupar = (linhas) => {
@@ -53,10 +72,19 @@ export async function GET(req) {
 
   // Soma produção de paletes diretos (já em paletes) + produção de pedidos (em caixas, convertida para paletes)
   const caixasPorPalete = ordem.produtos?.caixas_por_palete || 1;
-  const produzidoPaletes = (registros.data || []).reduce((s, r) => s + r.paletes, 0);
+  const produzidoPaletes = registros.reduce((s, r) => s + r.paletes, 0);
   const produzidoPedidos = (pedidos.data || []).reduce((s, p) => s + (p.quantidade_produzida || 0), 0);
   const produzido = produzidoPaletes + produzidoPedidos / caixasPorPalete;
   const produzidoCx = produzido * caixasPorPalete;
+
+  // Últimos lançamentos (paletes + perdas + problemas) com as linhas que produziram
+  const lancamentos = [
+    ...registros.map((r) => ({ tipo: "Paletes", detalhe: `${r.paletes} paletes`, linhas: r.linhas || null, quando: r.registrado_em })),
+    ...perdas.map((r) => ({ tipo: "Perda", detalhe: `${r.tipo} (${r.quantidade}x)`, linhas: r.linhas || null, quando: r.registrado_em })),
+    ...problemas.map((r) => ({ tipo: "Problema", detalhe: `${r.tipo} (${r.quantidade}x)`, linhas: r.linhas || null, quando: r.registrado_em })),
+  ]
+    .sort((a, b) => new Date(b.quando) - new Date(a.quando))
+    .slice(0, 15);
 
   return Response.json({
     ordem: {
@@ -69,9 +97,10 @@ export async function GET(req) {
       percentual: ordem.meta_paletes ? Math.min(100, Math.round((produzidoCx / ordem.meta_paletes) * 100)) : 0,
     },
     pedidos: pedidos.data || [],
-    registros: registros.data || [],
-    perdas: agrupar(perdas.data),
-    problemas: agrupar(problemas.data),
+    registros,
+    perdas: agrupar(perdas),
+    problemas: agrupar(problemas),
+    lancamentos,
   });
 }
 
@@ -103,7 +132,7 @@ export async function POST(req) {
   }
 
   // registros vinculados a uma OP existente
-  const { op } = body;
+  const { op, linhas } = body;
   const { data: ordem } = await supabase
     .from("ordens_producao")
     .select("id")
@@ -113,17 +142,25 @@ export async function POST(req) {
 
   let error = null;
   if (acao === "paletes") {
-    ({ error } = await supabase
-      .from("producao_registros")
-      .insert({ ordem_id: ordem.id, paletes: Number(body.paletes) || 0 }));
+    error = await inserirComLinhas(supabase, "producao_registros", {
+      ordem_id: ordem.id,
+      paletes: Number(body.paletes) || 0,
+      linhas: linhas || null,
+    });
   } else if (acao === "perda") {
-    ({ error } = await supabase
-      .from("perdas_embalagem")
-      .insert({ ordem_id: ordem.id, tipo: body.tipo || "Outros", quantidade: Number(body.quantidade) || 0 }));
+    error = await inserirComLinhas(supabase, "perdas_embalagem", {
+      ordem_id: ordem.id,
+      tipo: body.tipo || "Outros",
+      quantidade: Number(body.quantidade) || 0,
+      linhas: linhas || null,
+    });
   } else if (acao === "problema") {
-    ({ error } = await supabase
-      .from("problemas_qualidade")
-      .insert({ ordem_id: ordem.id, tipo: body.tipo || "Outros", quantidade: Number(body.quantidade) || 0 }));
+    error = await inserirComLinhas(supabase, "problemas_qualidade", {
+      ordem_id: ordem.id,
+      tipo: body.tipo || "Outros",
+      quantidade: Number(body.quantidade) || 0,
+      linhas: linhas || null,
+    });
   } else {
     return Response.json({ error: "Ação inválida." }, { status: 400 });
   }

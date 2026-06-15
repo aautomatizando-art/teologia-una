@@ -20,13 +20,33 @@ const INSUMOS_CONFIG = [
   { chave: "cm_fita_adesiva_por_caixa", label: "Fita Adesiva", unidade: "m", fator: 0.01 },
 ];
 
+const LINHAS_DISPONIVEIS = [1, 2, 3, 4, 5, 6];
+
+const PAINEIS = [
+  { titulo: "Painel 1", cor: "#6366f1" },
+  { titulo: "Painel 2", cor: "#06b6d4" },
+  { titulo: "Painel 3", cor: "#a855f7" },
+];
+
 export default function PaginaProducao() {
+  return (
+    <div className="shell">
+      <TopBar />
+      {PAINEIS.map((p, i) => (
+        <PainelOP key={p.titulo} titulo={p.titulo} cor={p.cor} indice={i} />
+      ))}
+    </div>
+  );
+}
+
+function PainelOP({ titulo, cor, indice }) {
   const [op, setOp] = useState("");
   const [dados, setDados] = useState(null);
   const [ordens, setOrdens] = useState([]);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [reg, setReg] = useState({ acao: "paletes", paletes: "", tipo: "", quantidade: "" });
+  const [linhasForm, setLinhasForm] = useState([]);
 
   // Bloco de produção por pedido
   const [pedidos, setPedidos] = useState([]);
@@ -44,14 +64,20 @@ export default function PaginaProducao() {
     fetch("/api/producao")
       .then((r) => r.json())
       .then((j) => {
-        setOrdens(j.ordens || []);
-        if (j.ordens?.length) {
-          setOp(j.ordens[0].numero);
-          buscar(j.ordens[0].numero);
+        const todas = j.ordens || [];
+        setOrdens(todas);
+        const escolhida = todas[indice] || todas[0];
+        if (escolhida) {
+          setOp(escolhida.numero);
+          buscar(escolhida.numero);
         }
       })
       .catch(() => {});
   }, []);
+
+  function toggleLinha(n) {
+    setLinhasForm((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n].sort((a, b) => a - b)));
+  }
 
   async function buscar(numero) {
     const alvo = (numero || op).trim();
@@ -93,7 +119,7 @@ export default function PaginaProducao() {
 
   async function registrar(e) {
     e.preventDefault();
-    const body = { op, acao: reg.acao };
+    const body = { op, acao: reg.acao, linhas: linhasForm.length ? linhasForm.join(",") : null };
     if (reg.acao === "paletes") body.paletes = reg.paletes;
     else {
       body.tipo = reg.tipo;
@@ -162,10 +188,15 @@ export default function PaginaProducao() {
   const pedidosDados = (dados?.pedidos || []).map((p) => ({ name: p.codigo_pedido, value: p.qtd_planejada }));
 
   return (
-    <div className="shell">
-      <TopBar />
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: cor, display: "inline-block" }} />
+        <h2 style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a5b4fc", margin: 0 }}>
+          🏭 {titulo}
+        </h2>
+      </div>
 
-      <div className="card" style={{ marginBottom: 18 }}>
+      <div className="card" style={{ marginBottom: 18, borderTop: `3px solid ${cor}` }}>
         <h3>🔎 Ordem de Produção</h3>
         <div className="linha">
           <div className="campo" style={{ position: "relative", flex: 1 }}>
@@ -497,7 +528,7 @@ export default function PaginaProducao() {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card" style={{ marginBottom: 18 }}>
             <h3>✍️ Registrar na OP {o.numero}</h3>
             <form className="linha" onSubmit={registrar}>
               <div className="campo">
@@ -528,9 +559,48 @@ export default function PaginaProducao() {
                   </div>
                 </>
               )}
+              <div className="campo">
+                <label>Linha(s) de produção</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {LINHAS_DISPONIVEIS.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`btn mini ${linhasForm.includes(n) ? "" : "sec"}`}
+                      onClick={() => toggleLinha(n)}
+                      title={`Linha ${n}`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button className="btn">Registrar</button>
             </form>
           </div>
+
+          {dados?.lancamentos?.length > 0 && (
+            <div className="card">
+              <h3>📋 Últimos lançamentos</h3>
+              <div style={{ overflowX: "auto" }}>
+                <table className="tab">
+                  <thead>
+                    <tr><th>Quando</th><th>Tipo</th><th>Detalhe</th><th>Linha(s)</th></tr>
+                  </thead>
+                  <tbody>
+                    {dados.lancamentos.map((l, i) => (
+                      <tr key={i}>
+                        <td>{new Date(l.quando).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+                        <td>{l.tipo}</td>
+                        <td>{l.detalhe}</td>
+                        <td>{l.linhas ? `Linha ${l.linhas}` : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
 
