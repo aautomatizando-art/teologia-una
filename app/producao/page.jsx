@@ -363,15 +363,18 @@ export default function PaginaProducao() {
               <h3>🧪 Insumos do Pedido</h3>
               {!pedidoSelecionado ? (
                 <p className="muted">Selecione um pedido para ver o consumo de insumos.</p>
-              ) : (
+              ) : (() => {
+                const caixasPorPalete = pedidoSelecionado.caixasPorPalete || 0;
+                const produzidoCaixas = (o.produzido || 0) * caixasPorPalete;
+                return (
                 <>
                   <p className="sub" style={{ marginTop: -8, marginBottom: 14 }}>
-                    Consumo estimado para {pedidoSelecionado.produzido.toLocaleString("pt-BR")} caixas produzidas
+                    Consumo estimado para {produzidoCaixas.toLocaleString("pt-BR")} caixas produzidas ({(o.produzido || 0).toLocaleString("pt-BR")} paletes × {caixasPorPalete.toLocaleString("pt-BR")} cx/palete)
                   </p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
                     {INSUMOS_CONFIG.map((item) => {
                       const taxa = pedidoSelecionado.insumos?.[item.chave] || 0;
-                      const valor = taxa * pedidoSelecionado.produzido;
+                      const valor = taxa * produzidoCaixas;
                       return (
                         <div key={item.chave} style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
                           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>{item.label}</div>
@@ -383,7 +386,8 @@ export default function PaginaProducao() {
                     })}
                   </div>
                 </>
-              )}
+                );
+              })()}
             </div>
             </div>
           )}

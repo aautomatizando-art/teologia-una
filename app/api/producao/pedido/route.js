@@ -15,15 +15,23 @@ const INSUMOS_VAZIOS = {
   cm_fita_adesiva_por_caixa: null,
 };
 
-// Busca produto incluindo insumos; cai para sem insumos se a migration ainda não foi aplicada
+// Busca produto incluindo insumos e caixas/palete; cai para versões parciais se a migration ainda não foi aplicada
 async function buscarProdutoComInsumos(supabase, produtoId) {
   const { data, error } = await supabase
+    .from("produtos")
+    .select(`quantidade, caixas_por_palete, ${COLS_INSUMOS}`)
+    .eq("id", produtoId)
+    .single();
+
+  if (!error) return data;
+
+  const { data: dataSemPalete, error: erroSemPalete } = await supabase
     .from("produtos")
     .select(`quantidade, ${COLS_INSUMOS}`)
     .eq("id", produtoId)
     .single();
 
-  if (!error) return data;
+  if (!erroSemPalete) return { ...dataSemPalete, caixas_por_palete: null };
 
   const { data: dataBasica } = await supabase
     .from("produtos")
@@ -31,7 +39,7 @@ async function buscarProdutoComInsumos(supabase, produtoId) {
     .eq("id", produtoId)
     .single();
 
-  return dataBasica ? { ...dataBasica, ...INSUMOS_VAZIOS } : null;
+  return dataBasica ? { ...dataBasica, ...INSUMOS_VAZIOS, caixas_por_palete: null } : null;
 }
 
 // GET /api/producao/pedido?ordem_id=<id> → lista pedidos da OP com progresso
@@ -61,12 +69,14 @@ export async function GET(req) {
 
       let estoque = 0;
       let insumos = { ...INSUMOS_VAZIOS };
+      let caixasPorPalete = null;
       if (pedidoCompra?.produto_id) {
         const produto = await buscarProdutoComInsumos(supabase, pedidoCompra.produto_id);
         estoque = produto?.quantidade || 0;
         if (produto) {
-          const { quantidade, ...resto } = produto;
+          const { quantidade, caixas_por_palete, ...resto } = produto;
           insumos = resto;
+          caixasPorPalete = caixas_por_palete ?? null;
         }
       }
 
@@ -84,6 +94,7 @@ export async function GET(req) {
         percentual,
         status: totalDisponivel >= p.qtd_planejada ? "FINALIZADO" : "PRODUZINDO",
         insumos,
+        caixasPorPalete,
       };
     })
   );
