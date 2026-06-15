@@ -16,7 +16,6 @@ function corStatus(s) {
 export default function PaginaEstoque() {
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState("");
-  const [filtro, setFiltro] = useState("");
   const [soCriticos, setSoCriticos] = useState(false);
   const [modal, setModal] = useState(null); // produto selecionado para edição
   const [infoProduto, setInfoProduto] = useState(null); // produto selecionado no gráfico
@@ -59,10 +58,9 @@ export default function PaginaEstoque() {
 
   const lista = useMemo(() => {
     let l = dados?.produtos || [];
-    if (filtro) l = l.filter((p) => p.nome.toLowerCase().includes(filtro.toLowerCase()));
     if (soCriticos) l = l.filter((p) => p.status !== "NORMAL");
     return l;
-  }, [dados, filtro, soCriticos]);
+  }, [dados, soCriticos]);
 
   function abrirEditar(p) {
     setPedindoSenha(true);
@@ -180,7 +178,7 @@ export default function PaginaEstoque() {
                   <CartesianGrid stroke="#26305c" strokeDasharray="3 3" />
                   <XAxis dataKey="nome" tick={{ fill: "#8b96c0", fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={90} />
                   <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} />
-                  <Tooltip contentStyle={TOOLTIP} cursor={{ fill: "rgba(99,102,241,0.08)" }} formatter={(v) => [`${v.toLocaleString("pt-BR")} un.`, "Quantidade"]} />
+                  <Tooltip contentStyle={TOOLTIP} cursor={{ fill: "rgba(99,102,241,0.08)" }} separator="" formatter={(v) => [`${v.toLocaleString("pt-BR")} un.`, ""]} />
                   <Bar dataKey="quantidade" name="Quantidade" radius={[6, 6, 0, 0]} onClick={(data) => setInfoProduto(data.payload)}>
                     {lista.map((p) => <Cell key={p.id} fill={corStatus(p.status).barra} />)}
                   </Bar>
@@ -195,7 +193,15 @@ export default function PaginaEstoque() {
         <div className="linha">
           <div className="campo">
             <label>Buscar produto</label>
-            <input value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Ex.: BATATA PALHA..." />
+            <select value="" onChange={(e) => {
+              const p = dados?.produtos.find((p) => String(p.id) === e.target.value);
+              if (p) setInfoProduto(p);
+            }}>
+              <option value="">— Selecione um produto —</option>
+              {(dados?.produtos || []).map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
+            </select>
           </div>
           <button className={`btn ${soCriticos ? "" : "sec"}`} onClick={() => setSoCriticos(!soCriticos)}>
             {soCriticos ? "Mostrando críticos ⚠️" : "Só críticos"}
