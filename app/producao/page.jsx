@@ -58,8 +58,6 @@ export default function PaginaProducao() {
     if (!alvo) return;
     setCarregando(true);
     setErro("");
-    setPedidos([]);
-    setPedidoSelecionado(null);
     try {
       const opRes = await fetch(`/api/producao?op=${encodeURIComponent(alvo)}`);
       const opData = await opRes.json();
@@ -77,8 +75,14 @@ export default function PaginaProducao() {
         const pedRes = await fetch(`/api/producao/pedido?ordem_id=${ordem.id}`);
         const pedData = await pedRes.json();
         if (pedRes.ok) {
-          setPedidos(pedData.pedidos || []);
+          const novosPedidos = pedData.pedidos || [];
+          setPedidos(novosPedidos);
+          // Mantém o pedido selecionado, mas com os dados (produzido/insumos) atualizados
+          setPedidoSelecionado((prev) => (prev ? novosPedidos.find((p) => p.id === prev.id) || null : null));
         }
+      } else {
+        setPedidos([]);
+        setPedidoSelecionado(null);
       }
     } catch {
       setErro("Erro de conexão.");
