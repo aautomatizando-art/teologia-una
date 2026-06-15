@@ -38,12 +38,20 @@ export async function GET(req) {
 
         if (!pedidoId) return null;
 
-        // Busca detalhes do pedido
-        const { data: pedidoCompra } = await supabase
+        // Busca detalhes do pedido (recebido_por pode não existir ainda)
+        let { data: pedidoCompra } = await supabase
           .from("pedidos_compra")
-          .select("id, quantidade, solicitante, criticidade, produtos(nome), nome_cliente, regiao, status_rastreio")
+          .select("id, quantidade, solicitante, criticidade, produtos(nome), nome_cliente, regiao, status_rastreio, recebido_por")
           .eq("id", pedidoId)
           .single();
+
+        if (!pedidoCompra) {
+          ({ data: pedidoCompra } = await supabase
+            .from("pedidos_compra")
+            .select("id, quantidade, solicitante, criticidade, produtos(nome), nome_cliente, regiao, status_rastreio")
+            .eq("id", pedidoId)
+            .single());
+        }
 
         // Apenas retorna se status é 5 (Em Rota) ou 6 (Entregue)
         if (pedidoCompra?.status_rastreio === 5 || pedidoCompra?.status_rastreio === 6) {
@@ -59,6 +67,7 @@ export async function GET(req) {
             nome_motorista: c.nome_motorista,
             nome_ajudante: c.nome_ajudante,
             status_rastreio: pedidoCompra?.status_rastreio,
+            recebido_por: pedidoCompra?.recebido_por,
           };
         }
         return null;

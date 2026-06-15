@@ -12,6 +12,11 @@ const ETAPAS = [
   { rotulo: "ENTREGUE / FINALIZADO", icone: "✅" },
 ];
 
+function formatarData(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
 function Rastreio() {
   const params = useSearchParams();
   const [pedidos, setPedidos] = useState(null);
@@ -100,10 +105,21 @@ function Rastreio() {
           <div className="timeline">
             {ETAPAS.map((e, i) => {
               const n = i + 1;
+              const dataEvento = selecionado.rastreio_timestamps?.[n] || (n === 1 ? selecionado.criado_em : null);
               return (
                 <div key={n} className={`etapa ${n <= s ? "feita" : ""} ${n === s ? "atual" : ""}`}>
                   <div className="bola">{n <= s ? e.icone : n}</div>
                   <div className="rotulo">{e.rotulo}</div>
+                  {dataEvento && (
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                      {formatarData(dataEvento)}
+                    </div>
+                  )}
+                  {n === 6 && s === 6 && selecionado.recebido_por && (
+                    <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                      Recebido por: {selecionado.recebido_por}
+                    </div>
+                  )}
                 </div>
               );
             })}

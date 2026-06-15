@@ -20,12 +20,30 @@ export async function PATCH(req) {
     return Response.json({ error: "Informe id e status entre 1 e 5." }, { status: 400 });
   }
 
-  const { data: pedido, error } = await supabase
+  // Busca timestamps já registrados para mesclar com o novo (coluna pode não existir ainda)
+  const { data: atual } = await supabase
     .from("pedidos_compra")
-    .update({ status_rastreio: novo })
+    .select("rastreio_timestamps")
+    .eq("id", id)
+    .maybeSingle();
+  const timestamps = { ...(atual?.rastreio_timestamps || {}), [novo]: new Date().toISOString() };
+
+  let { data: pedido, error } = await supabase
+    .from("pedidos_compra")
+    .update({ status_rastreio: novo, rastreio_timestamps: timestamps })
     .eq("id", id)
     .select("id, criticidade, solicitante, produtos(nome)")
     .single();
+
+  // Coluna rastreio_timestamps pode não existir ainda (migration pendente)
+  if (error) {
+    ({ data: pedido, error } = await supabase
+      .from("pedidos_compra")
+      .update({ status_rastreio: novo })
+      .eq("id", id)
+      .select("id, criticidade, solicitante, produtos(nome)")
+      .single());
+  }
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   const whatsapp = await enviarWhatsApp(

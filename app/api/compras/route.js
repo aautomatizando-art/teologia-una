@@ -6,10 +6,18 @@ export async function GET() {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("pedidos_compra")
-    .select("id, produto_id, quantidade, data, hora, solicitante, criticidade, status_rastreio, criado_em, produtos(nome)")
+    .select("id, produto_id, quantidade, data, hora, solicitante, criticidade, status_rastreio, criado_em, rastreio_timestamps, recebido_por, produtos(nome)")
     .order("criado_em", { ascending: false });
+
+  // Colunas rastreio_timestamps/recebido_por podem não existir ainda (migration pendente)
+  if (error) {
+    ({ data, error } = await supabase
+      .from("pedidos_compra")
+      .select("id, produto_id, quantidade, data, hora, solicitante, criticidade, status_rastreio, criado_em, produtos(nome)")
+      .order("criado_em", { ascending: false }));
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ pedidos: data || [] });

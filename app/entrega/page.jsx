@@ -81,15 +81,20 @@ export default function PaginaEntrega() {
 function PedidoCard({ pedido, onAtualizar }) {
   const [finalizando, setFinalizando] = useState(false);
   const [erro, setErro] = useState("");
+  const [recebidoPor, setRecebidoPor] = useState("");
 
   async function finalizarEntrega() {
+    if (!recebidoPor.trim()) {
+      setErro("Informe o nome de quem recebeu a mercadoria");
+      return;
+    }
     setFinalizando(true);
     setErro("");
     try {
       const res = await fetch("/api/entrega/finalizar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pedido_id: pedido.id }),
+        body: JSON.stringify({ pedido_id: pedido.id, recebido_por: recebidoPor.trim() }),
       });
       const data = await res.json();
       if (!res.ok) setErro(data.error || "Erro ao finalizar");
@@ -151,6 +156,22 @@ function PedidoCard({ pedido, onAtualizar }) {
       <p style={{ margin: "4px 0", fontSize: 12, color: "#fbbf24" }}>
         👤 Ajudante: {pedido.nome_ajudante}
       </p>
+
+      {pedido.status_rastreio === 6 ? (
+        <p style={{ margin: "4px 0", fontSize: 12, color: "#a5b4fc" }}>
+          Recebido por: {pedido.recebido_por || "—"}
+        </p>
+      ) : (
+        <div className="campo" style={{ marginTop: 12 }}>
+          <label>Nome de quem recebeu a mercadoria</label>
+          <input
+            type="text"
+            value={recebidoPor}
+            onChange={(e) => setRecebidoPor(e.target.value)}
+            placeholder="Digite o nome do recebedor"
+          />
+        </div>
+      )}
 
       {erro && (
         <p style={{ margin: "8px 0", fontSize: 12, color: "#ef4444" }}>

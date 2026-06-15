@@ -6,28 +6,49 @@ export async function POST(req) {
   const supabase = getSupabase();
   if (!supabase) return supabaseIndisponivel();
 
-  const { pedido_id } = await req.json();
+  const { pedido_id, recebido_por } = await req.json();
   if (!pedido_id) {
     return Response.json({ error: "pedido_id é obrigatório" }, { status: 400 });
   }
+  if (!recebido_por || !recebido_por.trim()) {
+    return Response.json({ error: "Informe o nome de quem recebeu a mercadoria" }, { status: 400 });
+  }
 
   try {
-    // Busca informações do pedido
-    const { data: pedido } = await supabase
+    // Busca informações do pedido (rastreio_timestamps pode não existir ainda)
+    let { data: pedido } = await supabase
       .from("pedidos_compra")
-      .select("id, produtos(nome), solicitante, quantidade")
+      .select("id, produtos(nome), solicitante, quantidade, rastreio_timestamps")
       .eq("id", pedido_id)
       .single();
+
+    if (!pedido) {
+      ({ data: pedido } = await supabase
+        .from("pedidos_compra")
+        .select("id, produtos(nome), solicitante, quantidade")
+        .eq("id", pedido_id)
+        .single());
+    }
 
     if (!pedido) {
       return Response.json({ error: "Pedido não encontrado" }, { status: 404 });
     }
 
-    // Atualiza status de rastreio para ENTREGUE/FINALIZADO (6)
-    const { error: eUpdate } = await supabase
+    const timestamps = { ...(pedido.rastreio_timestamps || {}), 6: new Date().toISOString() };
+
+    // Atualiza status de rastreio para ENTREGUE/FINALIZADO (6) e registra quem recebeu
+    let { error: eUpdate } = await supabase
       .from("pedidos_compra")
-      .update({ status_rastreio: 6 })
+      .update({ status_rastreio: 6, rastreio_timestamps: timestamps, recebido_por: recebido_por.trim() })
       .eq("id", pedido_id);
+
+    // Colunas rastreio_timestamps/recebido_por podem não existir ainda (migration pendente)
+    if (eUpdate) {
+      ({ error: eUpdate } = await supabase
+        .from("pedidos_compra")
+        .update({ status_rastreio: 6 })
+        .eq("id", pedido_id));
+    }
 
     if (eUpdate) {
       return Response.json({ error: eUpdate.message }, { status: 500 });
@@ -40,6 +61,7 @@ export async function POST(req) {
       `Produto: ${pedido.produtos?.nome}\n` +
       `Quantidade: ${pedido.quantidade} un.\n` +
       `Solicitante: ${pedido.solicitante}\n` +
+      `Recebido por: ${recebido_por.trim()}\n` +
       `Status: 🎉 ENTREGUE / FINALIZADO`
     );
 
