@@ -319,11 +319,6 @@ export default function PaginaEstoque() {
                 onChange={(e) => setForm({ ...form, quantidade_minima: parseInt(e.target.value) || 0 })} />
             </div>
             <div className="campo">
-              <label>Quantidade caixa por palete *</label>
-              <input type="number" min="1" required value={form.caixas_por_palete}
-                onChange={(e) => setForm({ ...form, caixas_por_palete: parseInt(e.target.value) || 1 })} />
-            </div>
-            <div className="campo">
               <label>Rua (local do Estoque)</label>
               <input value={form.rua} onChange={(e) => setForm({ ...form, rua: e.target.value })} placeholder="Ex.: Rua 3" />
             </div>
@@ -357,6 +352,13 @@ export default function PaginaEstoque() {
             </div>
             {mostrarInsumos && (
               <>
+                <div className="linha">
+                  <div className="campo">
+                    <label>Quantidade caixa por palete *</label>
+                    <input type="number" min="1" required value={form.caixas_por_palete}
+                      onChange={(e) => setForm({ ...form, caixas_por_palete: parseInt(e.target.value) || 1 })} />
+                  </div>
+                </div>
                 <div className="linha">
                   <div className="campo">
                     <label>Kg Batata por caixa</label>

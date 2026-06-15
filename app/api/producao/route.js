@@ -16,11 +16,20 @@ export async function GET(req) {
     return Response.json({ ordens: data || [] });
   }
 
-  const { data: ordem, error } = await supabase
+  let { data: ordem, error } = await supabase
     .from("ordens_producao")
-    .select("id, numero, meta_paletes, status, criado_em, produtos(nome)")
+    .select("id, numero, meta_paletes, status, criado_em, produtos(nome, caixas_por_palete)")
     .eq("numero", numero.trim())
     .maybeSingle();
+
+  // Coluna caixas_por_palete pode não existir ainda (migration pendente)
+  if (error) {
+    ({ data: ordem, error } = await supabase
+      .from("ordens_producao")
+      .select("id, numero, meta_paletes, status, criado_em, produtos(nome)")
+      .eq("numero", numero.trim())
+      .maybeSingle());
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!ordem) return Response.json({ error: `Ordem "${numero}" não encontrada.` }, { status: 404 });
@@ -54,6 +63,7 @@ export async function GET(req) {
       meta_paletes: ordem.meta_paletes,
       status: ordem.status,
       produzido,
+      caixasPorPalete: ordem.produtos?.caixas_por_palete || 1,
       percentual: ordem.meta_paletes ? Math.min(100, Math.round((produzido / ordem.meta_paletes) * 100)) : 0,
     },
     pedidos: pedidos.data || [],

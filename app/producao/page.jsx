@@ -17,7 +17,7 @@ const INSUMOS_CONFIG = [
   { chave: "kg_filme_bopp_por_caixa", label: "Filme BOPP", unidade: "kg" },
   { chave: "kg_condimento_por_caixa", label: "Condimento", unidade: "kg" },
   { chave: "kg_oleo_por_caixa", label: "Óleo", unidade: "kg" },
-  { chave: "cm_fita_adesiva_por_caixa", label: "Fita Adesiva", unidade: "cm" },
+  { chave: "cm_fita_adesiva_por_caixa", label: "Fita Adesiva", unidade: "m", fator: 0.01 },
 ];
 
 export default function PaginaProducao() {
@@ -220,7 +220,13 @@ export default function PaginaProducao() {
           <div className="grid g4" style={{ marginBottom: 18 }}>
             <div className="card"><h3>Produto</h3><div style={{ fontWeight: 700, fontSize: 15 }}>{o.produto || "—"}</div></div>
             <div className="card"><h3>Meta</h3><div className="kpi">{o.meta_paletes} <small>paletes</small></div></div>
-            <div className="card"><h3>Produzido</h3><div className="kpi">{o.produzido} <small>paletes</small></div></div>
+            <div className="card">
+              <h3>Produzido</h3>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div className="kpi" style={{ fontSize: 26 }}>{((o.produzido || 0) * (o.caixasPorPalete || 1)).toLocaleString("pt-BR")} <small>cx</small></div>
+                <div className="kpi" style={{ fontSize: 26 }}>{(o.produzido || 0).toLocaleString("pt-BR")} <small>paletes</small></div>
+              </div>
+            </div>
             <div className="card"><h3>Status</h3><span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span></div>
           </div>
 
@@ -374,7 +380,7 @@ export default function PaginaProducao() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
                     {INSUMOS_CONFIG.map((item) => {
                       const taxa = pedidoSelecionado.insumos?.[item.chave] || 0;
-                      const valor = taxa * produzidoCaixas;
+                      const valor = taxa * produzidoCaixas * (item.fator ?? 1);
                       return (
                         <div key={item.chave} style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
                           <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>{item.label}</div>
