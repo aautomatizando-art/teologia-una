@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 export const dynamic = "force-dynamic";
 import TopBar from "@/components/TopBar";
+import { pertenceALinhas } from "@/lib/linhas";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -182,10 +183,12 @@ function PainelOP({ titulo, cor, linhas, indice }) {
     { name: "Produzido", value: pct },
     { name: "Restante", value: Math.max(0, 100 - pct) },
   ];
-  const linha = (dados?.registros || []).map((r) => {
-    const d = new Date(r.registrado_em);
-    return { hora: d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }), paletes: r.paletes };
-  });
+  const linha = (dados?.registros || [])
+    .filter((r) => pertenceALinhas(r, linhas))
+    .map((r) => {
+      const d = new Date(r.registrado_em);
+      return { hora: d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }), paletes: r.paletes };
+    });
   let acc = 0;
   const linhaAcum = linha.map((p) => ({ ...p, acumulado: (acc += p.paletes) }));
   const pedidosDados = (dados?.pedidos || []).map((p) => ({ name: p.codigo_pedido, value: p.qtd_planejada }));
@@ -465,7 +468,10 @@ function PainelOP({ titulo, cor, linhas, indice }) {
             </div>
 
             <div className="card">
-              <h3>📈 Paletes produzidos × tempo</h3>
+              <h3>📈 Paletes produzidos × tempo <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>(Linhas {linhas.join(" e ")})</span></h3>
+              {linhaAcum.length === 0 ? (
+                <p className="muted" style={{ marginTop: 12 }}>Nenhum lançamento registrado para estas linhas.</p>
+              ) : (
               <div style={{ height: 260 }}>
                 <ResponsiveContainer>
                   <LineChart data={linhaAcum} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
@@ -479,6 +485,7 @@ function PainelOP({ titulo, cor, linhas, indice }) {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              )}
             </div>
           </div>
 

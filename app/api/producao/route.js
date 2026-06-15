@@ -100,6 +100,8 @@ export async function GET(req) {
     registros,
     perdas: agrupar(perdas),
     problemas: agrupar(problemas),
+    perdasDetalhe: perdas,
+    problemasDetalhe: problemas,
     lancamentos,
   });
 }

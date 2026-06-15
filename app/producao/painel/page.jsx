@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 export const dynamic = "force-dynamic";
-import TopBar from "@/components/TopBar";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+  ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
+import { pertenceALinhas, agruparPorTipo } from "@/lib/linhas";
 
 const TOOLTIP = { background: "#1a2347", border: "1px solid #26305c", borderRadius: 10, color: "#e8ecf8" };
 
@@ -16,19 +16,6 @@ const PAINEIS = [
 ];
 
 const REFRESH_MS = 30000;
-
-// soma os paletes dos lançamentos cujas linhas têm interseção com as linhas do painel
-function paletesPorLinhas(registros, linhasAlvo) {
-  return (registros || [])
-    .filter((r) => {
-      const ls = (r.linhas || "")
-        .split(",")
-        .map((s) => parseInt(s.trim(), 10))
-        .filter((n) => !isNaN(n));
-      return ls.some((l) => linhasAlvo.includes(l));
-    })
-    .reduce((s, r) => s + (r.paletes || 0), 0);
-}
 
 export default function PainelVisualizacao() {
   const [paineis, setPaineis] = useState([null, null, null]);
@@ -58,68 +45,30 @@ export default function PainelVisualizacao() {
     return () => clearInterval(id);
   }, []);
 
-  // total geral da(s) OP: deduplica por número (evita somar 2x quando painéis compartilham a mesma OP)
-  const distintas = {};
-  for (const d of paineis) {
-    const o = d?.ordem;
-    if (o && !distintas[o.numero]) distintas[o.numero] = o;
-  }
-  const lista = Object.values(distintas);
-  const totalProduzidoCx = lista.reduce((s, o) => s + (o.produzido || 0) * (o.caixasPorPalete || 1), 0);
-  const totalMeta = lista.reduce((s, o) => s + (o.meta_paletes || 0), 0);
-  const totalPct = totalMeta ? Math.min(100, Math.round((totalProduzidoCx / totalMeta) * 100)) : 0;
-
-  // comparativo de produção própria de cada painel (por linhas), independente de repetir a mesma OP
-  const dadosBarra = paineis.map((d, i) => ({
-    nome: `${PAINEIS[i].titulo} (Linhas ${PAINEIS[i].linhas.join("+")})`,
-    paletes: paletesPorLinhas(d?.registros, PAINEIS[i].linhas),
-    cor: PAINEIS[i].cor,
-  }));
-
   return (
     <div className="shell" style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <TopBar />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <a href="/producao" className="btn sec" style={{ textDecoration: "none" }}>← Voltar para lançamentos</a>
+        <a href="/producao" className="btn sec" style={{ textDecoration: "none" }}>← Voltar</a>
+        <h2 style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a5b4fc", margin: 0 }}>
+          📺 Visão geral da produção
+        </h2>
         <span className="muted" style={{ fontSize: 12 }}>
           {carregando ? "Atualizando..." : "Atualiza automaticamente a cada 30s"}
         </span>
       </div>
 
-      <div style={{ flex: "0 0 auto", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 18, marginBottom: 18 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
         {paineis.map((d, i) => (
-          <PainelCard key={i} dados={d} cor={PAINEIS[i].cor} titulo={PAINEIS[i].titulo} linhas={PAINEIS[i].linhas} />
+          <PainelColuna key={i} dados={d} cor={PAINEIS[i].cor} titulo={PAINEIS[i].titulo} linhas={PAINEIS[i].linhas} />
         ))}
-      </div>
-
-      <div className="card" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        <h3>📊 Produção por linha</h3>
-        <div style={{ display: "flex", gap: 28, alignItems: "baseline", margin: "10px 0 6px" }}>
-          <div className="muted" style={{ fontSize: 15 }}>
-            Total geral da OP em produção: <strong style={{ color: "#e8ecf8" }}>{totalPct}%</strong>
-            {" "}({totalProduzidoCx.toLocaleString("pt-BR")} / {totalMeta.toLocaleString("pt-BR")} caixas)
-          </div>
-        </div>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dadosBarra} layout="vertical" margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#26305c" horizontal={false} />
-              <XAxis type="number" allowDecimals={false} stroke="#8b96c0" />
-              <YAxis type="category" dataKey="nome" stroke="#8b96c0" width={170} />
-              <Tooltip contentStyle={TOOLTIP} formatter={(v) => [`${v} paletes`, "Produzido"]} />
-              <Bar dataKey="paletes" radius={[0, 8, 8, 0]} barSize={36}>
-                {dadosBarra.map((d, i) => <Cell key={i} fill={d.cor} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     </div>
   );
 }
 
-function PainelCard({ dados, cor, titulo, linhas }) {
+function PainelColuna({ dados, cor, titulo, linhas }) {
   const o = dados?.ordem;
+
   if (!o) {
     return (
       <div className="card" style={{ borderTop: `3px solid ${cor}` }}>
@@ -128,21 +77,101 @@ function PainelCard({ dados, cor, titulo, linhas }) {
       </div>
     );
   }
-  const produzido = paletesPorLinhas(dados?.registros, linhas);
+
+  const registrosFiltrados = (dados?.registros || []).filter((r) => pertenceALinhas(r, linhas));
+  let acc = 0;
+  const linhaAcum = registrosFiltrados.map((r) => {
+    const d = new Date(r.registrado_em);
+    acc += r.paletes || 0;
+    return {
+      hora: d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+      acumulado: acc,
+    };
+  });
+  const produzido = acc;
   const produzidoCx = produzido * (o.caixasPorPalete || 1);
+
+  const perdas = agruparPorTipo((dados?.perdasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
+  const problemas = agruparPorTipo((dados?.problemasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
+
   return (
-    <div className="card" style={{ borderTop: `3px solid ${cor}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h3 style={{ margin: 0 }}>🏭 {titulo} <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>(Linhas {linhas.join(" e ")})</span></h3>
-        <span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
+      <div className="card" style={{ borderTop: `3px solid ${cor}`, flex: "0 0 auto", padding: "12px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <h3 style={{ margin: 0, fontSize: 13 }}>
+            🏭 {titulo} <span className="muted" style={{ fontWeight: 400, fontSize: 11 }}>(Linhas {linhas.join("+")})</span>
+          </h3>
+          <span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 8 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>{o.numero}</div>
+            <div className="muted" style={{ fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {o.produto || "—"}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div className="kpi" style={{ fontSize: 24 }}>{produzido.toLocaleString("pt-BR")} <small>paletes</small></div>
+            <div className="muted" style={{ fontSize: 11 }}>{produzidoCx.toLocaleString("pt-BR")} cx</div>
+          </div>
+        </div>
       </div>
-      <div style={{ fontWeight: 800, fontSize: 17, marginTop: 8 }}>{o.numero}</div>
-      <div className="muted" style={{ fontSize: 13, marginBottom: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {o.produto || "—"}
+
+      <div className="card" style={{ flex: "1 1 0", minHeight: 0, padding: "12px 16px", display: "flex", flexDirection: "column" }}>
+        <h3 style={{ fontSize: 13, marginBottom: 6 }}>📈 Paletes × tempo</h3>
+        {linhaAcum.length === 0 ? (
+          <div className="muted" style={{ fontSize: 12 }}>Sem lançamentos para estas linhas.</div>
+        ) : (
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={linhaAcum} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke="#26305c" strokeDasharray="3 3" />
+                <XAxis dataKey="hora" tick={{ fill: "#8b96c0", fontSize: 9 }} />
+                <YAxis tick={{ fill: "#8b96c0", fontSize: 9 }} allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP} />
+                <Line type="monotone" dataKey="acumulado" name="Acumulado" stroke={cor} strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
-      <div className="kpi" style={{ fontSize: 32 }}>{produzido.toLocaleString("pt-BR")} <small>paletes</small></div>
-      <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
-        {produzidoCx.toLocaleString("pt-BR")} caixas produzidas por estas linhas
+
+      <div className="card" style={{ flex: "1 1 0", minHeight: 0, padding: "12px 16px", display: "flex", flexDirection: "column" }}>
+        <h3 style={{ fontSize: 13, marginBottom: 6 }}>📦 Perdas de embalagem</h3>
+        {perdas.length === 0 ? (
+          <div className="muted" style={{ fontSize: 12 }}>Sem perdas registradas.</div>
+        ) : (
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={perdas} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke="#26305c" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="tipo" tick={{ fill: "#8b96c0", fontSize: 9 }} />
+                <YAxis tick={{ fill: "#8b96c0", fontSize: 9 }} allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP} />
+                <Bar dataKey="quantidade" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ flex: "1 1 0", minHeight: 0, padding: "12px 16px", display: "flex", flexDirection: "column" }}>
+        <h3 style={{ fontSize: 13, marginBottom: 6 }}>🧪 Problemas qualitativos</h3>
+        {problemas.length === 0 ? (
+          <div className="muted" style={{ fontSize: 12 }}>Sem problemas registrados.</div>
+        ) : (
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={problemas} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid stroke="#26305c" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="tipo" tick={{ fill: "#8b96c0", fontSize: 9 }} />
+                <YAxis tick={{ fill: "#8b96c0", fontSize: 9 }} allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP} />
+                <Bar dataKey="quantidade" fill="#ef4444" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );
