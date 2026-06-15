@@ -178,7 +178,7 @@ export default function PaginaEstoque() {
                   <CartesianGrid stroke="#26305c" strokeDasharray="3 3" />
                   <XAxis dataKey="nome" tick={{ fill: "#8b96c0", fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={90} />
                   <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} />
-                  <Tooltip contentStyle={TOOLTIP} cursor={{ fill: "rgba(99,102,241,0.08)" }} separator="" formatter={(v) => [`${v.toLocaleString("pt-BR")} un.`, ""]} />
+                  <Tooltip contentStyle={TOOLTIP} itemStyle={{ color: "#fff" }} cursor={{ fill: "rgba(99,102,241,0.08)" }} separator="" formatter={(v) => [`${v.toLocaleString("pt-BR")} un.`, ""]} />
                   <Bar dataKey="quantidade" name="Quantidade" radius={[6, 6, 0, 0]} onClick={(data) => setInfoProduto(data.payload)}>
                     {lista.map((p) => <Cell key={p.id} fill={corStatus(p.status).barra} />)}
                   </Bar>
