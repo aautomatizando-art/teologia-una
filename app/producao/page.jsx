@@ -11,6 +11,15 @@ import {
 const CORES = ["#6366f1", "#8b5cf6", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6"];
 const TOOLTIP = { background: "#1a2347", border: "1px solid #26305c", borderRadius: 10, color: "#e8ecf8" };
 
+const INSUMOS_CONFIG = [
+  { chave: "kg_batata_por_caixa", label: "Batata", unidade: "kg" },
+  { chave: "caixa_por_caixa", label: "Caixa", unidade: "cx" },
+  { chave: "kg_filme_bopp_por_caixa", label: "Filme BOPP", unidade: "kg" },
+  { chave: "kg_condimento_por_caixa", label: "Condimento", unidade: "kg" },
+  { chave: "kg_oleo_por_caixa", label: "Óleo", unidade: "kg" },
+  { chave: "cm_fita_adesiva_por_caixa", label: "Fita Adesiva", unidade: "cm" },
+];
+
 export default function PaginaProducao() {
   const [op, setOp] = useState("");
   const [dados, setDados] = useState(null);
@@ -213,7 +222,8 @@ export default function PaginaProducao() {
 
           {/* ── BLOCO DE PRODUÇÃO POR PEDIDO ── */}
           {pedidos.length > 0 && (
-            <div className="card" style={{ marginBottom: 18 }}>
+            <div className="grid g2" style={{ marginBottom: 18, gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
+            <div className="card">
               <h3>📦 Produzir por Pedido</h3>
               {erroPedido && <div className="erro">{erroPedido}</div>}
               {okPedido && <div className="aviso" style={{ marginBottom: 14, borderColor: "rgba(34,197,94,.4)", color: "#86efac", background: "rgba(34,197,94,.1)" }}>{okPedido}</div>}
@@ -245,7 +255,7 @@ export default function PaginaProducao() {
                     <div className="card"><h3>Status</h3><span className={`badge ${pedidoSelecionado.status === "FINALIZADO" ? "ok" : "alto"}`}>{pedidoSelecionado.status}</span></div>
                   </div>
 
-                  <form onSubmit={finalizarPedido} style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+                  <form onSubmit={finalizarPedido} style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
                     <div className="campo">
                       <label>Caixas a registrar {pedidoSelecionado.status === "FINALIZADO" ? "(Pedido finalizado)" : ""}</label>
                       <input
@@ -322,29 +332,55 @@ export default function PaginaProducao() {
               )}
 
               {/* Tabela com status de cada pedido */}
-              {pedidos.length > 0 && (
-                <div style={{ marginTop: 18 }}>
-                  <h3 style={{ fontSize: 13, color: "#8b96c0", marginBottom: 10 }}>Status dos pedidos da OP:</h3>
-                  <table className="tab">
-                    <thead>
-                      <tr><th>Pedido</th><th>Planejado</th><th>Produzido</th><th>Estoque</th><th>Total</th><th>%</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                      {pedidos.map((p) => (
-                        <tr key={p.id}>
-                          <td style={{ fontWeight: 700 }}>{p.codigo}</td>
-                          <td>{p.qtd_planejada} caixas</td>
-                          <td>{p.produzido} caixas</td>
-                          <td style={{ color: "#86efac" }}>{p.estoque} caixas</td>
-                          <td style={{ fontWeight: 700, color: "#fbbf24" }}>{p.totalDisponivel} caixas</td>
-                          <td>{p.percentual}%</td>
-                          <td><span className={`badge ${p.status === "FINALIZADO" ? "ok" : "alto"}`}>{p.status}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div style={{ marginTop: 18, overflowX: "auto" }}>
+                <h3 style={{ fontSize: 13, color: "#8b96c0", marginBottom: 10 }}>Status dos pedidos da OP:</h3>
+                <table className="tab">
+                  <thead>
+                    <tr><th>Pedido</th><th>Planejado</th><th>Produzido</th><th>Estoque</th><th>Total</th><th>%</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    {pedidos.map((p) => (
+                      <tr key={p.id}>
+                        <td style={{ fontWeight: 700 }}>{p.codigo}</td>
+                        <td>{p.qtd_planejada} caixas</td>
+                        <td>{p.produzido} caixas</td>
+                        <td style={{ color: "#86efac" }}>{p.estoque} caixas</td>
+                        <td style={{ fontWeight: 700, color: "#fbbf24" }}>{p.totalDisponivel} caixas</td>
+                        <td>{p.percentual}%</td>
+                        <td><span className={`badge ${p.status === "FINALIZADO" ? "ok" : "alto"}`}>{p.status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3>🧪 Insumos do Pedido</h3>
+              {!pedidoSelecionado ? (
+                <p className="muted">Selecione um pedido para ver o consumo de insumos.</p>
+              ) : (
+                <>
+                  <p className="sub" style={{ marginTop: -8, marginBottom: 14 }}>
+                    Consumo estimado para {pedidoSelecionado.produzido.toLocaleString("pt-BR")} caixas produzidas
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+                    {INSUMOS_CONFIG.map((item) => {
+                      const taxa = pedidoSelecionado.insumos?.[item.chave] || 0;
+                      const valor = taxa * pedidoSelecionado.produzido;
+                      return (
+                        <div key={item.chave} style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>{item.label}</div>
+                          <div style={{ fontSize: 20, fontWeight: 800 }}>
+                            {valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} <small style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>{item.unidade}</small>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
+            </div>
             </div>
           )}
 

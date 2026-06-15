@@ -1,5 +1,18 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 
+const GRUPOS_OPCIONAIS = [
+  {
+    regex: /kg_batata_por_caixa|caixa_por_caixa|kg_filme_bopp_por_caixa|kg_condimento_por_caixa|kg_oleo_por_caixa|cm_fita_adesiva_por_caixa/,
+    chaves: ["kg_batata_por_caixa", "caixa_por_caixa", "kg_filme_bopp_por_caixa", "kg_condimento_por_caixa", "kg_oleo_por_caixa", "cm_fita_adesiva_por_caixa"],
+  },
+  { regex: /rua|prateleira|lote/, chaves: ["rua", "prateleira", "lote"] },
+  { regex: /caixas_por_palete/, chaves: ["caixas_por_palete"] },
+];
+
+function numeroOuNulo(v) {
+  return v === undefined || v === null || v === "" ? null : Number(v);
+}
+
 // POST /api/estoque/editar — Editar configurações de produto
 export async function POST(req) {
   const supabase = getSupabase();
@@ -15,6 +28,12 @@ export async function POST(req) {
     rua,
     prateleira,
     lote,
+    kg_batata_por_caixa,
+    caixa_por_caixa,
+    kg_filme_bopp_por_caixa,
+    kg_condimento_por_caixa,
+    kg_oleo_por_caixa,
+    cm_fita_adesiva_por_caixa,
   } = await req.json();
 
   if (!produto_id || !nome_produto || !quantidade_maxima || !quantidade_minima || !caixas_por_palete) {
@@ -22,7 +41,7 @@ export async function POST(req) {
   }
 
   try {
-    const campos = {
+    let campos = {
       nome: nome_produto,
       qtd_maxima: quantidade_maxima,
       qtd_minima: quantidade_minima,
@@ -30,22 +49,27 @@ export async function POST(req) {
       rua: rua || null,
       prateleira: prateleira || null,
       lote: lote || null,
+      kg_batata_por_caixa: numeroOuNulo(kg_batata_por_caixa),
+      caixa_por_caixa: numeroOuNulo(caixa_por_caixa),
+      kg_filme_bopp_por_caixa: numeroOuNulo(kg_filme_bopp_por_caixa),
+      kg_condimento_por_caixa: numeroOuNulo(kg_condimento_por_caixa),
+      kg_oleo_por_caixa: numeroOuNulo(kg_oleo_por_caixa),
+      cm_fita_adesiva_por_caixa: numeroOuNulo(cm_fita_adesiva_por_caixa),
     };
     if (quantidade !== undefined && quantidade !== null) campos.quantidade = quantidade;
 
-    // Atualizar produto
-    let { error: eUpdate } = await supabase.from("produtos").update(campos).eq("id", produto_id);
+    // Tenta atualizar, removendo grupos de colunas que ainda não existem (migrations pendentes)
+    let eUpdate;
+    for (let tentativa = 0; tentativa <= GRUPOS_OPCIONAIS.length; tentativa++) {
+      ({ error: eUpdate } = await supabase.from("produtos").update(campos).eq("id", produto_id));
+      if (!eUpdate) break;
 
-    // Colunas de localização podem não existir ainda (migration pendente)
-    if (eUpdate?.code === "PGRST204" || /rua|prateleira|lote/.test(eUpdate?.message || "")) {
-      const { rua: _rua, prateleira: _prateleira, lote: _lote, ...semLocalizacao } = campos;
-      ({ error: eUpdate } = await supabase.from("produtos").update(semLocalizacao).eq("id", produto_id));
-    }
+      const msg = eUpdate.message || "";
+      const grupo = GRUPOS_OPCIONAIS.find((g) => g.chaves.some((c) => c in campos) && (eUpdate.code === "PGRST204" || g.regex.test(msg)));
+      if (!grupo) break;
 
-    // Coluna caixas_por_palete pode não existir ainda (migration pendente)
-    if (eUpdate?.code === "PGRST204" || eUpdate?.message?.includes("caixas_por_palete")) {
-      const { caixas_por_palete: _cpp, rua: _rua2, prateleira: _prateleira2, lote: _lote2, ...semExtras } = campos;
-      ({ error: eUpdate } = await supabase.from("produtos").update(semExtras).eq("id", produto_id));
+      campos = { ...campos };
+      for (const c of grupo.chaves) delete campos[c];
     }
 
     if (eUpdate) {

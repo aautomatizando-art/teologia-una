@@ -5,6 +5,35 @@ import { enviarWhatsApp } from "@/lib/whatsapp";
 // Senha de produção (SHA-256) — padrão: "producao123"
 const SENHA_HASH = "247c5a87c4292ac36590492c216e8f565e56b85584892b89fb45dd3a9b6fd2ab";
 
+const COLS_INSUMOS = "kg_batata_por_caixa, caixa_por_caixa, kg_filme_bopp_por_caixa, kg_condimento_por_caixa, kg_oleo_por_caixa, cm_fita_adesiva_por_caixa";
+const INSUMOS_VAZIOS = {
+  kg_batata_por_caixa: null,
+  caixa_por_caixa: null,
+  kg_filme_bopp_por_caixa: null,
+  kg_condimento_por_caixa: null,
+  kg_oleo_por_caixa: null,
+  cm_fita_adesiva_por_caixa: null,
+};
+
+// Busca produto incluindo insumos; cai para sem insumos se a migration ainda não foi aplicada
+async function buscarProdutoComInsumos(supabase, produtoId) {
+  const { data, error } = await supabase
+    .from("produtos")
+    .select(`quantidade, ${COLS_INSUMOS}`)
+    .eq("id", produtoId)
+    .single();
+
+  if (!error) return data;
+
+  const { data: dataBasica } = await supabase
+    .from("produtos")
+    .select("quantidade")
+    .eq("id", produtoId)
+    .single();
+
+  return dataBasica ? { ...dataBasica, ...INSUMOS_VAZIOS } : null;
+}
+
 // GET /api/producao/pedido?ordem_id=<id> → lista pedidos da OP com progresso
 export async function GET(req) {
   const supabase = getSupabase();
@@ -19,7 +48,7 @@ export async function GET(req) {
     .eq("ordem_id", Number(ordemId));
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Para cada pedido, busca o estoque disponível
+  // Para cada pedido, busca o estoque disponível e os insumos do produto
   const pedidosComEstoque = await Promise.all(
     (data || []).map(async (p) => {
       // Busca o produto_id via código_pedido
@@ -31,13 +60,14 @@ export async function GET(req) {
         .single();
 
       let estoque = 0;
+      let insumos = { ...INSUMOS_VAZIOS };
       if (pedidoCompra?.produto_id) {
-        const { data: produto } = await supabase
-          .from("produtos")
-          .select("quantidade")
-          .eq("id", pedidoCompra.produto_id)
-          .single();
+        const produto = await buscarProdutoComInsumos(supabase, pedidoCompra.produto_id);
         estoque = produto?.quantidade || 0;
+        if (produto) {
+          const { quantidade, ...resto } = produto;
+          insumos = resto;
+        }
       }
 
       const produzido = p.quantidade_produzida || 0;
@@ -53,6 +83,7 @@ export async function GET(req) {
         totalDisponivel,
         percentual,
         status: totalDisponivel >= p.qtd_planejada ? "FINALIZADO" : "PRODUZINDO",
+        insumos,
       };
     })
   );

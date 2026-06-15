@@ -30,6 +30,7 @@ export default function PaginaEstoque() {
   const [pedindoSenhaQtd, setPedindoSenhaQtd] = useState(false);
   const [senhaQtd, setSenhaQtd] = useState("");
   const [erroQtd, setErroQtd] = useState("");
+  const [mostrarInsumos, setMostrarInsumos] = useState(false);
 
   async function carregar() {
     setCarregando(true);
@@ -97,10 +98,17 @@ export default function PaginaEstoque() {
         rua: produtoParaEditar.rua || "",
         prateleira: produtoParaEditar.prateleira || "",
         lote: produtoParaEditar.lote || "",
+        kg_batata_por_caixa: produtoParaEditar.kg_batata_por_caixa ?? "",
+        caixa_por_caixa: produtoParaEditar.caixa_por_caixa ?? "",
+        kg_filme_bopp_por_caixa: produtoParaEditar.kg_filme_bopp_por_caixa ?? "",
+        kg_condimento_por_caixa: produtoParaEditar.kg_condimento_por_caixa ?? "",
+        kg_oleo_por_caixa: produtoParaEditar.kg_oleo_por_caixa ?? "",
+        cm_fita_adesiva_por_caixa: produtoParaEditar.cm_fita_adesiva_por_caixa ?? "",
         data: agora.toISOString().slice(0, 10),
         hora: agora.toTimeString().slice(0, 5),
       });
       setQtdDesbloqueada(false);
+      setMostrarInsumos(false);
       setModal(produtoParaEditar);
       setMsgOk("");
     } catch {
@@ -341,6 +349,53 @@ export default function PaginaEstoque() {
               </div>
               <small className="muted">Atualizado automaticamente pela produção e controle de estoque. Alteração manual exige senha ADM.</small>
             </div>
+
+            <div className="campo" style={{ marginTop: 4 }}>
+              <button type="button" className="btn sec mini" onClick={() => setMostrarInsumos(!mostrarInsumos)}>
+                {mostrarInsumos ? "▾" : "▸"} 📦 Insumos (consumo por caixa produzida)
+              </button>
+            </div>
+            {mostrarInsumos && (
+              <>
+                <div className="linha">
+                  <div className="campo">
+                    <label>Kg Batata por caixa</label>
+                    <input type="number" step="0.001" min="0" value={form.kg_batata_por_caixa}
+                      onChange={(e) => setForm({ ...form, kg_batata_por_caixa: e.target.value })} />
+                  </div>
+                  <div className="campo">
+                    <label>Caixa / Caixa</label>
+                    <input type="number" step="0.001" min="0" value={form.caixa_por_caixa}
+                      onChange={(e) => setForm({ ...form, caixa_por_caixa: e.target.value })} />
+                  </div>
+                </div>
+                <div className="linha">
+                  <div className="campo">
+                    <label>Kg Filme BOPP por caixa</label>
+                    <input type="number" step="0.001" min="0" value={form.kg_filme_bopp_por_caixa}
+                      onChange={(e) => setForm({ ...form, kg_filme_bopp_por_caixa: e.target.value })} />
+                  </div>
+                  <div className="campo">
+                    <label>Kg Condimento por caixa</label>
+                    <input type="number" step="0.001" min="0" value={form.kg_condimento_por_caixa}
+                      onChange={(e) => setForm({ ...form, kg_condimento_por_caixa: e.target.value })} />
+                  </div>
+                </div>
+                <div className="linha">
+                  <div className="campo">
+                    <label>Kg Óleo por caixa</label>
+                    <input type="number" step="0.001" min="0" value={form.kg_oleo_por_caixa}
+                      onChange={(e) => setForm({ ...form, kg_oleo_por_caixa: e.target.value })} />
+                  </div>
+                  <div className="campo">
+                    <label>Cm Fita Adesiva por caixa</label>
+                    <input type="number" step="0.001" min="0" value={form.cm_fita_adesiva_por_caixa}
+                      onChange={(e) => setForm({ ...form, cm_fita_adesiva_por_caixa: e.target.value })} />
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="acoes">
               <button type="button" className="btn sec" onClick={() => setModal(null)}>Cancelar</button>
               <button className="btn" disabled={salvando}>{salvando ? "Salvando..." : "Confirmar Edição"}</button>
