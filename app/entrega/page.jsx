@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import TopBar from "@/components/TopBar";
 
 const EMOJI_CRIT = { EMERGENCIAL: "🟣", URGENTE: "🔴", MODERADO: "🟢" };
 
@@ -44,8 +43,6 @@ export default function PaginaEntrega() {
 
   return (
     <div className="shell">
-      <TopBar />
-
       <div className="card" style={{ marginBottom: 18 }}>
         <h3>🚚 Entrega Finalizada</h3>
 
