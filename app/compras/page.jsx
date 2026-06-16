@@ -8,6 +8,15 @@ const COLUNAS = [
   { chave: "MODERADO", classe: "moderado", emoji: "🟢" },
 ];
 
+const ETAPA_LABEL = ["", "📋 Gerado OP", "🏭 Produzindo", "📦 No estoque", "🚛 Em separação", "🛣️ Em rota", "✅ Entregue"];
+
+function corTicket(status) {
+  if (status === 6) return { background: "rgba(34,197,94,.22)", borderLeft: "4px solid #22c55e" };
+  if (status === 5) return { background: "rgba(6,182,212,.12)", borderLeft: "4px solid #06b6d4" };
+  if (status === 3 || status === 4) return { background: "rgba(34,197,94,.10)", borderLeft: "4px solid #4ade80" };
+  return {};
+}
+
 const EMOJI_CRIT = { EMERGENCIAL: "🟣", URGENTE: "🔴", MODERADO: "🟢" };
 
 function agoraData() { return new Date().toISOString().slice(0, 10); }
@@ -375,7 +384,7 @@ export default function PaginaCompras() {
       {pedidos && (
         <div className="kanban" style={{ marginBottom: 18 }}>
           {COLUNAS.map((c) => {
-            const itens = pedidos.filter((p) => p.criticidade === c.chave && p.status_rastreio !== 6);
+            const itens = pedidos.filter((p) => p.criticidade === c.chave);
             return (
               <div key={c.chave} className={`coluna ${c.classe}`}>
                 <div className="cab">
@@ -386,10 +395,15 @@ export default function PaginaCompras() {
                   {itens.length === 0 && <span className="muted center" style={{ fontSize: 13, padding: 20 }}>Nenhum pedido</span>}
                   {itens.map((p) => (
                     <a key={p.id} className="ticket" href={`/rastreio?pedido=${p.id}`} title="Abrir rastreio"
-                      style={p.status_rastreio === 3 ? { background: "rgba(34, 197, 94, .2)", borderLeft: "4px solid #22c55e" } : {}}>
+                      style={corTicket(p.status_rastreio)}>
                       <span className="prod">#{p.id} • {p.produtos?.nome}</span>
                       <span className="meta">Qtd: {p.quantidade} • {p.solicitante}</span>
-                      <span className="meta">📅 {p.data?.split("-").reverse().join("/")} ⏰ {String(p.hora).slice(0, 5)}{p.status_rastreio === 3 ? " • ✅ ESTOQUE" : idsVinculados.has(p.id) ? " • 🏭 em OP" : ""}</span>
+                      <span className="meta">📅 {p.data?.split("-").reverse().join("/")} ⏰ {String(p.hora).slice(0, 5)}</span>
+                      {p.status_rastreio > 0 && (
+                        <span style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: p.status_rastreio === 6 ? "#4ade80" : p.status_rastreio >= 3 ? "#86efac" : "#a5b4fc" }}>
+                          {ETAPA_LABEL[p.status_rastreio]}
+                        </span>
+                      )}
                     </a>
                   ))}
                 </div>
