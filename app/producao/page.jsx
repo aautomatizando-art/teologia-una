@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 export const dynamic = "force-dynamic";
 import TopBar from "@/components/TopBar";
-import { pertenceALinhas } from "@/lib/linhas";
+import { pertenceALinhas, agruparPorTipo } from "@/lib/linhas";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -192,6 +192,8 @@ function PainelOP({ titulo, cor, linhas, indice }) {
   let acc = 0;
   const linhaAcum = linha.map((p) => ({ ...p, acumulado: (acc += p.paletes) }));
   const pedidosDados = (dados?.pedidos || []).map((p) => ({ name: p.codigo_pedido, value: p.qtd_planejada }));
+  const perdasFiltradas = agruparPorTipo((dados?.perdasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
+  const problemasFiltrados = agruparPorTipo((dados?.problemasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
 
   return (
     <div style={{ marginBottom: 36 }}>
@@ -510,7 +512,7 @@ function PainelOP({ titulo, cor, linhas, indice }) {
               <h3>📦 Perdas de embalagem</h3>
               <div style={{ height: 240 }}>
                 <ResponsiveContainer>
-                  <BarChart data={dados.perdas} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                  <BarChart data={perdasFiltradas} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                     <CartesianGrid stroke="#26305c" strokeDasharray="3 3" />
                     <XAxis dataKey="tipo" tick={{ fill: "#8b96c0", fontSize: 10 }} interval={0} />
                     <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} />
@@ -525,7 +527,7 @@ function PainelOP({ titulo, cor, linhas, indice }) {
               <h3>🧪 Problemas qualitativos</h3>
               <div style={{ height: 240 }}>
                 <ResponsiveContainer>
-                  <BarChart data={dados.problemas} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                  <BarChart data={problemasFiltrados} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
                     <CartesianGrid stroke="#26305c" strokeDasharray="3 3" />
                     <XAxis dataKey="tipo" tick={{ fill: "#8b96c0", fontSize: 10 }} interval={0} />
                     <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} />

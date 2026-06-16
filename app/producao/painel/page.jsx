@@ -90,7 +90,9 @@ function PainelColuna({ dados, cor, titulo, linhas }) {
   });
   const produzido = acc;
   const produzidoCx = produzido * (o.caixasPorPalete || 1);
-  const pct = o.meta_paletes ? Math.min(100, Math.round((produzidoCx / o.meta_paletes) * 100)) : 0;
+  // percentual total da OP (todos painéis somados) — fica igual nos 3 quando compartilham a mesma OP
+  const pct = o.percentual ?? 0;
+  const totalOpCx = Math.round((o.produzido || 0) * (o.caixasPorPalete || 1));
 
   const perdas = agruparPorTipo((dados?.perdasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
   const problemas = agruparPorTipo((dados?.problemasDetalhe || []).filter((r) => pertenceALinhas(r, linhas)));
@@ -119,7 +121,7 @@ function PainelColuna({ dados, cor, titulo, linhas }) {
         <div style={{ marginTop: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
             <span className="muted" style={{ fontSize: 11 }}>
-              {produzidoCx.toLocaleString("pt-BR")} / {(o.meta_paletes || 0).toLocaleString("pt-BR")} cx
+              {totalOpCx.toLocaleString("pt-BR")} / {(o.meta_paletes || 0).toLocaleString("pt-BR")} cx (OP total)
             </span>
             <span style={{ fontSize: 13, fontWeight: 800, color: cor }}>{pct}%</span>
           </div>
