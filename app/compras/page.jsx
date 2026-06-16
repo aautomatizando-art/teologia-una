@@ -222,7 +222,7 @@ export default function PaginaCompras() {
     carregar();
   }
 
-  const corStatus = { ABERTA: "ok", CONCLUIDA: "alto", CANCELADA: "baixo" };
+  const corStatus = { ABERTA: "ok", CONCLUIDA: "alto", ENTREGUE: "ok", CANCELADA: "baixo" };
 
   return (
     <div className="shell">

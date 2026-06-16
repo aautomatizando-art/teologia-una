@@ -54,6 +54,19 @@ export async function POST(req) {
       return Response.json({ error: eUpdate.message }, { status: 500 });
     }
 
+    // Atualiza status da OP vinculada para ENTREGUE
+    const { data: pedidoOp } = await supabase
+      .from("pedidos_op")
+      .select("ordem_id")
+      .eq("codigo_pedido", `PD-${pedido_id}`)
+      .maybeSingle();
+    if (pedidoOp?.ordem_id) {
+      await supabase
+        .from("ordens_producao")
+        .update({ status: "ENTREGUE" })
+        .eq("id", pedidoOp.ordem_id);
+    }
+
     // Envia notificação WhatsApp
     await enviarWhatsApp(
       `✅ *ENTREGA FINALIZADA*\n` +
