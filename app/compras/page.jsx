@@ -11,9 +11,8 @@ const COLUNAS = [
 const ETAPA_LABEL = ["", "📋 Gerado OP", "🏭 Produzindo", "📦 No estoque", "🚛 Em separação", "🛣️ Em rota", "✅ Entregue"];
 
 function corTicket(status) {
-  if (status === 6) return { background: "rgba(34,197,94,.22)", borderLeft: "4px solid #22c55e" };
-  if (status === 5) return { background: "rgba(6,182,212,.12)", borderLeft: "4px solid #06b6d4" };
-  if (status === 3 || status === 4) return { background: "rgba(34,197,94,.10)", borderLeft: "4px solid #4ade80" };
+  if (status === 5) return { background: "rgba(6,182,212,.18)", borderLeft: "4px solid #06b6d4" };
+  if (status === 3 || status === 4) return { background: "rgba(34,197,94,.35)", borderLeft: "4px solid #22c55e" };
   return {};
 }
 
@@ -384,7 +383,7 @@ export default function PaginaCompras() {
       {pedidos && (
         <div className="kanban" style={{ marginBottom: 18 }}>
           {COLUNAS.map((c) => {
-            const itens = pedidos.filter((p) => p.criticidade === c.chave);
+            const itens = pedidos.filter((p) => p.criticidade === c.chave && p.status_rastreio !== 6);
             return (
               <div key={c.chave} className={`coluna ${c.classe}`}>
                 <div className="cab">
