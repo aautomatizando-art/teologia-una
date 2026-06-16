@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Botão RGB no Tasmota — Guia Prático</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:ital,wght@0,300;0,400;0,600;1,300&family=Fira+Code:wght@400;500&display=swap');
+:root{
+  --bg:#0e0e0e;--s1:#141414;--s2:#1e1e1e;--s3:#252525;
+  --br:#303030;--br2:#3a3a3a;--tx:#f2f2f2;--mu:#777;--mu2:#999;
+  --lime:#c8f135;--lime-d:rgba(200,241,53,.1);--lime-b:rgba(200,241,53,.22);
+  --orange:#ff6b35;--orange-d:rgba(255,107,53,.1);--orange-b:rgba(255,107,53,.22);
+  --sky:#35c8ff;--sky-d:rgba(53,200,255,.1);--sky-b:rgba(53,200,255,.22);
+  --rose:#ff3577;--rose-d:rgba(255,53,119,.1);--rose-b:rgba(255,53,119,.22);
+  --gold:#ffd166;--gold-d:rgba(255,209,102,.1);--gold-b:rgba(255,209,102,.22);
+  --blue:#2a5fa5;--blue-l:#3a7bd5;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Archivo',sans-serif;}
+#bar{position:fixed;top:0;left:0;height:3px;background:var(--lime);z-index:99;transition:width .3s ease;box-shadow:0 0 12px var(--lime);}
+#deck{width:100%;height:100vh;position:relative;overflow:hidden;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:52px 64px 68px;opacity:0;transform:scale(.97) translateY(16px);transition:opacity .38s ease,transform .38s ease;pointer-events:none;}
+.slide.active{opacity:1;transform:scale(1) translateY(0);pointer-events:all;}
+.slide.out{opacity:0;transform:scale(1.02) translateY(-16px);}
+.tag{font-family:'Fira Code',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--lime);display:flex;align-items:center;gap:10px;margin-bottom:16px;align-self:flex-start;}
+.tag::before{content:'//';opacity:.4;}
+h1.hero{font-family:'Archivo Black',sans-serif;font-size:clamp(3.5rem,7vw,7rem);line-height:.9;letter-spacing:-3px;text-align:center;}
+h1.hero em{color:var(--lime);font-style:normal;display:block;}
+.sub{font-size:1rem;color:var(--mu2);margin-top:20px;text-align:center;max-width:580px;line-height:1.75;font-weight:300;}
+h2{font-family:'Archivo Black',sans-serif;font-size:clamp(1.6rem,2.8vw,2.6rem);letter-spacing:-1px;line-height:1;align-self:flex-start;margin-bottom:18px;}
+h2 em{color:var(--lime);font-style:normal;}
+h2 em.sk{color:var(--sky);}
+h2 em.og{color:var(--orange);}
+h2 em.gd{color:var(--gold);}
+.w{width:100%;max-width:920px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+.card{background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:16px 18px;transition:border-color .2s;}
+.card:hover{border-color:var(--br2);}
+.card h3{font-family:'Fira Code',monospace;font-size:.72rem;color:var(--lime);margin-bottom:8px;letter-spacing:.5px;}
+.card h3.sk{color:var(--sky);}
+.card h3.og{color:var(--orange);}
+.card h3.gd{color:var(--gold);}
+.card h3.rs{color:var(--rose);}
+.card p{font-size:.81rem;color:var(--mu2);line-height:1.65;}
+.card ul{list-style:none;margin-top:6px;}
+.card ul li{font-size:.78rem;color:var(--mu2);padding:3px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.55;}
+.card ul li::before{content:'▸';color:var(--lime);font-size:.6rem;margin-top:4px;flex-shrink:0;}
+.card ul li.sk::before{color:var(--sky);}
+.card ul li.og::before{color:var(--orange);}
+.card ul li.gd::before{color:var(--gold);}
+.hl{border-left:2px solid var(--lime);background:var(--lime-d);border-radius:0 8px 8px 0;padding:13px 17px;width:100%;max-width:920px;}
+.hl p{font-size:.84rem;color:var(--tx);line-height:1.7;}
+.hl strong{color:var(--lime);}
+.sky-hl{border-left-color:var(--sky);background:var(--sky-d);}
+.sky-hl p{color:var(--tx);}
+.sky-hl strong{color:var(--sky);}
+.gold-hl{border-left-color:var(--gold);background:var(--gold-d);}
+.gold-hl p{color:var(--tx);}
+.gold-hl strong{color:var(--gold);}
+.orange-hl{border-left-color:var(--orange);background:var(--orange-d);}
+.orange-hl p,.orange-hl strong{color:var(--orange);}
+.rose-hl{border-left-color:var(--rose);background:var(--rose-d);}
+.rose-hl p{color:var(--tx);}
+.rose-hl strong{color:var(--rose);}
+.badge{display:inline-flex;align-items:center;gap:4px;font-family:'Fira Code',monospace;font-size:.67rem;padding:3px 10px;border-radius:3px;}
+.bl{background:var(--lime-d);color:var(--lime);border:1px solid var(--lime-b);}
+.bo{background:var(--orange-d);color:var(--orange);border:1px solid var(--orange-b);}
+.bs{background:var(--sky-d);color:var(--sky);border:1px solid var(--sky-b);}
+.bgold{background:var(--gold-d);color:var(--gold);border:1px solid var(--gold-b);}
+.brose{background:var(--rose-d);color:var(--rose);border:1px solid var(--rose-b);}
+.steps{list-style:none;width:100%;max-width:920px;}
+.steps li{display:flex;gap:14px;align-items:flex-start;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:12px 16px;margin-bottom:8px;transition:border-color .2s;}
+.steps li:hover{border-color:var(--br2);}
+.sn{font-family:'Fira Code',monospace;font-size:.65rem;background:var(--lime);color:var(--bg);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.sn.sk{background:var(--sky);}
+.sn.og{background:var(--orange);}
+.sb h4{font-size:.87rem;font-weight:600;margin-bottom:3px;}
+.sb p{font-size:.78rem;color:var(--mu2);line-height:1.55;}
+.ctbl{width:100%;border-collapse:collapse;font-size:.76rem;}
+.ctbl thead th{background:var(--s3);color:var(--lime);padding:9px 13px;text-align:left;border-bottom:1px solid var(--br2);font-family:'Fira Code',monospace;font-size:.67rem;letter-spacing:1px;}
+.ctbl thead th.sk{color:var(--sky);}
+.ctbl tbody tr{border-bottom:1px solid rgba(48,48,48,.7);transition:background .15s;}
+.ctbl tbody tr:hover{background:var(--s2);}
+.ctbl td{padding:8px 13px;color:var(--mu2);}
+.ctbl td.hi{color:var(--lime);}
+.ctbl td.sk{color:var(--sky);}
+.ctbl td.ok{color:#c3e88d;}
+.ctbl td.warn{color:var(--gold);}
+.ctbl td.og{color:var(--orange);}
+.ctbl td.rs{color:var(--rose);}
+code{font-family:'Fira Code',monospace;font-size:.82rem;background:var(--s3);border:1px solid var(--br);border-radius:4px;padding:2px 7px;color:var(--lime);}
+code.sk{color:var(--sky);}
+code.og{color:var(--orange);}
+.cmdblock{background:var(--s3);border:1px solid var(--br);border-radius:8px;padding:14px 18px;width:100%;max-width:920px;font-family:'Fira Code',monospace;font-size:.78rem;line-height:1.9;}
+.cmdblock .cm{color:var(--mu);font-size:.68rem;}
+.cmdblock .cmd{color:var(--lime);}
+.cmdblock .val{color:var(--sky);}
+.cmdblock .val2{color:var(--gold);}
+.cmdblock .val3{color:var(--orange);}
+.gfx{position:absolute;pointer-events:none;border-radius:50%;filter:blur(110px);opacity:.06;}
+.gfxa{width:600px;height:400px;background:var(--lime);top:-150px;right:-200px;}
+.gfxb{width:400px;height:400px;background:var(--blue-l);bottom:-150px;left:-150px;}
+.gfxc{width:500px;height:300px;background:var(--sky);top:-100px;left:-150px;}
+.gfxd{width:350px;height:350px;background:var(--orange);bottom:-100px;right:-100px;}
+#nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(14,14,14,.93);border:1px solid var(--br2);border-radius:40px;padding:8px 18px;backdrop-filter:blur(20px);z-index:10000;}
+#nav button{background:none;border:none;color:var(--mu);font-size:15px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .2s;}
+#nav button:hover{color:var(--lime);background:var(--lime-d);}
+#ctr{font-family:'Fira Code',monospace;font-size:11px;color:var(--mu);min-width:55px;text-align:center;}
+#menu{position:fixed;inset:0;background:rgba(10,10,10,.97);backdrop-filter:blur(24px);z-index:200;display:none;overflow-y:auto;padding:48px 44px;}
+#menu.open{display:block;}
+#mc{background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer;position:fixed;top:16px;right:20px;}
+.mt{font-family:'Archivo Black',sans-serif;font-size:2rem;letter-spacing:-1px;color:var(--lime);margin-bottom:28px;}
+.ms{margin-bottom:18px;}
+.msl{font-family:'Fira Code',monospace;font-size:.6rem;letter-spacing:3px;color:var(--mu);text-transform:uppercase;margin-bottom:8px;}
+.mi{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background .15s;margin-bottom:3px;}
+.mi:hover{background:var(--s2);}
+.mi.cur{background:var(--lime-d);}
+.mn{font-family:'Fira Code',monospace;font-size:.6rem;color:var(--lime);width:22px;}
+.ml{font-size:.83rem;}
+.dot-row{display:flex;gap:8px;align-items:center;margin-top:14px;}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--br2);cursor:pointer;transition:transform .15s;}
+.dot:hover{transform:scale(1.2);}
+.dot.lime{background:var(--lime);}
+.dot.orange{background:var(--orange);}
+.dot.sky{background:var(--sky);}
+.dot.rose{background:var(--rose);}
+.dot.gold{background:var(--gold);}
+.dot.white{background:#fff;}
+.dot.purple{background:#a855f7;}
+.dot.green{background:#22c55e;}
+.rainbow{background:linear-gradient(90deg,#ff0000,#ff7700,#ffff00,#00ff00,#0000ff,#8b00ff);border-radius:4px;height:4px;width:100%;margin-top:8px;}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+
+<div id="menu">
+  <button id="mc" onclick="closeMenu()">✕</button>
+  <div class="mt">// Botão RGB · Tasmota</div>
+  <div id="mb"></div>
+</div>
+
+<div id="deck">
+
+<!-- S0 CAPA -->
+<div class="slide active" id="s0">
+  <div class="gfx gfxa" style="background:var(--sky)"></div>
+  <div class="gfx gfxb" style="background:var(--lime)"></div>
+  <div class="tag">tasmota · iot · rgb</div>
+  <h1 class="hero">Botão <em>RGB</em><span style="font-family:'Archivo Black';font-size:clamp(2rem,4vw,3.8rem);letter-spacing:-2px;display:block;margin-top:8px;color:var(--mu2)">com Tasmota</span></h1>
+  <p class="sub">Aprenda a configurar um botão físico para controlar cores, brilho e cenas de uma lâmpada RGB — via Console, Rules e comandos MQTT.</p>
+  <div class="dot-row" style="justify-content:center">
+    <div class="dot lime"></div>
+    <div class="dot orange"></div>
+    <div class="dot sky"></div>
+    <div class="dot rose"></div>
+    <div class="dot gold"></div>
+    <div class="dot white"></div>
+    <div class="dot purple"></div>
+    <div class="dot green"></div>
+  </div>
+  <div class="rainbow" style="max-width:300px;margin-top:12px"></div>
+</div>
+
+<!-- S1 O QUE É TASMOTA -->
+<div class="slide" id="s1">
+  <div class="gfx gfxc"></div>
+  <div class="w">
+    <div class="tag">fundamentos</div>
+    <h2>O que é o <em>Tasmota?</em></h2>
+    <div class="g3" style="margin-bottom:14px">
+      <div class="card">
+        <h3>// firmware open-source</h3>
+        <p>Firmware alternativo para chips ESP8266 e ESP32. Substitui o firmware proprietário de lâmpadas, tomadas e módulos Wi-Fi.</p>
+      </div>
+      <div class="card">
+        <h3 class="sk">// controle local</h3>
+        <p>Funciona 100% na rede local, sem depender de nuvem. Compatível com Home Assistant, MQTT, e automações via Rules internas.</p>
+      </div>
+      <div class="card">
+        <h3 class="og">// hardware suportado</h3>
+        <p>Sonoff, Shelly (ESP), lâmpadas Tuya, Teckin, Gosund, módulos com ESP8266/ESP32 e outros compatíveis com flash.</p>
+      </div>
+    </div>
+    <div class="hl sky-hl">
+      <p><strong>Cenário deste guia:</strong> um dispositivo Tasmota com GPIO de botão físico e saídas PWM para controlar canais R, G, B de uma lâmpada (ou tira de LED RGB).</p>
+    </div>
+  </div>
+</div>
+
+<!-- S2 HARDWARE -->
+<div class="slide" id="s2">
+  <div class="gfx gfxd"></div>
+  <div class="w">
+    <div class="tag">hardware</div>
+    <h2>O que você <em>precisa</em></h2>
+    <div class="g2" style="margin-bottom:14px">
+      <div>
+        <ul class="steps">
+          <li>
+            <div class="sn">1</div>
+            <div class="sb">
+              <h4>Dispositivo com Tasmota instalado</h4>
+              <p>ESP8266 / ESP32 com firmware Tasmota. Pode ser lâmpada bulb RGB (ex: Shelly Bulb), módulo LED ou montagem própria com driver PWM.</p>
+            </div>
+          </li>
+          <li>
+            <div class="sn">2</div>
+            <div class="sb">
+              <h4>Botão físico conectado a um GPIO</h4>
+              <p>Normalmente um botão momentâneo (NO — normalmente aberto) entre o GPIO e o GND. O Tasmota já trata o debounce.</p>
+            </div>
+          </li>
+          <li>
+            <div class="sn">3</div>
+            <div class="sb">
+              <h4>Template/Template configurado</h4>
+              <p>GPIO do botão definido como <code>Button1</code> (ou Button2…) no menu Configuration → Configure Module.</p>
+            </div>
+          </li>
+          <li>
+            <div class="sn sk">4</div>
+            <div class="sb">
+              <h4>Acesso ao Console Tasmota</h4>
+              <p>Interface web em <code>http://&lt;ip-do-device&gt;</code> → Console. Todos os comandos deste guia são digitados ali.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <h3>// GPIOs típicos numa build RGB</h3>
+        <table class="ctbl">
+          <thead><tr><th>GPIO</th><th>Função Tasmota</th></tr></thead>
+          <tbody>
+            <tr><td class="hi">GPIO4</td><td>PWM1 → canal R</td></tr>
+            <tr><td class="hi">GPIO5</td><td>PWM2 → canal G</td></tr>
+            <tr><td class="hi">GPIO14</td><td>PWM3 → canal B</td></tr>
+            <tr><td class="sk">GPIO0</td><td>Button1 (botão físico)</td></tr>
+            <tr><td class="og">GPIO12</td><td>Relay1 (opcional)</td></tr>
+          </tbody>
+        </table>
+        <div class="hl gold-hl" style="margin-top:4px">
+          <p><strong>Dica:</strong> use Configuration → Configure Other → "Friendly Name" para nomear o dispositivo (ex: <em>LampadaRGB</em>).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S3 COMANDOS RGB BÁSICOS -->
+<div class="slide" id="s3">
+  <div class="gfx gfxa" style="background:var(--rose)"></div>
+  <div class="w">
+    <div class="tag">console</div>
+    <h2>Comandos RGB <em>essenciais</em></h2>
+    <table class="ctbl" style="margin-bottom:14px">
+      <thead>
+        <tr><th>Comando</th><th>Exemplo</th><th>Descrição</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="hi">Power</td><td><code>Power ON</code> / <code>Power OFF</code></td><td>Liga ou desliga a lâmpada</td></tr>
+        <tr><td class="hi">Color</td><td><code>Color #FF0000</code></td><td>Define cor em hex RGB</td></tr>
+        <tr><td class="hi">Color</td><td><code>Color 1</code> … <code>Color 25</code></td><td>Cores predefinidas (1=vermelho, 2=verde, 3=azul…)</td></tr>
+        <tr><td class="sk">HSBColor</td><td><code>HSBColor 240,100,80</code></td><td>Matiz (0-360), Saturação (0-100), Brilho (0-100)</td></tr>
+        <tr><td class="sk">Dimmer</td><td><code>Dimmer 50</code></td><td>Brilho geral de 0 a 100%</td></tr>
+        <tr><td class="warn">CT</td><td><code>CT 250</td><td>Temperatura de cor (153=frio, 500=quente) — só lâmpadas RGBW/CCT</td></tr>
+        <tr><td class="og">Scheme</td><td><code>Scheme 2</code></td><td>Efeito automático: 0=fixo, 2=fade, 3=random, 4=rainbow</td></tr>
+        <tr><td class="og">Speed</td><td><code>Speed 5</code></td><td>Velocidade dos efeitos (1=rápido, 20=lento)</td></tr>
+        <tr><td class="ok">White</td><td><code>White 80</code></td><td>Canal branco dedicado (lâmpadas RGBW)</td></tr>
+      </tbody>
+    </table>
+    <div class="hl">
+      <p>Digite qualquer comando acima no <strong>Console</strong> (sem aspas) e pressione Enter para testar imediatamente.</p>
+    </div>
+  </div>
+</div>
+
+<!-- S4 COMO BOTÕES FUNCIONAM -->
+<div class="slide" id="s4">
+  <div class="gfx gfxc" style="background:var(--gold)"></div>
+  <div class="w">
+    <div class="tag">comportamento</div>
+    <h2>Como botões funcionam no <em>Tasmota</em></h2>
+    <div class="g2" style="margin-bottom:14px">
+      <div>
+        <table class="ctbl">
+          <thead><tr><th>Ação no botão</th><th>Evento gerado</th></tr></thead>
+          <tbody>
+            <tr><td class="hi">1 clique</td><td>Toggle do Relay1 (padrão)</td></tr>
+            <tr><td class="sk">2 cliques rápidos</td><td>Toggle do Relay2 (se existir)</td></tr>
+            <tr><td class="og">3 cliques</td><td>Toggle do Relay3</td></tr>
+            <tr><td class="warn">Segurar 4s</td><td>Modo WiFi (reset soft)</td></tr>
+            <tr><td class="warn">Segurar 40s</td><td>Reset de fábrica</td></tr>
+          </tbody>
+        </table>
+        <div class="hl gold-hl" style="margin-top:10px">
+          <p><strong>SetOption1 1</strong> → desativa o comportamento padrão (toggle relay), liberando o botão para uso exclusivo via Rules.</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="card">
+          <h3>// eventos disponíveis em Rules</h3>
+          <ul>
+            <li>Button1#State=10 → pressão simples</li>
+            <li>Button1#State=11 → duplo clique</li>
+            <li>Button1#State=12 → triplo clique</li>
+            <li>Button1#State=3 → botão pressionado (hold)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="sk">// setoptions úteis</h3>
+          <ul>
+            <li class="sk"><code class="sk">SetOption1 1</code> → desacopla botão do relay</li>
+            <li><code>SetOption32 8</code> → tempo de hold (×0.1s = 800ms)</li>
+            <li><code>SetOption73 1</code> → desativa hold para reset WiFi</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S5 CONFIGURAÇÃO PASSO A PASSO -->
+<div class="slide" id="s5">
+  <div class="gfx gfxb"></div>
+  <div class="w">
+    <div class="tag">configuração</div>
+    <h2>Passo a passo: <em>preparar</em> o dispositivo</h2>
+    <ul class="steps">
+      <li>
+        <div class="sn">1</div>
+        <div class="sb">
+          <h4>Acesse o Console → digite os comandos abaixo</h4>
+          <p>Vá em <strong>http://&lt;ip&gt;</strong> → Console. Os comandos configuram o módulo para RGB + botão independente.</p>
+        </div>
+      </li>
+      <li>
+        <div class="sn">2</div>
+        <div class="sb">
+          <h4>Desacoplar botão do relay padrão</h4>
+          <p><code>SetOption1 1</code> — agora Button1 não alterna mais o relay automaticamente; será controlado só pelas Rules.</p>
+        </div>
+      </li>
+      <li>
+        <div class="sn">3</div>
+        <div class="sb">
+          <h4>Definir tempo de "segurar" (hold)</h4>
+          <p><code>SetOption32 10</code> → hold detectado após 1 segundo (valor × 100ms). Ajuste conforme preferência.</p>
+        </div>
+      </li>
+      <li>
+        <div class="sn sk">4</div>
+        <div class="sb">
+          <h4>Proteger contra reset WiFi acidental</h4>
+          <p><code>SetOption73 1</code> → desativa o reset por segurar 4s. Assim o hold fica disponível para suas Rules.</p>
+        </div>
+      </li>
+      <li>
+        <div class="sn sk">5</div>
+        <div class="sb">
+          <h4>Habilitar multipress</h4>
+          <p><code>SetOption13 0</code> (padrão) — garante que duplo e triplo clique sejam detectados corretamente.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- S6 RULE 1 SIMPLES -->
+<div class="slide" id="s6">
+  <div class="gfx gfxa"></div>
+  <div class="w">
+    <div class="tag">rule 1 — clique simples</div>
+    <h2>1 clique → <em>ligar / desligar</em></h2>
+    <div class="cmdblock" style="margin-bottom:14px">
+      <div class="cm"># Apagar qualquer rule antiga no slot 1</div>
+      <div><span class="cmd">Rule1</span> <span class="val">0</span></div>
+      <br>
+      <div class="cm"># Definir a rule</div>
+      <div><span class="cmd">Rule1</span> <span class="val">ON Button1#State=10 DO Power TOGGLE ENDON</span></div>
+      <br>
+      <div class="cm"># Ativar</div>
+      <div><span class="cmd">Rule1</span> <span class="val">1</span></div>
+    </div>
+    <div class="g2">
+      <div class="hl">
+        <p><strong>State=10</strong> é o evento de pressão única (single press). <strong>Power TOGGLE</strong> alterna entre ON e OFF mantendo a última cor definida.</p>
+      </div>
+      <div class="hl sky-hl">
+        <p>Se quiser ligar <strong>sempre na mesma cor</strong> ao invés de toggle, substitua por: <code class="sk">Power ON</code> e adicione <code class="sk">Color #FF4400</code> na mesma ação separando com <code class="sk">;</code></p>
+      </div>
+    </div>
+    <div class="cmdblock" style="margin-top:12px">
+      <div class="cm"># Versão: ligar sempre em laranja ao pressionar</div>
+      <div><span class="cmd">Rule1</span> <span class="val">ON Button1#State=10 DO Backlog Power ON; Color #FF4400 ENDON</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- S7 RULE 2 DUPLO CLIQUE -->
+<div class="slide" id="s7">
+  <div class="gfx gfxc"></div>
+  <div class="w">
+    <div class="tag">rule 2 — duplo clique</div>
+    <h2>2 cliques → <em>próxima cor</em></h2>
+    <p style="font-size:.85rem;color:var(--mu2);margin-bottom:14px">Usamos uma variável <code>Var1</code> para guardar o índice da cor atual e ciclar entre 5 cores predefinidas.</p>
+    <div class="cmdblock" style="margin-bottom:14px">
+      <div class="cm"># Inicializar variável de cor</div>
+      <div><span class="cmd">Var1</span> <span class="val">1</span></div>
+      <br>
+      <div class="cm"># Rule2: ciclar cores no duplo clique</div>
+      <div><span class="cmd">Rule2</span> <span class="val2">ON Button1#State=11 DO</span></div>
+      <div style="padding-left:16px"><span class="val"> Backlog Add Var1 1;</span></div>
+      <div style="padding-left:32px"><span class="val">  IF (%var1%>5) DO Var1 1 ENDIF;</span></div>
+      <div style="padding-left:32px"><span class="val">  Color%var1%</span></div>
+      <div><span class="val2">ENDON</span></div>
+      <br>
+      <div><span class="cmd">Rule2</span> <span class="val">1</span></div>
+    </div>
+    <div class="g3">
+      <div class="card"><h3>// Color1</h3><p>Vermelho — <code>#FF0000</code></p></div>
+      <div class="card"><h3 class="sk">// Color2</h3><p>Verde — <code>#00FF00</code></p></div>
+      <div class="card"><h3 class="og">// Color3</h3><p>Azul — <code>#0000FF</code></p></div>
+    </div>
+    <div class="hl gold-hl" style="margin-top:10px">
+      <p><strong>Alternativa simples:</strong> use <code>Color%var1%</code> onde os números 1–25 são as cores predefinidas do Tasmota (listadas em <em>Commands → Light</em> na documentação).</p>
+    </div>
+  </div>
+</div>
+
+<!-- S8 RULE 3 HOLD -->
+<div class="slide" id="s8">
+  <div class="gfx gfxd"></div>
+  <div class="w">
+    <div class="tag">rule 3 — segurar botão</div>
+    <h2>Segurar → <em>modo branco / cena</em></h2>
+    <div class="cmdblock" style="margin-bottom:14px">
+      <div class="cm"># Hold: ativa luz branca quente (relaxar)</div>
+      <div><span class="cmd">Rule3</span> <span class="val">ON Button1#State=3 DO Backlog Power ON; Color #FFFFFF; Dimmer 40; CT 400 ENDON</span></div>
+      <br>
+      <div><span class="cmd">Rule3</span> <span class="val">1</span></div>
+    </div>
+    <div class="g2" style="margin-bottom:12px">
+      <div class="card">
+        <h3>// State=3 → hold detectado</h3>
+        <ul>
+          <li>Ativa ao segurar o botão pelo tempo de <code>SetOption32</code></li>
+          <li>Ideal para cenas fixas (leitura, cinema, relaxar)</li>
+          <li>Combina vários comandos com <code>Backlog</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="og">// outras cenas com hold</h3>
+        <ul>
+          <li class="og">Cinema: <code>Color #200800; Dimmer 10</code></li>
+          <li>Festa: <code>Scheme 4; Speed 3</code></li>
+          <li class="sk">Foco: <code>Color #FFFFFF; Dimmer 100; CT 153</code></li>
+          <li class="gd">Dormir: <code>Dimmer 5; CT 500</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="hl rose-hl">
+      <p><strong>Atenção:</strong> se <code>SetOption73 1</code> não estiver ativo, segurar 4s aciona o modo WiFi e reinicia o dispositivo — sempre configure antes.</p>
+    </div>
+  </div>
+</div>
+
+<!-- S9 RULE COMPLETA -->
+<div class="slide" id="s9">
+  <div class="gfx gfxc" style="background:var(--lime)"></div>
+  <div class="w">
+    <div class="tag">configuração completa</div>
+    <h2>Rule <em>completa</em> em 3 slots</h2>
+    <div class="cmdblock" style="font-size:.73rem">
+      <div class="cm"># ═══════════ SETUP INICIAL ═══════════</div>
+      <div><span class="cmd">SetOption1</span>  <span class="val">1</span>    <span class="cm">  ; desacopla botão do relay</span></div>
+      <div><span class="cmd">SetOption32</span> <span class="val">10</span>   <span class="cm">  ; hold = 1 segundo</span></div>
+      <div><span class="cmd">SetOption73</span> <span class="val">1</span>    <span class="cm">  ; desativa reset WiFi por hold</span></div>
+      <div><span class="cmd">Var1</span>        <span class="val">1</span>    <span class="cm">  ; índice de cor inicial</span></div>
+      <br>
+      <div class="cm"># ═══════════ RULE 1: clique simples → toggle ═══════════</div>
+      <div><span class="cmd">Rule1</span> <span class="val">ON Button1#State=10 DO Power TOGGLE ENDON</span></div>
+      <div><span class="cmd">Rule1</span> <span class="val">1</span></div>
+      <br>
+      <div class="cm"># ═══════════ RULE 2: duplo clique → próxima cor ═══════════</div>
+      <div><span class="cmd">Rule2</span> <span class="val">ON Button1#State=11 DO Backlog Add Var1 1; IF (%var1%>6) DO Var1 1 ENDIF; Color%var1% ENDON</span></div>
+      <div><span class="cmd">Rule2</span> <span class="val">1</span></div>
+      <br>
+      <div class="cm"># ═══════════ RULE 3: hold → cena branco quente ═══════════</div>
+      <div><span class="cmd">Rule3</span> <span class="val">ON Button1#State=3 DO Backlog Power ON; Color #FFF0C0; Dimmer 40; CT 400 ENDON</span></div>
+      <div><span class="cmd">Rule3</span> <span class="val">1</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- S10 BRILHO COM BOTÃO -->
+<div class="slide" id="s10">
+  <div class="gfx gfxb" style="background:var(--sky)"></div>
+  <div class="w">
+    <div class="tag">controle de brilho</div>
+    <h2>Controlar <em class="sk">brilho</em> com botão</h2>
+    <p style="font-size:.85rem;color:var(--mu2);margin-bottom:14px">Estratégia: hold alterna entre aumentar e diminuir o brilho em passos enquanto o botão fica pressionado.</p>
+    <div class="cmdblock" style="margin-bottom:14px">
+      <div class="cm"># Var2 controla direção: 1=subindo, 0=descendo</div>
+      <div><span class="cmd">Var2</span> <span class="val">1</span></div>
+      <br>
+      <div class="cm"># Hold: incrementa ou decrementa brilho</div>
+      <div><span class="cmd">Rule3</span> <span class="val2">ON Button1#State=3 DO</span></div>
+      <div style="padding-left:16px"><span class="val">  Backlog IF (%var2%==1) DO Add Dimmer 10 ENDIF;</span></div>
+      <div style="padding-left:32px"><span class="val">IF (%var2%==0) DO Sub Dimmer 10 ENDIF;</span></div>
+      <div style="padding-left:32px"><span class="val">IF (%Dimmer%>=100) DO Var2 0 ENDIF;</span></div>
+      <div style="padding-left:32px"><span class="val">IF (%Dimmer%<=10)  DO Var2 1 ENDIF</span></div>
+      <div><span class="val2">ENDON</span></div>
+      <div><span class="cmd">Rule3</span> <span class="val">1</span></div>
+    </div>
+    <div class="hl sky-hl">
+      <p>Combine Rule1 (toggle) + Rule2 (cor) + Rule3 (brilho) para ter controle completo da lâmpada com <strong>um único botão físico</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- S11 MQTT -->
+<div class="slide" id="s11">
+  <div class="gfx gfxa" style="background:var(--orange)"></div>
+  <div class="w">
+    <div class="tag">mqtt · home assistant</div>
+    <h2>Integração com <em class="og">MQTT</em></h2>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card">
+        <h3 class="og">// tópicos publicados pelo Tasmota</h3>
+        <ul>
+          <li class="og"><code>cmnd/LampadaRGB/Power</code> → ON / OFF</li>
+          <li><code>cmnd/LampadaRGB/Color</code> → valor hex</li>
+          <li><code>cmnd/LampadaRGB/Dimmer</code> → 0–100</li>
+          <li class="sk"><code>stat/LampadaRGB/RESULT</code> → resposta</li>
+          <li><code>tele/LampadaRGB/STATE</code> → estado periódico</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="sk">// exemplo Home Assistant (configuration.yaml)</h3>
+        <p style="font-family:'Fira Code',monospace;font-size:.68rem;line-height:1.9;color:var(--mu2)">
+          light:<br>
+          &nbsp;&nbsp;- platform: mqtt<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;name: "Lâmpada RGB"<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;command_topic: "cmnd/LampadaRGB/Power"<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;rgb_command_topic: "cmnd/LampadaRGB/Color"<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;brightness_command_topic: "cmnd/LampadaRGB/Dimmer"<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;state_topic: "tele/LampadaRGB/STATE"
+        </p>
+      </div>
+    </div>
+    <div class="hl">
+      <p>Com Tasmota + MQTT, o botão físico e o Home Assistant <strong>coexistem</strong>: o dispositivo publica seu estado a cada ação, mantendo tudo sincronizado.</p>
+    </div>
+  </div>
+</div>
+
+<!-- S12 REFERÊNCIA RÁPIDA -->
+<div class="slide" id="s12">
+  <div class="gfx gfxb" style="background:var(--gold)"></div>
+  <div class="w">
+    <div class="tag">referência</div>
+    <h2>Referência <em class="gd">rápida</em></h2>
+    <table class="ctbl">
+      <thead>
+        <tr><th>Comando</th><th class="sk">Valor / Exemplo</th><th>Para que serve</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="hi">SetOption1</td><td class="sk">1</td><td>Desacopla botão do relay padrão</td></tr>
+        <tr><td class="hi">SetOption32</td><td class="sk">10</td><td>Tempo de hold em ×100ms (10 = 1s)</td></tr>
+        <tr><td class="hi">SetOption73</td><td class="sk">1</td><td>Desativa reset WiFi por botão pressionado</td></tr>
+        <tr><td class="hi">SetOption13</td><td class="sk">0</td><td>Habilita multipress (padrão — não altere)</td></tr>
+        <tr><td class="og">Rule1/2/3</td><td class="sk">1 / 0</td><td>Ativa ou desativa o slot de rule</td></tr>
+        <tr><td class="og">Var1…Var16</td><td class="sk">Var1 1</td><td>Variáveis internas para lógica nas rules</td></tr>
+        <tr><td class="warn">Button1#State</td><td class="sk">=10/11/12/3</td><td>1x, 2x, 3x, hold</td></tr>
+        <tr><td class="warn">Backlog</td><td class="sk">cmd1; cmd2</td><td>Executa vários comandos em sequência</td></tr>
+        <tr><td class="ok">Color</td><td class="sk">#RRGGBB ou 1–25</td><td>Define a cor da lâmpada</td></tr>
+        <tr><td class="ok">Dimmer</td><td class="sk">0–100</td><td>Brilho percentual</td></tr>
+        <tr><td class="ok">Scheme</td><td class="sk">0–4</td><td>Efeitos: fixo, fade, random, rainbow</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- S13 RESUMO -->
+<div class="slide" id="s13">
+  <div class="gfx gfxc" style="background:var(--lime)"></div>
+  <div class="gfx gfxd" style="background:var(--sky)"></div>
+  <div class="w" style="display:flex;flex-direction:column;align-items:center;text-align:center">
+    <div class="tag">resumo</div>
+    <h2 style="align-self:center;text-align:center">Você tem um botão <em>completo</em></h2>
+    <div class="g3" style="margin:20px 0;text-align:left">
+      <div class="card">
+        <h3>// 1 clique</h3>
+        <p>Toggle ON/OFF — mantém cor e brilho da última vez que a lâmpada estava ligada.</p>
+        <div class="rainbow" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h3 class="sk">// 2 cliques</h3>
+        <p>Avança para a próxima cor na sequência configurada (vermelho → verde → azul → …).</p>
+        <div class="dot-row" style="margin-top:10px">
+          <div class="dot lime"></div>
+          <div class="dot sky"></div>
+          <div class="dot rose"></div>
+          <div class="dot gold"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="og">// segurar</h3>
+        <p>Ativa cena pré-definida (branco quente, cinema, modo leitura) ou controla brilho progressivamente.</p>
+      </div>
+    </div>
+    <div class="hl" style="text-align:left">
+      <p><strong>Próximos passos:</strong> explore <code>Backlog</code>, <code>IF/ELSEIF/ELSE</code> nas rules e os eventos MQTT para criar automações ainda mais avançadas no Home Assistant ou Node-RED.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button onclick="openMenu()" title="Menu">☰</button>
+  <button onclick="go(-1)" title="Anterior">&#8592;</button>
+  <span id="ctr">1 / 14</span>
+  <button onclick="go(1)" title="Próximo">&#8594;</button>
+</div>
+
+<script>
+var slides = document.querySelectorAll('.slide');
+var cur = 0;
+var total = slides.length;
+
+function updateBar() {
+  document.getElementById('bar').style.width = ((cur + 1) / total * 100) + '%';
+  document.getElementById('ctr').textContent = (cur + 1) + ' / ' + total;
+}
+
+function go(d) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('out');
+  setTimeout(function() { slides[cur < total ? cur : 0].classList.remove('out'); }, 400);
+  cur = Math.max(0, Math.min(total - 1, cur + d));
+  slides[cur].classList.add('active');
+  updateBar();
+  buildMenu();
+}
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  cur = n;
+  slides[cur].classList.add('active');
+  updateBar();
+  closeMenu();
+}
+
+var menuTitles = [
+  'Capa', 'O que é Tasmota?', 'Hardware necessário',
+  'Comandos RGB essenciais', 'Como botões funcionam',
+  'Passo a passo: preparação', 'Rule 1 — clique simples',
+  'Rule 2 — duplo clique', 'Rule 3 — segurar botão',
+  'Rule completa (3 slots)', 'Controlar brilho',
+  'Integração MQTT', 'Referência rápida', 'Resumo'
+];
+
+function buildMenu() {
+  var mb = document.getElementById('mb');
+  mb.innerHTML = '';
+  menuTitles.forEach(function(t, i) {
+    var d = document.createElement('div');
+    d.className = 'mi' + (i === cur ? ' cur' : '');
+    d.innerHTML = '<span class="mn">0' + (i < 9 ? '0' : '') + (i + 1) + '</span><span class="ml">' + t + '</span>';
+    d.onclick = function() { goTo(i); };
+    mb.appendChild(d);
+  });
+}
+
+function openMenu() { document.getElementById('menu').classList.add('open'); buildMenu(); }
+function closeMenu() { document.getElementById('menu').classList.remove('open'); }
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') go(-1);
+  if (e.key === 'Escape') closeMenu();
+  if (e.key === 'm' || e.key === 'M') openMenu();
+});
+
+var touchX = 0;
+document.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; });
+document.addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+});
+
+updateBar();
+</script>
+</body>
+</html>
