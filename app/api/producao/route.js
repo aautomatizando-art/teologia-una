@@ -70,11 +70,10 @@ export async function GET(req) {
     return Object.entries(m).map(([tipo, quantidade]) => ({ tipo, quantidade }));
   };
 
-  // Soma produção de paletes diretos (já em paletes) + produção de pedidos (em caixas, convertida para paletes)
+  // Produção vem apenas dos lançamentos de paletes (producao_registros).
+  // pedidos_op.quantidade_produzida é o fluxo de finalização de pedido — não entra aqui para evitar dupla contagem.
   const caixasPorPalete = ordem.produtos?.caixas_por_palete || 1;
-  const produzidoPaletes = registros.reduce((s, r) => s + r.paletes, 0);
-  const produzidoPedidos = (pedidos.data || []).reduce((s, p) => s + (p.quantidade_produzida || 0), 0);
-  const produzido = produzidoPaletes + produzidoPedidos / caixasPorPalete;
+  const produzido = registros.reduce((s, r) => s + r.paletes, 0);
   const produzidoCx = produzido * caixasPorPalete;
 
   // Últimos lançamentos (paletes + perdas + problemas) com as linhas que produziram
