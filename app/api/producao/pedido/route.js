@@ -215,11 +215,11 @@ export async function POST(req) {
           }
         }
 
-        // Atualiza status de rastreio para ESTOQUE (3)
-        await supabase
-          .from("pedidos_compra")
-          .update({ status_rastreio: 3 })
-          .eq("id", pedidoCompra.id);
+        // Atualiza status de rastreio para ESTOQUE (3) com timestamp
+        const { data: tsAtual3 } = await supabase.from("pedidos_compra").select("rastreio_timestamps").eq("id", pedidoCompra.id).maybeSingle();
+        const ts3 = { ...(tsAtual3?.rastreio_timestamps || {}), 3: new Date().toISOString() };
+        const { error: eTs3 } = await supabase.from("pedidos_compra").update({ status_rastreio: 3, rastreio_timestamps: ts3 }).eq("id", pedidoCompra.id);
+        if (eTs3) await supabase.from("pedidos_compra").update({ status_rastreio: 3 }).eq("id", pedidoCompra.id);
 
         // Envia notificação WhatsApp
         const nomeProduto = pedidoCompra.produtos?.nome || "Produto";

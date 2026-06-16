@@ -45,11 +45,11 @@ export async function POST(req) {
         .update({ quantidade: novoEstoque })
         .eq("id", pedido.produto_id);
 
-      // Atualiza status para ESTOQUE (3)
-      await supabase
-        .from("pedidos_compra")
-        .update({ status_rastreio: 3 })
-        .eq("id", Number(pedidoId));
+      // Atualiza status para ESTOQUE (3) com timestamp
+      const { data: tsAtualRe } = await supabase.from("pedidos_compra").select("rastreio_timestamps").eq("id", Number(pedidoId)).maybeSingle();
+      const tsRe = { ...(tsAtualRe?.rastreio_timestamps || {}), 3: new Date().toISOString() };
+      const { error: eTsRe } = await supabase.from("pedidos_compra").update({ status_rastreio: 3, rastreio_timestamps: tsRe }).eq("id", Number(pedidoId));
+      if (eTsRe) await supabase.from("pedidos_compra").update({ status_rastreio: 3 }).eq("id", Number(pedidoId));
 
       retirados++;
       detalhes.push(`${pedido.produtos?.nome} (${pedido.quantidade} un.)`);

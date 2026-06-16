@@ -96,8 +96,10 @@ export async function POST(req) {
   );
   if (eVinc) return Response.json({ error: eVinc.message }, { status: 500 });
 
-  // garante etapa 1 (GERADO ORDEM DE PRODUÇÃO) no rastreio dos pedidos
-  await supabase.from("pedidos_compra").update({ status_rastreio: 1 }).in("id", pedido_ids);
+  // garante etapa 1 (GERADO ORDEM DE PRODUÇÃO) no rastreio dos pedidos com timestamp
+  const ts1 = { 1: new Date().toISOString() };
+  const { error: eTs1 } = await supabase.from("pedidos_compra").update({ status_rastreio: 1, rastreio_timestamps: ts1 }).in("id", pedido_ids);
+  if (eTs1) await supabase.from("pedidos_compra").update({ status_rastreio: 1 }).in("id", pedido_ids);
 
   const emoji = { EMERGENCIAL: "🟣", URGENTE: "🔴", MODERADO: "🟢" };
   const agora = new Date();

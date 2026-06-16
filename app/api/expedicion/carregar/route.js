@@ -56,11 +56,11 @@ export async function POST(req) {
       .eq("id", pedidoId)
       .single();
 
-    // Atualizar status de rastreio para EM ROTA (5)
-    await supabase
-      .from("pedidos_compra")
-      .update({ status_rastreio: 5 })
-      .eq("id", pedidoCompra?.id);
+    // Atualizar status de rastreio para EM ROTA (5) com timestamp
+    const { data: tsAtual5 } = await supabase.from("pedidos_compra").select("rastreio_timestamps").eq("id", pedidoCompra?.id).maybeSingle();
+    const ts5 = { ...(tsAtual5?.rastreio_timestamps || {}), 5: new Date().toISOString() };
+    const { error: eTs5 } = await supabase.from("pedidos_compra").update({ status_rastreio: 5, rastreio_timestamps: ts5 }).eq("id", pedidoCompra?.id);
+    if (eTs5) await supabase.from("pedidos_compra").update({ status_rastreio: 5 }).eq("id", pedidoCompra?.id);
 
     // Enviar WhatsApp
     await enviarWhatsApp(

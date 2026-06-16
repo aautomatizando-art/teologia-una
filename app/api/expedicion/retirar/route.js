@@ -76,11 +76,11 @@ export async function POST(req) {
       .update({ quantidade: produto.quantidade - Number(quantidade) })
       .eq("id", pedidoCompra.produto_id);
 
-    // Atualizar status de rastreio para EXPEDIÇÃO (4)
-    await supabase
-      .from("pedidos_compra")
-      .update({ status_rastreio: 4 })
-      .eq("id", pedidoCompra.id);
+    // Atualizar status de rastreio para EXPEDIÇÃO (4) com timestamp
+    const { data: tsAtual4 } = await supabase.from("pedidos_compra").select("rastreio_timestamps").eq("id", pedidoCompra.id).maybeSingle();
+    const ts4 = { ...(tsAtual4?.rastreio_timestamps || {}), 4: new Date().toISOString() };
+    const { error: eTs4 } = await supabase.from("pedidos_compra").update({ status_rastreio: 4, rastreio_timestamps: ts4 }).eq("id", pedidoCompra.id);
+    if (eTs4) await supabase.from("pedidos_compra").update({ status_rastreio: 4 }).eq("id", pedidoCompra.id);
 
     // Enviar WhatsApp
     await enviarWhatsApp(
