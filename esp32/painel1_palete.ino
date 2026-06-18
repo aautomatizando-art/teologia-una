@@ -11,7 +11,7 @@
     - Ao conectar ao WiFi, Saída 1 acende
     - Ao segurar o botão por 2 s, busca a OP ativa no dashboard
       e registra 1 palete no Painel 1 (Linhas 1+2)
-    - Após registro bem-sucedido, Saída 2 é habilitada
+    - Após registro bem-sucedido, Saída 2 pulsa por 2 s
 
   Dependências (Library Manager):
     - ArduinoJson  (v6+)  — Benoit Blanchon
@@ -22,13 +22,18 @@
 #include <ArduinoJson.h>
 
 // ── Configurações ──────────────────────────────────────────────────────────
-const char* SSID      = "SEU_WIFI";
-const char* SENHA_WIFI = "SUA_SENHA_WIFI";
+const char* SSID       = "iPhone de Alexsandro";
+const char* SENHA_WIFI = "galaction";
 const char* BASE_URL   = "https://dashboard-producao-two.vercel.app";
 
+// ── Identidade deste painel ─────────────────────────────────────────────────
+//    Para clonar para outro painel, altere apenas estas duas linhas:
+#define PAINEL_NUM  1          // 1, 2 ou 3
+#define LINHAS_STR  "1,2"      // "1,2" | "3,4" | "5,6"
+
 // ── Pinos ──────────────────────────────────────────────────────────────────
-#define PIN_SAIDA1  2    // LED/relé: WiFi conectado
-#define PIN_SAIDA2  4    // LED/relé: habilitado após palete
+#define PIN_SAIDA1  2    // LED/relé: WiFi conectado  (ativo-LOW)
+#define PIN_SAIDA2  4    // LED/relé: pulsa após palete (ativo-LOW)
 #define PIN_BOTAO   15   // Botão (pullup interno, pressão = LOW)
 
 // ── Parâmetros de tempo ────────────────────────────────────────────────────
@@ -48,8 +53,8 @@ void setup() {
   pinMode(PIN_SAIDA2, OUTPUT);
   pinMode(PIN_BOTAO,  INPUT_PULLUP);
 
-  digitalWrite(PIN_SAIDA1, LOW);
-  digitalWrite(PIN_SAIDA2, LOW);
+  digitalWrite(PIN_SAIDA1, HIGH); // relé desligado (ativo-LOW)
+  digitalWrite(PIN_SAIDA2, HIGH);
 
   // Pisca Saída 1 enquanto conecta
   Serial.print("Conectando ao WiFi");
@@ -60,8 +65,8 @@ void setup() {
     Serial.print(".");
   }
 
-  // Conectado: Saída 1 acende fixo
-  digitalWrite(PIN_SAIDA1, HIGH);
+  // Conectado: Saída 1 acende fixo (LOW = relé acionado)
+  digitalWrite(PIN_SAIDA1, LOW);
   Serial.printf("\nConectado! IP: %s\n", WiFi.localIP().toString().c_str());
 }
 
@@ -101,11 +106,12 @@ void enviarHeartbeat() {
   http.setTimeout(3000);
 
   String ip = WiFi.localIP().toString();
-  http.POST("{\"painel\":1,\"ip\":\"" + ip + "\"}");
+  String body = "{\"painel\":" + String(PAINEL_NUM) + ",\"ip\":\"" + ip + "\"}";
+  http.POST(body);
   http.end();
 }
 
-// ── Registra 1 palete no Painel 1 (Linhas 1 e 2) ─────────────────────────
+// ── Registra 1 palete no painel configurado ───────────────────────────────
 bool registrarPalete(const String& op) {
   if (WiFi.status() != WL_CONNECTED) return false;
 
@@ -114,8 +120,7 @@ bool registrarPalete(const String& op) {
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(8000);
 
-  // Painel 1 = Linhas 1 e 2
-  String body = "{\"acao\":\"paletes\",\"op\":\"" + op + "\",\"paletes\":1,\"linhas\":\"1,2\"}";
+  String body = "{\"acao\":\"paletes\",\"op\":\"" + op + "\",\"paletes\":1,\"linhas\":\"" LINHAS_STR "\"}";
   int code = http.POST(body);
   Serial.printf("POST /api/producao → %d\n", code);
   http.end();
@@ -133,13 +138,13 @@ void loop() {
     enviarHeartbeat();
   }
 
-  bool pressionado = (digitalRead(PIN_BOTAO) == LOW); // LOW = botão ativo
+  bool pressionado = (digitalRead(PIN_BOTAO) == LOW);
 
   if (pressionado) {
     if (inicioPressao == 0) inicioPressao = agora;
 
     if (!acionado && (agora - inicioPressao >= HOLD_MS)) {
-      acionado = true; // trava para não re-disparar enquanto mantém pressionado
+      acionado = true;
 
       Serial.println("Botão segurado 2 s — buscando OP ativa...");
       String op = buscarOPAtiva();
@@ -147,17 +152,18 @@ void loop() {
       if (op.isEmpty()) {
         Serial.println("Nenhuma OP ativa encontrada.");
       } else {
-        Serial.printf("OP: %s — registrando palete no Painel 1...\n", op.c_str());
+        Serial.printf("OP: %s — registrando palete no Painel %d...\n", op.c_str(), PAINEL_NUM);
         if (registrarPalete(op)) {
-          Serial.println("Palete registrado (Linhas 1+2)");
-          digitalWrite(PIN_SAIDA2, HIGH); // habilita Saída 2
+          Serial.println("Palete registrado (" LINHAS_STR ")");
+          digitalWrite(PIN_SAIDA2, LOW);  // pulsa relé 2 s
+          delay(2000);
+          digitalWrite(PIN_SAIDA2, HIGH);
         } else {
           Serial.println("Falha ao registrar.");
         }
       }
     }
   } else {
-    // Botão solto: reseta para próxima pressão
     inicioPressao = 0;
     acionado = false;
   }

@@ -30,7 +30,7 @@ export default function Esp32Status({ painel }) {
         background: status ? "#22c55e" : "#4b5563",
         boxShadow: status ? "0 0 6px #22c55e" : "none",
       }} />
-      {status ? "ESP32 ON" : "ESP32 OFF"}
+      {status ? "BOTOEIRA ON" : "BOTOEIRA OFF"}
     </span>
   );
 }
