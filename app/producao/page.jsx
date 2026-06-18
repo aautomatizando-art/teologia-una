@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 export const dynamic = "force-dynamic";
 import TopBar from "@/components/TopBar";
 import { pertenceALinhas, agruparPorTipo } from "@/lib/linhas";
+import Esp32Status from "@/components/Esp32Status";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -199,8 +200,9 @@ function PainelOP({ titulo, cor, linhas, indice }) {
     <div style={{ marginBottom: 36 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <span style={{ width: 10, height: 10, borderRadius: "50%", background: cor, display: "inline-block" }} />
-        <h2 style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a5b4fc", margin: 0 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a5b4fc", margin: 0, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
           🏭 {titulo} <span style={{ fontWeight: 600, letterSpacing: "normal", textTransform: "none", color: "#8b96c0" }}>(Linhas {linhas.join(" e ")})</span>
+          <Esp32Status painel={indice + 1} />
         </h2>
       </div>
 

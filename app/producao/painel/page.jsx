@@ -6,6 +6,7 @@ import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 import { pertenceALinhas, agruparPorTipo } from "@/lib/linhas";
+import Esp32Status from "@/components/Esp32Status";
 
 const TOOLTIP = { background: "#1a2347", border: "1px solid #26305c", borderRadius: 10, color: "#e8ecf8" };
 
@@ -59,14 +60,14 @@ export default function PainelVisualizacao() {
 
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
         {paineis.map((d, i) => (
-          <PainelColuna key={i} dados={d} cor={PAINEIS[i].cor} titulo={PAINEIS[i].titulo} linhas={PAINEIS[i].linhas} />
+          <PainelColuna key={i} dados={d} cor={PAINEIS[i].cor} titulo={PAINEIS[i].titulo} linhas={PAINEIS[i].linhas} painel={i + 1} />
         ))}
       </div>
     </div>
   );
 }
 
-function PainelColuna({ dados, cor, titulo, linhas }) {
+function PainelColuna({ dados, cor, titulo, linhas, painel }) {
   const o = dados?.ordem;
 
   if (!o) {
@@ -101,8 +102,9 @@ function PainelColuna({ dados, cor, titulo, linhas }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
       <div className="card" style={{ borderTop: `3px solid ${cor}`, flex: "0 0 auto", padding: "12px 16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <h3 style={{ margin: 0, fontSize: 13 }}>
+          <h3 style={{ margin: 0, fontSize: 13, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
             🏭 {titulo} <span className="muted" style={{ fontWeight: 400, fontSize: 11 }}>(Linhas {linhas.join("+")})</span>
+            <Esp32Status painel={painel} />
           </h3>
           <span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span>
         </div>
