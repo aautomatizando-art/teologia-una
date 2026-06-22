@@ -1,0 +1,128 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// ─── CONDOMINIO ──────────────────────────────────────────────────────────────────
+// Identificador deste condominio (aparece na dashboard e nas mensagens do grupo).
+// Use um nome diferente em cada gateway instalado!
+#define CONDOMINIO_NOME  "Condominio Park"
+
+// ─── WIFI (configuracao no local via WiFiManager) ───────────────────────────────
+// Nao precisa gravar SSID/senha no codigo: na primeira ligacao (ou se a rede
+// salva nao for encontrada) o ESP32 cria o ponto de acesso abaixo. Conecte pelo
+// celular, o portal abre sozinho, escolha a rede WiFi do condominio e digite a
+// senha. Fica salvo na memoria flash do ESP32.
+#define AP_CONFIG_NOME   "CaixaDagua-Setup"
+#define AP_CONFIG_SENHA  "12345678"          // senha do AP de configuracao (min 8)
+#define PORTAL_TIMEOUT_S 180                 // portal aberto por 3 min, depois reinicia
+
+// ─── EVOLUTION API (WhatsApp no VPS Hostinger) ─────────────────────────────────
+// IP do VPS (srv1745227.hstgr.cloud)
+#define EVO_BASE_URL   "http://2.25.192.72:8080"
+
+// Instancia conectada (verificada via /instance/fetchInstances)
+#define EVO_INSTANCE   "escola-una-v2"
+
+// API Key global da Evolution API (AUTHENTICATION_API_KEY)
+// NAO comitar a chave real no GitHub — preencha apenas localmente!
+#define EVO_APIKEY     "SUA_APIKEY_AQUI"
+
+// Grupo do WhatsApp: "Gestao Condominio"
+#define WHATS_GROUP_ID "120363407922496564@g.us"
+
+// ─── SUPABASE (Dashboard web) ───────────────────────────────────────────────────
+// URL do projeto: Supabase -> Settings -> API -> Project URL
+#define SUPABASE_URL  "https://odnjbvsjqteqapppkkpc.supabase.co"
+
+// Chave anon/public (chave publica, protegida por RLS — nunca use a service_role!)
+#define SUPABASE_KEY  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kbmpidnNqcXRlcWFwcHBra3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0Mjk4NDQsImV4cCI6MjA5NjAwNTg0NH0.YWEzDGBl-045TPfp66drFkFwo8eeILxEu6Ex8n3pO2M"
+
+// ════════════════════════════════════════════════════════════════════════
+// TANQUE SUPERIOR (recebido via ESP-NOW do ESP32 #1)
+// ════════════════════════════════════════════════════════════════════════
+
+// ─── LIMITES DE ALERTA ──────────────────────────────────────────────────────────
+#define NIVEL_ALERTA  20   // % abaixo disto -> alerta de nivel baixo
+#define NIVEL_OK      80   // % acima disto  -> aviso de caixa cheia
+
+// ─── STATUS PERIODICO ───────────────────────────────────────────────────────────
+// 0 = desativado (so envia alertas). Ex: 3600000UL = status a cada 1 hora
+#define INTERVALO_STATUS_MS  0UL
+
+// ─── TIMEOUT SEM DADOS ──────────────────────────────────────────────────────────
+// Alerta se o sensor (ESP-NOW) ficar mais que X ms sem enviar dados
+#define TIMEOUT_SENSOR_MS  120000UL   // 2 minutos sem dados = alerta
+
+// ════════════════════════════════════════════════════════════════════════
+// TANQUE INFERIOR (sensores e entradas ligados neste mesmo ESP32)
+// ════════════════════════════════════════════════════════════════════════
+
+// ─── PINOS ──────────────────────────────────────────────────────────────
+#define TRIG_PIN        32   // JSN-SR04T TRIG
+#define ECHO_PIN        33   // JSN-SR04T ECHO
+#define LED_PIN          2   // LED onboard (pisca apos cada envio)
+
+// ─── ENTRADAS DIGITAIS (sinais do quadro/inversor da bomba) ──────────
+// Contatos secos (rele) ligados ao GND quando ativos -> usa INPUT_PULLUP
+// (pino em HIGH = inativo, pino em LOW = ativo)
+// As 4 entradas do quadro/inversor da bomba ficam todas neste no.
+#define ENTRADA1_PIN    27   // ENTRADA 1: Bomba ligou
+#define ENTRADA2_PIN    14   // ENTRADA 2: Bomba falhou
+#define ENTRADA3_PIN    13   // ENTRADA 3: Falha no inversor
+#define ENTRADA4_PIN     4   // ENTRADA 4: Painel sem energia (sem rede CA)
+
+// ─── TEMPERATURA (DS18B20 via OneWire) ───────────────────────────────
+#define TEMP_PIN        15   // barramento OneWire do sensor DS18B20
+
+// ─── VIBRACAO (MPU-6050 / GY-521 via I2C) ────────────────────────────
+// Acelerometro fixado na carcaca da bomba. Ligacao:
+//   VCC -> 3V3 | GND -> GND | SDA -> GPIO21 | SCL -> GPIO22
+//   AD0 -> GND (ou solto) = endereco I2C 0x68
+#define MPU_SDA_PIN     21   // I2C SDA (padrao do ESP32 DevKit)
+#define MPU_SCL_PIN     22   // I2C SCL (padrao do ESP32 DevKit)
+#define MPU_I2C_ADDR    0x68 // 0x68 com AD0 no GND; 0x69 com AD0 no 3V3
+
+// ─── CALIBRACAO DA CAIXA ─────────────────────────────────────────────
+// Distancia (cm) do sensor ate a superficie da agua:
+//
+//  [Sensor na tampa]
+//     |  <- DIST_CAIXA_CHEIA (15cm) => caixa cheia (100%)
+//     |
+//     ~  nivel da agua
+//     |
+//     |  <- DIST_CAIXA_VAZIA (90cm) => caixa vazia (0%)
+//     |
+//  [Fundo]
+//
+#define DIST_CAIXA_VAZIA  90   // cm: nivel baixo (caixa vazia)
+#define DIST_CAIXA_CHEIA  15   // cm: nivel cheio (caixa cheia)
+
+// ─── LIMITES DE ALERTA (Tanque Inferior) ─────────────────────────────────────────
+#define TI_NIVEL_ALERTA  20   // % abaixo disto -> alerta de nivel baixo
+#define TI_NIVEL_OK      80   // % acima disto  -> aviso de tanque abastecido
+
+#define TEMP_ALERTA_C   60     // alerta se temperatura da bomba ultrapassar este valor (°C)
+// Vibracao RMS em mili-g (1000 mg = 1 g). Referencia: bomba parada ~5-20 mg
+// (ruido do sensor), bomba ok ~30-150 mg. Calibre com a bomba real: anote a
+// leitura "bomba ligada normal" no Serial Monitor e use ~2x esse valor.
+#define VIBRACAO_LIMIAR 300.0  // mg RMS acima disto = vibracao excessiva
+
+// ─── INTERVALO DE MEDICAO ─────────────────────────────────────────────
+#define INTERVALO_MEDICAO_MS  30000UL   // mede e envia a cada 30 segundos
+
+// ════════════════════════════════════════════════════════════════════════
+// MONITORAMENTO DA CAMERA (ESP32-CAM, Alarme de Incendio)
+// ════════════════════════════════════════════════════════════════════════
+// O gateway tem o unico ESP32 que fica sempre online, entao ele tambem
+// consulta periodicamente a tabela "alarme_incendio" no Supabase: se o
+// "created_at" da ultima leitura nao mudar por CAM_TIMEOUT_CHECKS
+// verificacoes seguidas, considera a camera/alarme offline e avisa no
+// WhatsApp (e novamente quando ela voltar a enviar dados).
+
+// Intervalo entre verificacoes (ms)
+#define CAM_CHECK_INTERVALO_MS  60000UL   // verifica a cada 1 minuto
+
+// Verificacoes seguidas sem mudanca no created_at = camera offline
+// (a camera envia heartbeat a cada 30s, entao 2 x 60s = ~2min sem dados)
+#define CAM_TIMEOUT_CHECKS  2
+
+#endif

@@ -81,6 +81,35 @@ CREATE INDEX IF NOT EXISTS idx_perguntas_nivel  ON quiz_perguntas(nivel) WHERE a
 CREATE INDEX IF NOT EXISTS idx_respostas_partida ON quiz_respostas(partida_id);
 
 -- ═══════════════════════════════════════════════════════════
+--  USUÁRIOS (login) + RANKING GLOBAL
+-- ═══════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS quiz_usuarios (
+  id         BIGINT PRIMARY KEY,
+  nome       TEXT UNIQUE NOT NULL,
+  senha      TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS quiz_ranking (
+  id         BIGINT PRIMARY KEY,          -- mesmo id do usuário
+  nome       TEXT NOT NULL,
+  pontos     INT DEFAULT 0,
+  acertos    INT DEFAULT 0,
+  erros      INT DEFAULT 0,
+  partidas   INT DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE quiz_usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_ranking   ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_usuarios" ON quiz_usuarios;
+DROP POLICY IF EXISTS "anon_ranking"  ON quiz_ranking;
+CREATE POLICY "anon_usuarios" ON quiz_usuarios FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "anon_ranking"  ON quiz_ranking  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_ranking_pontos ON quiz_ranking(pontos DESC);
+
+-- ═══════════════════════════════════════════════════════════
 --  SEED — PERGUNTAS
 -- ═══════════════════════════════════════════════════════════
 
