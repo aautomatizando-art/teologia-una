@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quiz Bíblico Pentecostal · ESP32</title>
-<meta name="description" content="Quiz Bíblico Pentecostal com níveis Básico, Médio, Avançado e Teológico, cronômetro, sorteio de até 8 jogadores e integração com ESP32.">
+<title>Quiz Bíblico · Ensino Teológico UNA</title>
+<meta name="description" content="Quiz Bíblico Ensino Teológico UNA com níveis Básico, Médio, Avançado e Teológico, cronômetro, sorteio de até 8 jogadores e integração com ESP32.">
 <meta name="theme-color" content="#0e0e0e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -25,8 +25,34 @@ html,body{min-height:100%;background:
 
 .hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,44px);position:sticky;top:0;z-index:100;}
 .hdr-in{max-width:1320px;margin:0 auto;height:60px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
-.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(13px,1.8vw,17px);display:flex;align-items:center;gap:10px;}
+.hdr-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.7vw,16px);display:flex;align-items:center;justify-content:center;gap:12px;}
 .hdr-title span{color:var(--gold);}
+.hdr-logo{height:42px;width:auto;object-fit:contain;}
+.hdr-user{font-size:12px;font-weight:600;color:var(--sky);background:rgba(53,200,255,.08);border:1px solid rgba(53,200,255,.22);border-radius:20px;padding:4px 12px;display:none;white-space:nowrap;}
+
+/* ── Login screen ── */
+.ls-over{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+.ls-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:380px;padding:32px 28px;text-align:center;}
+.ls-box h2{font-family:'Archivo Black',sans-serif;font-size:20px;margin-bottom:4px;}
+.ls-box .ls-sub{color:var(--muted);font-size:13px;margin-bottom:24px;}
+.ls-box .fld{text-align:left;}
+.ls-err{color:var(--danger);font-size:12px;margin-bottom:10px;display:none;}
+.ls-link{font-size:13px;color:var(--muted);margin-top:12px;}
+.ls-link a{color:var(--sky);text-decoration:none;font-weight:600;}
+
+/* ── Ranking global ── */
+.grank-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;margin-bottom:5px;border:1px solid var(--border);font-size:13px;background:var(--bg3);}
+.grank-row.top1{background:linear-gradient(90deg,rgba(255,209,102,.18),rgba(255,209,102,.04));border-color:rgba(255,209,102,.55);}
+.grank-row.top2{background:linear-gradient(90deg,rgba(203,213,225,.16),rgba(203,213,225,.03));border-color:rgba(203,213,225,.45);}
+.grank-row.top3{background:linear-gradient(90deg,rgba(251,146,60,.15),rgba(251,146,60,.03));border-color:rgba(251,146,60,.45);}
+.grank-pos{display:flex;align-items:center;gap:3px;min-width:46px;font-weight:800;font-size:13px;color:var(--muted);}
+.grank-row.top1 .grank-pos{color:var(--gold);}
+.grank-row.top2 .grank-pos{color:#cbd5e1;}
+.grank-row.top3 .grank-pos{color:#fb923c;}
+.grank-medal{font-size:16px;}
+.grank-nome{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.grank-pts{color:var(--gold);font-weight:800;font-size:15px;}
+.grank-pct{color:var(--muted);font-size:11px;min-width:34px;text-align:right;}
 .tag{display:inline-flex;align-items:center;font-family:'Fira Code',monospace;font-size:10px;
   padding:2px 8px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25);border-radius:4px;color:var(--gold);}
 
@@ -102,6 +128,7 @@ html,body{min-height:100%;background:
 .modal.show{display:flex;}
 .modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;padding:24px;animation:fu .25s ease;}
 .modal-box.sm{max-width:380px;}
+.modal-box.lg{max-width:680px;}
 .modal-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
 .modal-h h3{font-family:'Archivo Black',sans-serif;font-size:17px;}
 .modal-x{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;padding:0 4px;}
@@ -122,6 +149,8 @@ html,body{min-height:100%;background:
 .qa-item{display:flex;gap:9px;align-items:flex-start;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:13px;}
 .qa-item .qx{flex:1;line-height:1.4;}
 .qa-item .qx small{color:var(--muted);font-family:'Fira Code',monospace;font-size:11px;}
+.qa-edit{background:rgba(53,200,255,.12);border:1px solid rgba(53,200,255,.35);color:var(--sky);border-radius:6px;cursor:pointer;font-size:14px;padding:2px 9px;flex-shrink:0;}
+.qa-edit:hover{background:rgba(53,200,255,.22);}
 .qa-del{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:var(--danger);border-radius:6px;cursor:pointer;font-size:14px;padding:2px 9px;flex-shrink:0;}
 .qa-del:hover{background:rgba(239,68,68,.22);}
 .adm-tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);}
@@ -150,9 +179,14 @@ html,body{min-height:100%;background:
 .est-label{margin-top:10px;color:var(--gold);font-size:12.5px;font-weight:700;letter-spacing:.04em;}
 .est-label .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--danger);box-shadow:0 0 6px var(--danger);animation:bl .5s infinite;margin-right:5px;}
 
-.draw-zone{text-align:center;padding:30px 10px;}
-.draw-name{font-family:'Archivo Black',sans-serif;font-size:clamp(26px,6vw,52px);line-height:1.1;margin:8px 0 18px;}
+.draw-zone{text-align:center;padding:14px 10px 18px;}
+.draw-name{font-family:'Archivo Black',sans-serif;font-size:clamp(24px,4.5vw,42px);line-height:1.05;margin:2px 0 14px;}
 .draw-hint{color:var(--muted);font-size:13px;}
+.draw-verse{max-width:560px;margin:14px auto 0;color:var(--text);font-style:italic;font-size:13.5px;line-height:1.5;
+  background:rgba(0,0,0,.22);border-left:3px solid var(--gold);border-radius:8px;padding:10px 14px;text-align:left;}
+.draw-verse b{color:var(--gold);font-style:normal;}
+.draw-verse-ref{display:block;margin-top:6px;color:var(--muted);font-style:normal;font-family:'Fira Code',monospace;font-size:11px;letter-spacing:.03em;}
+.draw-logo{display:block;max-width:150px;max-height:104px;width:auto;height:auto;margin:0 auto 8px;object-fit:contain;border-radius:10px;}
 
 .q-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .q-player{display:flex;align-items:center;gap:8px;font-weight:700;}
@@ -223,39 +257,53 @@ html,body{min-height:100%;background:
 </head>
 <body>
 
+<!-- ── TELA DE LOGIN ── -->
+<div class="ls-over" id="loginScreen">
+  <div class="ls-box">
+    <img src="logoteologia.jpg?v=1" style="max-width:110px;margin:0 auto 14px;display:block;border-radius:10px;" onerror="this.style.display='none'">
+    <h2>✝️ Quiz Bíblico</h2>
+    <p class="ls-sub">Ensino Teológico UNA</p>
+
+    <div id="loginForm">
+      <div class="fld"><label>Nome de usuário</label><input type="text" id="loginNome" placeholder="Seu nome" autocomplete="username" style="width:100%"></div>
+      <div class="fld"><label>Senha</label><input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" style="width:100%"></div>
+      <div class="ls-err" id="loginErr"></div>
+      <button class="btn btn-gold btn-lg" id="btnLogin" style="width:100%;margin-bottom:12px">Entrar</button>
+      <p class="ls-link">Não tem conta? <a href="#" id="showRegister">Cadastrar-se</a></p>
+    </div>
+
+    <div id="registerForm" style="display:none">
+      <div class="fld"><label>Nome</label><input type="text" id="regNome" placeholder="Seu nome" autocomplete="name" style="width:100%"></div>
+      <div class="fld"><label>Senha</label><input type="password" id="regSenha" placeholder="Senha" autocomplete="new-password" style="width:100%"></div>
+      <div class="fld"><label>Confirmar senha</label><input type="password" id="regSenha2" placeholder="Repita a senha" style="width:100%"></div>
+      <div class="ls-err" id="regErr"></div>
+      <button class="btn btn-sky btn-lg" id="btnRegister" style="width:100%;margin-bottom:12px">Cadastrar e Entrar</button>
+      <p class="ls-link">Já tem conta? <a href="#" id="showLogin">Entrar</a></p>
+    </div>
+  </div>
+</div>
+
 <header class="hdr"><div class="hdr-in">
-  <div class="hdr-title">✝️ Quiz Bíblico <span>Pentecostal</span> <span class="tag">ESP32</span></div>
+  <div class="hdr-title">
+    ✝️ Quiz Bíblico <span>Ensino Teológico UNA</span>
+    <img src="logo.jpg?v=3" alt="UNA" class="hdr-logo">
+  </div>
   <div style="display:flex;align-items:center;gap:10px;">
+    <span class="hdr-user" id="hdrUser"></span>
     <span class="chip chip-off" id="connChip"><span class="dot dot-off" id="connDot"></span><span id="connTxt">ESP32 Offline</span></span>
     <span class="chip chip-off" id="sbChip"><span class="dot dot-off"></span><span id="sbTxt">Local</span></span>
   </div>
 </div></header>
 
-<div class="strip"><div class="strip-in">
-  <div class="ifield"><span class="ilbl">Relay / WS URL</span>
-    <input class="iinput" id="cfgRelay" placeholder="wss://… (opcional)"></div>
-  <div class="ifield"><span class="ilbl">IP do ESP32</span>
-    <input class="iinput" id="cfgIp" placeholder="192.168.1.100" style="width:120px"></div>
-  <button class="btn btn-sky" id="btnConnect">🔌 Conectar ESP32</button>
-  <div class="idiv"></div>
-  <div class="ifield"><span class="ilbl">Supabase URL</span>
-    <input class="iinput" id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
-  <div class="ifield"><span class="ilbl">Supabase anon key</span>
-    <input class="iinput" id="cfgSbKey" placeholder="eyJ…" type="password"></div>
-  <button class="btn btn-ghost" id="btnSaveSb">💾 Salvar</button>
-</div></div>
-
 <div class="body">
-
-  <div class="banner banner-https" id="httpsBanner"><div class="bico">🔒</div><div class="btxt">
-    <strong>Conexão ws:// bloqueada nesta página HTTPS</strong>
-    <small>Para usar o ESP32 na rede local, rode o <b>relay</b> e cole a URL <b>wss://</b> acima, ou abra este HTML salvo no computador.</small>
-  </div></div>
 
   <!-- ── SETUP ── -->
   <div class="card" id="setupCard">
     <div class="card-h"><div class="card-t">⚙️ Configuração da Partida</div>
-      <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <button class="btn btn-ghost" id="btnAdmin">🔐 Gerenciar Perguntas</button>
+        <button class="btn btn-ghost" id="btnRanking" style="font-size:12px;padding:5px 10px">🏅 Ranking Global</button>
+      </div></div>
     <div class="setup-row">
       <div class="ifield"><span class="ilbl">Nível</span>
         <div class="lvl-tabs" id="lvlTabs">
@@ -285,43 +333,13 @@ html,body{min-height:100%;background:
       <div class="card stage" id="stageCard">
         <!-- estado inicial / sorteio -->
         <div id="drawZone" class="draw-zone">
+          <img id="drawLogo" src="logoteologia.jpg?v=1" alt="Ensino Teológico UNA" class="draw-logo" onerror="this.style.display='none'">
           <div class="draw-hint">Pronto para começar</div>
           <div class="draw-name" id="drawName" style="color:var(--gold)">Quiz Bíblico</div>
           <button class="btn btn-gold btn-lg" id="btnDraw">🎲 Sortear Jogador</button>
-          <div class="draw-hint" style="margin-top:14px">O sorteio aciona a saída do jogador no ESP32</div>
-        </div>
-
-        <!-- pergunta -->
-        <div id="qZone" style="display:none">
-          <div class="q-meta">
-            <div class="q-player"><span class="q-pdot" id="qPdot"></span><span id="qPname">—</span></div>
-            <span class="lvl-badge" id="qLvl">Básico</span>
-          </div>
-          <div class="q-text" id="qText">—</div>
-          <div class="opts" id="qOpts"></div>
-          <div class="timer-wrap" style="margin-top:18px">
-            <div class="timer-num" id="timerNum">30</div>
-            <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
-          </div>
-
-          <div class="result" id="result">
-            <div class="result-emoji" id="resEmoji">🎉</div>
-            <div class="result-title" id="resTitle">Parabéns!</div>
-            <div class="result-sub" id="resSub"></div>
-            <div class="castigo" id="resCastigo" style="display:none"></div>
-            <div class="esteira" id="esteira">
-              <div class="est-wrap">
-                <div class="est-roller l"></div>
-                <div class="est-belt"></div>
-                <div class="est-roller r"></div>
-                <div class="est-box">⚡</div>
-              </div>
-              <div class="est-label" id="estLabel"><span class="dot"></span>Saída de castigo ligada…</div>
-            </div>
-            <div class="ref" id="resRef"></div>
-            <button class="btn btn-gold" id="btnVerse" style="display:none;margin-top:12px">📖 Ler versículo (ARC)</button>
-            <div class="vtext" id="resVerse" style="display:none"></div>
-            <div style="margin-top:16px"><button class="btn btn-sky btn-lg" id="btnNext">➡️ Próxima Rodada</button></div>
+          <div class="draw-verse">
+            “Conheçamos e prossigamos em conhecer o <b>SENHOR</b>: como a alva, será a sua saída; e ele a nós virá como a chuva, como chuva serôdia que rega a terra.”
+            <span class="draw-verse-ref">Oseias 6:3 · ARC</span>
           </div>
         </div>
       </div>
@@ -334,16 +352,52 @@ html,body{min-height:100%;background:
     <div>
       <div class="card">
         <div class="card-h"><div class="card-t">🏆 Placar</div>
-          <button class="btn btn-ghost" id="btnReset" style="padding:5px 10px">Zerar</button></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ok" id="btnFinalizar" style="padding:5px 10px">✅ Finalizar</button>
+            <button class="btn btn-ghost" id="btnReset" style="padding:5px 10px">Zerar</button>
+          </div></div>
         <div class="score-list" id="scoreList"></div>
-      </div>
-      <div class="card">
-        <div class="card-h"><div class="card-t">📋 Eventos</div></div>
-        <div class="log" id="log"></div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ── MODAL: PERGUNTA (centro) ── -->
+<div class="modal" id="mQuestion" data-nodismiss="1"><div class="modal-box lg">
+  <div class="q-meta">
+    <div class="q-player"><span class="q-pdot" id="qPdot"></span><span id="qPname">—</span></div>
+    <span class="lvl-badge" id="qLvl">Básico</span>
+  </div>
+  <div class="q-text" id="qText">—</div>
+  <div class="opts" id="qOpts"></div>
+  <div class="timer-wrap" style="margin-top:18px">
+    <div class="timer-num" id="timerNum">30</div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+  </div>
+</div></div>
+
+<!-- ── MODAL: RESULTADO (centro) ── -->
+<div class="modal" id="mResult" data-nodismiss="1"><div class="modal-box">
+  <div class="result show" id="result">
+    <div class="result-emoji" id="resEmoji">🎉</div>
+    <div class="result-title" id="resTitle">Parabéns!</div>
+    <div class="result-sub" id="resSub"></div>
+    <div class="castigo" id="resCastigo" style="display:none"></div>
+    <div class="esteira" id="esteira">
+      <div class="est-wrap">
+        <div class="est-roller l"></div>
+        <div class="est-belt"></div>
+        <div class="est-roller r"></div>
+        <div class="est-box">⚡</div>
+      </div>
+      <div class="est-label" id="estLabel"><span class="dot"></span>Saída de castigo ligada…</div>
+    </div>
+    <div class="ref" id="resRef"></div>
+    <button class="btn btn-gold" id="btnVerse" style="display:none;margin-top:12px">📖 Ler versículo (ARC)</button>
+    <div class="vtext" id="resVerse" style="display:none"></div>
+    <div style="margin-top:16px"><button class="btn btn-sky btn-lg" id="btnNext">➡️ Próxima Rodada</button></div>
+  </div>
+</div></div>
 
 <!-- ── MODAL: senha de administrador ── -->
 <div class="modal" id="mPass"><div class="modal-box sm">
@@ -388,6 +442,7 @@ html,body{min-height:100%;background:
       <div class="fld"><label>Referência (opcional)</label><input id="adRef" placeholder="Ex.: João 3:16"></div>
     </div>
     <div class="fld"><label>Versículo ARC (opcional)</label><textarea id="adVers" placeholder="Texto do versículo…"></textarea></div>
+    <div id="adEditing" style="display:none;color:var(--sky);font-size:12px;font-weight:700;margin-bottom:8px">✏️ Editando pergunta — clique em "Limpar" para cancelar.</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
       <button class="btn btn-ghost" id="adClear">Limpar</button>
       <button class="btn btn-sky" id="adSave">💾 Salvar pergunta</button>
@@ -410,16 +465,208 @@ html,body{min-height:100%;background:
 
   <!-- aba config -->
   <div id="atCfg" style="display:none">
-    <div class="fld"><label>Senha do administrador atual</label><input type="password" id="adPassCur" placeholder="Senha atual"></div>
-    <div class="fld"><label>Nova senha</label><input type="password" id="adPassNew" placeholder="Nova senha"></div>
+    <div style="font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📡 ESP32</div>
+    <div class="row2">
+      <div class="fld"><label>Relay / WS URL (opcional)</label><input id="cfgRelay" placeholder="wss://…"></div>
+      <div class="fld"><label>IP do ESP32</label><input id="cfgIp" placeholder="192.168.1.100"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn btn-sky" id="btnConnect">🔌 Conectar ESP32</button></div>
+
+    <div style="font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">☁️ Supabase</div>
+    <div class="fld"><label>Supabase URL</label><input id="cfgSbUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div class="fld"><label>Supabase anon key</label><input type="password" id="cfgSbKey" placeholder="eyJ…"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><button class="btn btn-ghost" id="btnSaveSb">💾 Salvar Supabase</button></div>
+
+    <div style="font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🔐 Senha do administrador</div>
+    <div class="row2">
+      <div class="fld"><label>Senha atual</label><input type="password" id="adPassCur" placeholder="Senha atual"></div>
+      <div class="fld"><label>Nova senha</label><input type="password" id="adPassNew" placeholder="Nova senha"></div>
+    </div>
     <div style="display:flex;justify-content:flex-end"><button class="btn btn-sky" id="adPassSave">Alterar senha</button></div>
     <p class="muted" style="font-size:11px;margin-top:14px">As perguntas são salvas no <b>Supabase</b> quando configurado; caso contrário, ficam salvas <b>localmente</b> neste navegador.</p>
   </div>
 </div></div>
 
+<!-- ── MODAL: Ranking Global ── -->
+<div class="modal" id="mRanking"><div class="modal-box sm">
+  <div class="modal-h"><h3>🏅 Ranking Global</h3><button class="modal-x" data-close="mRanking">×</button></div>
+  <div id="globalRankList"><p class="muted" style="font-size:12px">Nenhum jogador ainda.</p></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+/* ══════════════ AUTH ══════════════ */
+let currentUser = null;
+
+function getUsers(){ try{ return JSON.parse(localStorage.getItem('quiz_users')||'[]'); }catch(_){ return []; } }
+function saveUsers(u){ localStorage.setItem('quiz_users', JSON.stringify(u)); }
+
+async function doLogin(nome, senha){
+  nome = nome.trim();
+  if(sb){
+    try{
+      const {data} = await sb.from('quiz_usuarios').select('*').ilike('nome', nome).limit(1);
+      if(data && data.length) return data[0].senha===senha ? data[0] : null;
+      return null;
+    }catch(_){ /* cai para local */ }
+  }
+  const u = getUsers().find(x => x.nome.toLowerCase()===nome.toLowerCase() && x.senha===senha);
+  return u || null;
+}
+async function doRegister(nome, senha){
+  nome = nome.trim();
+  const u = { id: Date.now(), nome, senha };
+  if(sb){
+    try{
+      const {data:exist} = await sb.from('quiz_usuarios').select('id').ilike('nome', nome).limit(1);
+      if(exist && exist.length) return null;            // já existe
+      const {error} = await sb.from('quiz_usuarios').insert(u);
+      if(error) throw error;
+      return u;
+    }catch(_){ /* cai para local */ }
+  }
+  const users = getUsers();
+  if(users.find(x => x.nome.toLowerCase()===nome.toLowerCase())) return null;
+  users.push(u); saveUsers(users);
+  return u;
+}
+function startSession(u){
+  currentUser = u;
+  try{ sessionStorage.setItem('quiz_session', JSON.stringify(u)); }catch(_){}
+  const el = document.getElementById('hdrUser');
+  el.textContent = '👤 ' + u.nome;
+  el.style.display = 'inline-flex';
+  document.getElementById('loginScreen').style.display = 'none';
+  renderGlobalRanking();
+}
+function initAuth(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem('quiz_session')||'null');
+    if(s && s.id){ startSession(s); return; }
+  }catch(_){}
+  // mostra tela de login
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// Eventos de login
+document.getElementById('btnLogin').onclick = async () => {
+  const btn = document.getElementById('btnLogin');
+  const nome = document.getElementById('loginNome').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const err = document.getElementById('loginErr');
+  if(!nome || !senha){ err.textContent='Preencha nome e senha.'; err.style.display='block'; return; }
+  btn.disabled=true;
+  const u = await doLogin(nome, senha);
+  btn.disabled=false;
+  if(!u){ err.textContent='Usuário ou senha incorretos.'; err.style.display='block'; return; }
+  err.style.display='none'; startSession(u);
+};
+document.getElementById('loginSenha').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnLogin').click(); });
+document.getElementById('loginNome').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginSenha').focus(); });
+
+document.getElementById('btnRegister').onclick = async () => {
+  const btn = document.getElementById('btnRegister');
+  const nome = document.getElementById('regNome').value.trim();
+  const senha = document.getElementById('regSenha').value;
+  const senha2 = document.getElementById('regSenha2').value;
+  const err = document.getElementById('regErr');
+  if(!nome || !senha){ err.textContent='Preencha todos os campos.'; err.style.display='block'; return; }
+  if(senha.length < 3){ err.textContent='A senha precisa de ao menos 3 caracteres.'; err.style.display='block'; return; }
+  if(senha !== senha2){ err.textContent='As senhas não coincidem.'; err.style.display='block'; return; }
+  btn.disabled=true;
+  const u = await doRegister(nome, senha);
+  btn.disabled=false;
+  if(!u){ err.textContent='Esse nome já está em uso.'; err.style.display='block'; return; }
+  err.style.display='none'; startSession(u);
+};
+document.getElementById('regSenha2').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnRegister').click(); });
+
+document.getElementById('showRegister').onclick = e => {
+  e.preventDefault();
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('registerForm').style.display='block';
+  document.getElementById('regNome').focus();
+};
+document.getElementById('showLogin').onclick = e => {
+  e.preventDefault();
+  document.getElementById('registerForm').style.display='none';
+  document.getElementById('loginForm').style.display='block';
+  document.getElementById('loginNome').focus();
+};
+
+/* ══════════════ RANKING GLOBAL ══════════════ */
+function getGlobalRanking(){ try{ return JSON.parse(localStorage.getItem('quiz_global_ranking')||'[]'); }catch(_){ return []; } }
+function saveGlobalRanking(r){ localStorage.setItem('quiz_global_ranking', JSON.stringify(r)); }
+
+// Soma os pontos/acertos/erros da partida atual (placar)
+function partidaStats(){
+  let pts=0, ac=0, tot=0;
+  Object.values(scores||{}).forEach(s=>{ pts+=(s.pts||0); ac+=(s.hit||0); tot+=(s.total||0); });
+  return { pts, ac, err: tot-ac };
+}
+
+async function updateGlobalRanking(){
+  if(!currentUser) return false;
+  const {pts, ac, err} = partidaStats();
+  if(pts===0 && ac===0 && err===0) return false;
+
+  if(sb){
+    try{
+      const {data} = await sb.from('quiz_ranking').select('*').eq('id', currentUser.id).limit(1);
+      const cur = (data && data[0]) || {pontos:0,acertos:0,erros:0,partidas:0};
+      const row = {
+        id: currentUser.id, nome: currentUser.nome,
+        pontos:(cur.pontos||0)+pts, acertos:(cur.acertos||0)+ac,
+        erros:(cur.erros||0)+err, partidas:(cur.partidas||0)+1,
+        updated_at: new Date().toISOString()
+      };
+      const {error} = await sb.from('quiz_ranking').upsert(row);
+      if(error) throw error;
+      await renderGlobalRanking();
+      return true;
+    }catch(_){ /* cai para local */ }
+  }
+  // fallback local
+  const r = getGlobalRanking();
+  let entry = r.find(x => x.id===currentUser.id);
+  if(!entry){ entry={id:currentUser.id,nome:currentUser.nome,pontos:0,acertos:0,erros:0,partidas:0}; r.push(entry); }
+  entry.nome = currentUser.nome;
+  entry.pontos += pts; entry.acertos += ac; entry.erros += err; entry.partidas++;
+  saveGlobalRanking(r);
+  await renderGlobalRanking();
+  return true;
+}
+
+async function renderGlobalRanking(){
+  let r = [];
+  if(sb){
+    try{
+      const {data} = await sb.from('quiz_ranking').select('*').order('pontos',{ascending:false}).limit(10);
+      if(data) r = data;
+    }catch(_){ r = getGlobalRanking(); }
+  } else {
+    r = getGlobalRanking();
+  }
+  r = r.slice().sort((a,b)=>b.pontos-a.pontos).slice(0,10);
+  const el = document.getElementById('globalRankList');
+  if(!el) return;
+  if(!r.length){ el.innerHTML='<p class="muted" style="font-size:12px;padding:8px 0">Nenhum jogador ainda.</p>'; return; }
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML = r.map((u,i)=>{
+    const pct = (u.acertos+u.erros)>0 ? Math.round(u.acertos/(u.acertos+u.erros)*100) : 0;
+    const topCls = i<3 ? ' top'+(i+1) : '';
+    const medal = medals[i] || '';
+    const me = currentUser && u.id===currentUser.id ? 'style="color:var(--sky)"' : '';
+    return `<div class="grank-row${topCls}">
+      <span class="grank-pos">${i+1}º ${medal}</span>
+      <span class="grank-nome" ${me}>${u.nome}</span>
+      <span class="grank-pts">${u.pontos}</span>
+      <span class="grank-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
 /* ══════════════ CONFIG / ESTADO ══════════════ */
 let cfg = { relay:'', ip:'192.168.1.100', sbUrl:'', sbKey:'', level:'basico', num:4, time:30, adminPass:'1234', castigoSec:5,
   names:['Jogador 1','Jogador 2','Jogador 3','Jogador 4','Jogador 5','Jogador 6','Jogador 7','Jogador 8'] };
@@ -559,12 +806,16 @@ const ARC={
 /* perguntas adicionadas localmente pelo administrador (quando sem Supabase) */
 function loadCustomQ(){ try{ return JSON.parse(localStorage.getItem('quiz_custom_q')||'[]'); }catch(_){ return []; } }
 function saveCustomQ(a){ localStorage.setItem('quiz_custom_q',JSON.stringify(a)); }
+/* embutidas ocultadas após serem editadas (vira cópia editável) */
+function loadHidden(){ try{ return JSON.parse(localStorage.getItem('quiz_hidden_local')||'[]'); }catch(_){ return []; } }
+function saveHidden(a){ localStorage.setItem('quiz_hidden_local',JSON.stringify(a)); }
 
 /* ══════════════ SUPABASE ══════════════ */
 let sb=null;
 async function initSupabase(){
-  const custom=loadCustomQ();
-  questions=FALLBACK_Q.concat(custom).map((q,i)=>({...q,id:q.id||'local-'+i,versiculo:q.versiculo||ARC[q.referencia]||''}));
+  const custom=loadCustomQ(), hidden=loadHidden();
+  questions=FALLBACK_Q.concat(custom).map((q,i)=>({...q,id:q.id||'local-'+i,versiculo:q.versiculo||ARC[q.referencia]||''}))
+    .filter(q=>!hidden.includes(q.id));
   castigos=FALLBACK_C.slice();
   if(cfg.sbUrl && cfg.sbKey){
     try{
@@ -619,7 +870,7 @@ function connect(){
   const isLocal=/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|localhost)/.test(cfg.ip);
   if(isHttps && isLocal){
     setConn('fail','HTTPS bloqueia ws://');
-    document.getElementById('httpsBanner').classList.add('show');
+    toast('ws:// bloqueado em HTTPS — use um Relay (wss://) ou abra o HTML salvo no PC','err');
     log('warn','HTTPS impede ws:// — use um Relay (wss://) ou abra o HTML salvo localmente');
     return;
   }
@@ -644,9 +895,26 @@ function handleEsp(d){
 
 /* ══════════════ ÁUDIO (standalone) ══════════════ */
 let actx=null;
+function unlockAudio(){
+  if(actx) return;
+  try{
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    // toca silêncio para destravar o contexto no mobile
+    const buf=actx.createBuffer(1,1,22050);
+    const src=actx.createBufferSource();
+    src.buffer=buf; src.connect(actx.destination); src.start(0);
+    if(actx.state==='suspended') actx.resume();
+  }catch(_){}
+}
+// desbloqueio no primeiro gesto do usuário
+['touchstart','touchend','mousedown','keydown'].forEach(ev=>
+  document.addEventListener(ev, unlockAudio, {once:true, passive:true})
+);
+
 function tone(freq,dur,when=0,type='sine',vol=.25){
   try{
-    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended') actx.resume();
     const o=actx.createOscillator(),g=actx.createGain();
     o.type=type;o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
     const t=actx.currentTime+when;
@@ -662,6 +930,7 @@ function tick(){ tone(1200,.05,0,'square',.08); }
 /* ══════════════ LOG ══════════════ */
 function log(t,m){
   const el=document.getElementById('log');
+  if(!el) return;
   const d=document.createElement('div');
   d.className='log-'+(t==='ok'?'ok':t==='warn'?'warn':t==='err'?'err':'i');
   d.textContent=`${new Date().toLocaleTimeString('pt-BR')} ${m}`;
@@ -714,9 +983,15 @@ function renderScores(){
 }
 
 /* ══════════════ JOGO ══════════════ */
+let drawnThisCycle=new Set();   // jogadores já sorteados no ciclo atual
 function drawPlayer(){
   const n=cfg.num;
-  currentPlayer=Math.floor(Math.random()*n)+1;
+  // só sorteia entre quem ainda não jogou neste ciclo
+  let avail=[];
+  for(let i=1;i<=n;i++) if(!drawnThisCycle.has(i)) avail.push(i);
+  if(!avail.length){ drawnThisCycle.clear(); for(let i=1;i<=n;i++) avail.push(i); }
+  currentPlayer=avail[Math.floor(Math.random()*avail.length)];
+  drawnThisCycle.add(currentPlayer);
   sendCmd({cmd:'sorteio',player:currentPlayer});   // aciona saída do ESP32
   log('i',`🎲 Sorteado: ${cfg.names[currentPlayer-1]} (saída ${currentPlayer})`);
   // animação de sorteio
@@ -737,11 +1012,29 @@ function drawPlayer(){
   renderScores();
 }
 
+const LEVEL_ORDER=['basico','medio','avancado','teologico'];
 function pickQuestion(){
+  // nunca repete: usa só perguntas ainda não usadas do nível atual
   let pool=questions.filter(q=>q.nivel===cfg.level && !usedIds.has(q.id));
-  if(!pool.length){ // recicla
-    questions.filter(q=>q.nivel===cfg.level).forEach(q=>usedIds.delete(q.id));
-    pool=questions.filter(q=>q.nivel===cfg.level);
+  if(!pool.length){
+    // nível esgotado → avança para o próximo nível que ainda tenha perguntas
+    const start=LEVEL_ORDER.indexOf(cfg.level);
+    let found=null;
+    for(let k=1;k<=LEVEL_ORDER.length;k++){
+      const lvl=LEVEL_ORDER[(start+k)%LEVEL_ORDER.length];
+      const p=questions.filter(q=>q.nivel===lvl && !usedIds.has(q.id));
+      if(p.length){ found=lvl; pool=p; break; }
+    }
+    if(found){
+      setLevel(found);
+      toast('Perguntas do nível esgotadas — indo para '+LVL_PT[found],'ok');
+      log('i','Nível alterado para '+LVL_PT[found]+' (perguntas anteriores esgotadas)');
+    } else {
+      // todos os níveis esgotados → recicla tudo
+      usedIds.clear();
+      pool=questions.filter(q=>q.nivel===cfg.level);
+      log('i','Todas as perguntas de todos os níveis foram usadas — reciclando');
+    }
   }
   if(!pool.length) return null;
   const q=pool[Math.floor(Math.random()*pool.length)];
@@ -752,9 +1045,8 @@ function pickQuestion(){
 function showQuestion(){
   currentQ=pickQuestion();
   if(!currentQ){ log('err','Sem perguntas para este nível'); return; }
-  document.getElementById('drawZone').style.display='none';
-  document.getElementById('qZone').style.display='block';
-  document.getElementById('result').classList.remove('show');
+  closeModal('mResult');
+  openModal('mQuestion');                 // pergunta numa janela central
 
   document.getElementById('qPname').textContent=cfg.names[currentPlayer-1];
   document.getElementById('qPdot').style.background=COLORS[currentPlayer-1];
@@ -818,6 +1110,8 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
   const res=document.getElementById('result');
   res.className='result show '+(correct?'win':'lose');
   document.getElementById('resEmoji').textContent=correct?'🎉':'😬';
+  const nextBtn=document.getElementById('btnNext');
+  nextBtn.disabled=false; nextBtn.textContent='➡️ Próxima Rodada';
   if(correct){
     document.getElementById('resEmoji').style.animation='pop .4s ease';
     document.getElementById('resTitle').textContent='Parabéns!';
@@ -836,7 +1130,9 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
     somErro();
     if(cfg.castigoSec>0){
       sendCmd({cmd:'castigo',ms:cfg.castigoSec*1000});   // aciona saída de castigo do ESP32
-      showEsteira(cfg.castigoSec);                       // animação enquanto a saída está ligada
+      // bloqueia "Próxima Rodada" até o tempo do castigo terminar
+      nextBtn.disabled=true; nextBtn.textContent=`⏳ Aguarde o castigo (${cfg.castigoSec}s)`;
+      showEsteira(cfg.castigoSec, ()=>{ nextBtn.disabled=false; nextBtn.textContent='➡️ Próxima Rodada'; });
       log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — saída de castigo por ${cfg.castigoSec}s · ${cast}`);
     } else {
       log('warn',`❌ ${cfg.names[currentPlayer-1]} errou — castigo: ${cast}`);
@@ -851,6 +1147,9 @@ function answer(n){            // n = 1..5, ou 0 = tempo esgotado
     vBtn.textContent='📖 Ler versículo (ARC)';
     vBox.innerHTML=`“${_v}”<span class="vref">📖 ${_ref} · Almeida Revista e Corrigida</span>`;
   } else { vBtn.style.display='none'; }
+
+  // mostra a alternativa marcada por um instante e abre a janela de resultado
+  setTimeout(()=>{ closeModal('mQuestion'); openModal('mResult'); }, 750);
 
   saveResposta(correct,n,elapsed,pts);
 }
@@ -876,9 +1175,8 @@ function nextRound(){
   sendCmd({cmd:'alloff'});
   hideEsteira();
   currentQ=null; currentPlayer=0; answered=true;
-  document.getElementById('qZone').style.display='none';
+  closeModal('mQuestion'); closeModal('mResult');
   document.getElementById('drawZone').style.display='block';
-  document.getElementById('result').classList.remove('show');
   document.getElementById('drawName').textContent='Quiz Bíblico';
   document.getElementById('drawName').style.color='var(--gold)';
   document.getElementById('btnDraw').disabled=false;
@@ -886,9 +1184,28 @@ function nextRound(){
 }
 
 function resetGame(){
-  scores={}; usedIds.clear(); partidaId=null;
+  scores={}; usedIds.clear(); partidaId=null; drawnThisCycle.clear();
   nextRound(); renderScores();
   log('i','Placar zerado');
+}
+
+// Finaliza a partida: salva os pontos no ranking global (Supabase) e zera o placar
+async function finalizarPartida(){
+  const {pts, ac, err} = partidaStats();
+  if(pts===0 && ac===0 && err===0){ toast('Nenhuma pontuação para salvar.','err'); return; }
+  const btn=document.getElementById('btnFinalizar');
+  btn.disabled=true;
+  const ok = await updateGlobalRanking();
+  btn.disabled=false;
+  if(ok){
+    toast('Partida finalizada — ranking atualizado ✓','ok');
+    log('ok',`🏁 Partida finalizada — ${pts} pts somados ao ranking de ${currentUser?currentUser.nome:'—'}`);
+    scores={}; usedIds.clear(); partidaId=null; drawnThisCycle.clear();
+    nextRound(); renderScores();
+    openModal('mRanking');
+  } else {
+    toast('Não foi possível salvar o ranking.','err');
+  }
 }
 
 /* ══════════════ ADMINISTRAÇÃO ══════════════ */
@@ -902,8 +1219,9 @@ function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 
 /* ── Esteira (visível enquanto a saída de castigo está ligada) ── */
-let esteiraIv=null;
-function showEsteira(sec){
+let esteiraIv=null, esteiraDone=null;
+function showEsteira(sec,onDone){
+  esteiraDone=onDone||null;
   const el=document.getElementById('esteira'), lbl=document.getElementById('estLabel');
   el.classList.add('show');
   let left=Math.max(1,sec|0);
@@ -912,7 +1230,11 @@ function showEsteira(sec){
   clearInterval(esteiraIv);
   esteiraIv=setInterval(()=>{ left--; if(left<=0) hideEsteira(); else upd(); },1000);
 }
-function hideEsteira(){ clearInterval(esteiraIv); document.getElementById('esteira').classList.remove('show'); }
+function hideEsteira(){
+  clearInterval(esteiraIv);
+  document.getElementById('esteira').classList.remove('show');
+  const cb=esteiraDone; esteiraDone=null; if(cb) cb();
+}
 
 function requireAdmin(cb){
   if(adminUnlocked){ cb(); return; }
@@ -944,15 +1266,31 @@ function openAdmin(){
   document.getElementById('adMode').textContent = sb
     ? 'As perguntas serão salvas no Supabase e ficam disponíveis em todos os dispositivos.'
     : 'Sem Supabase configurado: as perguntas serão salvas localmente neste navegador.';
+  clearAdmForm();
   setAdmTab('nova');
   openModal('mAdmin');
 }
 
-let adCorreta=0;
+let adCorreta=0, editingId=null;
 function clearAdmForm(){
   ['adPergunta','adOpt1','adOpt2','adOpt3','adOpt4','adOpt5','adRef','adVers'].forEach(id=>document.getElementById(id).value='');
-  adCorreta=0;
+  adCorreta=0; editingId=null;
   document.querySelectorAll('#atNova .onb').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('adSave').textContent='💾 Salvar pergunta';
+  const ed=document.getElementById('adEditing'); if(ed) ed.style.display='none';
+}
+function editQuestion(id){
+  const q=questions.find(x=>x.id===id); if(!q) return;
+  setAdmTab('nova');
+  document.getElementById('adNivel').value=q.nivel;
+  document.getElementById('adPergunta').value=q.pergunta;
+  [1,2,3,4,5].forEach(i=>document.getElementById('adOpt'+i).value=q.opcoes[i-1]||'');
+  document.getElementById('adRef').value=q.referencia||'';
+  document.getElementById('adVers').value=q.versiculo||'';
+  adCorreta=q.correta; editingId=id;
+  document.querySelectorAll('#atNova .onb').forEach(b=>b.classList.toggle('sel',+b.dataset.c===q.correta));
+  document.getElementById('adSave').textContent='💾 Atualizar pergunta';
+  const ed=document.getElementById('adEditing'); if(ed) ed.style.display='block';
 }
 async function saveQuestion(){
   const nivel=document.getElementById('adNivel').value;
@@ -963,22 +1301,57 @@ async function saveQuestion(){
   if(!pergunta) return toast('Digite a pergunta.','err');
   if(opcoes.some(o=>!o)) return toast('Preencha as 5 alternativas.','err');
   if(!adCorreta) return toast('Marque a alternativa correta (clique no número).','err');
-  const novo={nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo};
+  const dados={nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo};
 
+  /* ── EDIÇÃO ── */
+  if(editingId){
+    if(String(editingId).startsWith('local-')){
+      // embutida → cria uma cópia editável e oculta a original
+      let newId;
+      if(sb){
+        try{ const {data,error}=await sb.from('quiz_perguntas').insert({...dados,ativa:true}).select('id').single(); if(error) throw error; newId=data.id; }
+        catch(err){ return toast('Erro ao salvar: '+err.message,'err'); }
+      } else {
+        newId='custom-'+Date.now();
+        const c=loadCustomQ(); c.push({...dados,id:newId}); saveCustomQ(c);
+      }
+      const hid=loadHidden(); if(!hid.includes(editingId)){ hid.push(editingId); saveHidden(hid); }
+      questions=questions.filter(q=>q.id!==editingId);
+      questions.push({...dados,id:newId});
+      toast('Cópia editável criada ✓','ok');
+      log('ok',`Pergunta embutida (${LVL_PT[nivel]}) tornou-se editável`);
+    } else {
+      const isPersisted = sb && !String(editingId).startsWith('custom-');
+      if(isPersisted){
+        try{ const {error}=await sb.from('quiz_perguntas').update(dados).eq('id',editingId); if(error) throw error; }
+        catch(err){ return toast('Erro ao atualizar: '+err.message,'err'); }
+      } else if(String(editingId).startsWith('custom-')){
+        saveCustomQ(loadCustomQ().map(q=>q.id===editingId?{...dados,id:editingId}:q));
+      }
+      const idx=questions.findIndex(q=>q.id===editingId);
+      if(idx>=0) questions[idx]={...dados,id:editingId};
+      toast('Pergunta atualizada ✓','ok');
+      log('ok',`Pergunta (${LVL_PT[nivel]}) atualizada`);
+    }
+    clearAdmForm(); setAdmTab('lista');
+    return;
+  }
+
+  /* ── NOVA ── */
   if(sb){
     try{
       const {data,error}=await sb.from('quiz_perguntas')
-        .insert({nivel,pergunta,opcoes,correta:adCorreta,referencia,versiculo,ativa:true})
+        .insert({...dados,ativa:true})
         .select('id').single();
       if(error) throw error;
-      questions.push({...novo,id:data.id});
+      questions.push({...dados,id:data.id});
       toast('Pergunta salva no Supabase ✓','ok');
     }catch(err){ return toast('Erro ao salvar: '+err.message,'err'); }
   } else {
     const custom=loadCustomQ();
     const id='custom-'+Date.now();
-    custom.push({...novo,id}); saveCustomQ(custom);
-    questions.push({...novo,id});
+    custom.push({...dados,id}); saveCustomQ(custom);
+    questions.push({...dados,id});
     toast('Pergunta salva localmente ✓','ok');
   }
   log('ok',`Nova pergunta (${LVL_PT[nivel]}) cadastrada`);
@@ -990,16 +1363,20 @@ function renderAdmList(){
   const list=questions.filter(q=>q.nivel===nivel);
   if(!list.length){ box.innerHTML='<p class="muted" style="font-size:13px">Nenhuma pergunta neste nível.</p>'; return; }
   list.forEach(q=>{
-    const editable=String(q.id).startsWith('custom-')||!String(q.id).startsWith('local-');
+    const embedded=String(q.id).startsWith('local-');
     const item=document.createElement('div'); item.className='qa-item';
     item.innerHTML=`<div class="qx">${q.pergunta}<br><small>✔ ${q.opcoes[q.correta-1]}${q.referencia?' · '+q.referencia:''}</small></div>`;
-    if(editable){
+    const ed=document.createElement('button'); ed.className='qa-edit'; ed.textContent='✏️';
+    ed.title='Editar'; ed.onclick=()=>editQuestion(q.id);
+    item.appendChild(ed);
+    if(embedded){
+      const tag=document.createElement('span'); tag.className='muted'; tag.style.fontSize='10px';
+      tag.style.alignSelf='center'; tag.textContent='embutida';
+      item.appendChild(tag);
+    } else {
       const del=document.createElement('button'); del.className='qa-del'; del.textContent='🗑';
       del.title='Excluir'; del.onclick=()=>delQuestion(q.id);
       item.appendChild(del);
-    } else {
-      const tag=document.createElement('span'); tag.className='muted'; tag.style.fontSize='10px'; tag.textContent='embutida';
-      item.appendChild(tag);
     }
     box.appendChild(item);
   });
@@ -1027,12 +1404,13 @@ function changePass(){
 /* ══════════════ EVENTOS ══════════════ */
 document.getElementById('lvlTabs').onclick=e=>{ if(e.target.dataset.l) setLevel(e.target.dataset.l); };
 document.getElementById('numPlayers').onchange=e=>{
-  cfg.num=+e.target.value; saveCfg(); renderPlayersEdit(); renderScores(); };
+  cfg.num=+e.target.value; saveCfg(); drawnThisCycle.clear(); renderPlayersEdit(); renderScores(); };
 document.getElementById('cfgTime').onchange=e=>{ cfg.time=Math.max(5,+e.target.value||30); saveCfg(); };
 document.getElementById('cfgCastigo').onchange=e=>{ cfg.castigoSec=Math.max(0,Math.min(60,+e.target.value||0)); saveCfg(); };
 document.getElementById('btnDraw').onclick=drawPlayer;
 document.getElementById('btnNext').onclick=nextRound;
-document.getElementById('btnReset').onclick=resetGame;
+document.getElementById('btnReset').onclick=()=>requireAdmin(resetGame);
+document.getElementById('btnFinalizar').onclick=finalizarPartida;
 document.getElementById('btnVerse').onclick=()=>{
   const box=document.getElementById('resVerse'), btn=document.getElementById('btnVerse');
   const show=box.style.display==='none';
@@ -1042,10 +1420,11 @@ document.getElementById('btnVerse').onclick=()=>{
 
 /* ── Admin: aberturas, abas, salvar, excluir, senha ── */
 document.getElementById('btnAdmin').onclick=()=>requireAdmin(openAdmin);
+document.getElementById('btnRanking').onclick=()=>{ renderGlobalRanking(); openModal('mRanking'); };
 document.getElementById('passOk').onclick=tryPass;
 document.getElementById('passInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryPass(); });
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{ if(e.target===m) m.classList.remove('show'); }));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{ if(e.target===m && !m.dataset.nodismiss) m.classList.remove('show'); }));
 document.querySelectorAll('.adm-tab').forEach(t=>t.onclick=()=>setAdmTab(t.dataset.at));
 document.querySelectorAll('#atNova .onb').forEach(b=>b.onclick=()=>{
   adCorreta=+b.dataset.c;
@@ -1073,7 +1452,8 @@ document.addEventListener('keydown',e=>{
   else if(e.key.toLowerCase()==='s'){ if(answered && !document.getElementById('btnDraw').disabled
       && document.getElementById('drawZone').style.display!=='none') drawPlayer(); }
   else if(e.key===' '){ e.preventDefault();
-    if(document.getElementById('result').classList.contains('show')) nextRound(); }
+    if(document.getElementById('mResult').classList.contains('show')
+       && !document.getElementById('btnNext').disabled) nextRound(); }
 });
 
 /* ══════════════ INIT ══════════════ */
@@ -1087,7 +1467,7 @@ function init(){
   document.getElementById('numPlayers').value=cfg.num;
   setLevel(cfg.level);
   renderPlayersEdit(); renderScores();
-  initSupabase();
+  initSupabase().then(initAuth);   // aguarda Supabase para login/ranking funcionarem entre dispositivos
   if(cfg.relay||cfg.ip) connect();
   log('i','Pronto. Configure o ESP32/Supabase ou jogue em modo local.');
 }

@@ -1,0 +1,17 @@
+# Bibliotecas necessarias — instalar via Arduino IDE
+# Sketch > Incluir Biblioteca > Gerenciar Bibliotecas
+
+TinyGSM                  by vshymanskyy          >= 0.11.7
+SSLClient                by OPEnSLab-OSU          >= 1.6.11
+UniversalTelegramBot     by Brian Lough           >= 1.3.0
+ArduinoJson              by Benoit Blanchon       >= 6.21.0
+
+# Suporte a placa LilyGO T-SIM7000G:
+# Arduino IDE > Preferencias > URLs adicionais de placas:
+# https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+#
+# Ferramentas > Placa > Gerenciador de Placas:
+# Instalar: "ESP32 by Espressif Systems" versao >= 2.0.0
+#
+# Selecionar placa: "ESP32 Dev Module"
+# (a LilyGO T-SIM7000G usa o mesmo core do ESP32 Dev Module)
