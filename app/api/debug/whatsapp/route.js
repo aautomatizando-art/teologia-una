@@ -18,11 +18,31 @@ export async function GET(req) {
 
   const config = { provider, evUrl, evInstance, evApikey, evGroup, cbPhone, cbApikey };
 
+  // Verifica status de conexão da instância Evolution
+  let instanciaStatus = null;
+  if (provider === "evolution") {
+    const url      = process.env.EVOLUTION_URL;
+    const instance = process.env.EVOLUTION_INSTANCE;
+    const apikey   = process.env.EVOLUTION_APIKEY;
+    if (url && instance && apikey) {
+      try {
+        const r = await fetch(
+          `${url.replace(/\/$/, "")}/instance/connectionState/${instance}`,
+          { headers: { apikey }, signal: AbortSignal.timeout(5000) }
+        );
+        const j = await r.json();
+        instanciaStatus = { httpStatus: r.status, ...j };
+      } catch (e) {
+        instanciaStatus = { erro: e.message };
+      }
+    }
+  }
+
   const send = new URL(req.url).searchParams.get("send");
   let resultado = null;
   if (send === "1") {
-    resultado = await enviarWhatsApp("🔧 *Teste de diagnóstico*\nMensagem enviada pelo endpoint /api/debug/whatsapp");
+    resultado = await enviarWhatsApp("Teste de diagnostico - dashboard producao");
   }
 
-  return Response.json({ config, resultado, instrucao: "Adicione &send=1 para enviar mensagem de teste" });
+  return Response.json({ config, instanciaStatus, resultado, instrucao: "Adicione &send=1 para enviar mensagem de teste" });
 }
