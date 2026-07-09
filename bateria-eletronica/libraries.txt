@@ -1,0 +1,20 @@
+# Bibliotecas necessarias
+# Instalar via Arduino IDE: Sketch > Incluir Biblioteca > Gerenciar Bibliotecas
+
+# NENHUMA biblioteca de terceiros e necessaria.
+# SD, SPI e o driver I2S (driver/i2s.h) ja vem inclusos no ESP32 Arduino Core.
+# A saida MIDI e feita "na mao" via Serial2 (bytes MIDI puros), sem lib externa.
+
+# Placa ESP32 (Arduino IDE > Preferencias > URLs adicionais):
+# https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+# Ferramentas > Placa > Gerenciador de Placas > "ESP32 by Espressif Systems" >= 2.0.0
+
+# Placa a selecionar: uma ESP32 COM PSRAM, por exemplo:
+#   "ESP32 Wrover Module" ou "ESP32 Dev Module" (com PSRAM: Enabled)
+# As amostras de audio sao carregadas inteiras na PSRAM -- sem PSRAM o
+# firmware principal (esp32_bateria_eletronica) nao vai conseguir tocar
+# os sons (mas o teste_calibracao_piezo funciona em qualquer ESP32).
+
+# Configuracoes obrigatorias em Ferramentas (Arduino IDE):
+#   PSRAM: "Enabled" (ou "QSPI PSRAM" / "OPI PSRAM", dependendo da placa)
+#   Partition Scheme: qualquer esquema padrao (o audio fica na PSRAM, nao na flash)
