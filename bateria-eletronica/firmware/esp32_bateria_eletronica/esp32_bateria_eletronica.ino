@@ -1,5 +1,5 @@
 /*
- * Bateria Eletronica Profissional - ESP32
+ * Bateria Eletronica Profissional - ESP32-S3 (N16R8: 16MB flash, 8MB PSRAM)
  * ------------------------------------------------------------------------
  * Le os golpes dos pads piezo (bumbo, caixa, toms, pratos e chimbal com
  * pedal), calcula a velocidade de cada golpe (algoritmo scan+mask, igual
@@ -8,9 +8,10 @@
  * Tambem envia MIDI (DIN 5 pinos) para uso com modulos ou DAW/VST externos.
  *
  * Requisitos de hardware: ver README.md (pasta bateria-eletronica/).
- * IMPORTANTE: use uma placa ESP32 com PSRAM (ex: ESP32-WROVER) e habilite
- * "PSRAM: Enabled" nas opcoes da placa na Arduino IDE -- as amostras de
- * audio sao carregadas inteiras na PSRAM para tocar sem falhas/latencia.
+ * IMPORTANTE: selecione a placa "ESP32S3 Dev Module" na Arduino IDE e
+ * habilite "PSRAM: OPI PSRAM" (a variante N16R8 usa PSRAM Octal -- se
+ * deixar em "QSPI PSRAM" a PSRAM nao e detectada). As amostras de audio
+ * sao carregadas inteiras na PSRAM para tocar sem falhas/latencia.
  *
  * Bibliotecas: apenas ESP32 core (SD, SPI e I2S ja vem inclusos)
  */
@@ -33,7 +34,8 @@ void setup() {
 
     pinMode(LED_PIN, OUTPUT);
 
-    SPIClass spiSD(VSPI);
+    // ESP32-S3 usa FSPI (o "VSPI" do ESP32 classico nao existe no S3)
+    SPIClass spiSD(FSPI);
     spiSD.begin(SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
     if (!SD.begin(SD_CS_PIN, spiSD)) {
         Serial.println("[SD] ERRO: cartao nao encontrado! Verifique a fiacao e");

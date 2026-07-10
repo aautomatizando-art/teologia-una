@@ -1,6 +1,7 @@
-# Bateria Eletronica Profissional - ESP32
+# Bateria Eletronica Profissional - ESP32-S3
 
-Bateria eletronica completa baseada em ESP32: pads piezo com deteccao de
+Bateria eletronica completa baseada em **ESP32-S3 (N16R8: 16MB flash, 8MB
+PSRAM Octal)**: pads piezo com deteccao de
 velocidade (mesmo algoritmo dos modulos comerciais), motor de audio
 polifonico que toca **amostras reais de bateria acustica** (multi-camadas
 de velocidade, para dinamica realista) via I2S, chimbal com pedal
@@ -32,6 +33,10 @@ de realismo possivel.
 6. **Saida MIDI** — se quiser o som de um plugin de bateria profissional
    (VST) em vez do audio local do ESP32, ligue a saida MIDI DIN a uma
    interface MIDI-USB e use qualquer DAW.
+7. **USB nativo (S3)** — a placa tem porta USB nativa (alem da porta de
+   programacao), o que abre a possibilidade de expor a bateria como
+   dispositivo **USB-MIDI classe padrao** direto no PC/celular, sem
+   interface MIDI-USB externa (veja "Extensoes possiveis").
 
 ---
 
@@ -39,7 +44,7 @@ de realismo possivel.
 
 | Item | Especificacao | Qtde |
 |---|---|---|
-| ESP32 **com PSRAM** | ESP32-WROVER (recomendado) ou DevKit com PSRAM | 1 |
+| ESP32-S3 **N16R8** | 16MB flash, 8MB PSRAM Octal (ex: devkit "ESP32-S3-DevKitC-1 N16R8") | 1 |
 | Pads piezo | disco piezo de 27-35mm (ou pads prontos de bateria eletronica) | 8 |
 | Pedal de chimbal | potenciometro linear 10k (ou pedal de hihat com sensor) | 1 |
 | DAC de audio | módulo **PCM5102A** (I2S, saida de linha) *ou* amplificador **MAX98357A** (I2S, direto num alto-falante) | 1 |
@@ -53,31 +58,45 @@ de realismo possivel.
 
 ---
 
-## Pinagem (config.h)
+## Pinagem (config.h) — ESP32-S3-N16R8
 
 | Sinal | GPIO | Observacao |
 |---|---|---|
-| Kick (bumbo) | 34 | ADC1, entrada apenas |
-| Snare (caixa) | 35 | ADC1, entrada apenas |
-| Tom 1 (agudo) | 32 | ADC1 |
-| Tom 2 (medio) | 33 | ADC1 |
-| Tom 3 / Surdo | 36 (VP) | ADC1, entrada apenas |
-| Crash | 39 (VN) | ADC1, entrada apenas |
-| Ride | 4 | ADC2 |
-| Hi-Hat (pad) | 13 | ADC2 |
-| Pedal do Hi-Hat (CV) | 14 | ADC2, posicao continua |
-| I2S BCK | 25 | Bit clock do DAC |
-| I2S WS (LRCK) | 26 | Word select do DAC |
-| I2S DOUT | 27 | Dados de audio |
-| SD SCK | 18 | SPI |
-| SD MISO | 19 | SPI |
-| SD MOSI | 23 | SPI |
-| SD CS | 5 | SPI |
-| MIDI TX | 17 | Serial2, saida DIN |
-| LED status | 2 | Pisca a cada golpe |
+| Kick (bumbo) | 1 | ADC1 |
+| Snare (caixa) | 2 | ADC1 |
+| Tom 1 (agudo) | 4 | ADC1 |
+| Tom 2 (medio) | 5 | ADC1 |
+| Tom 3 / Surdo | 6 | ADC1 |
+| Crash | 7 | ADC1 |
+| Ride | 8 | ADC1 |
+| Hi-Hat (pad) | 9 | ADC1 |
+| Pedal do Hi-Hat (CV) | 10 | ADC1, posicao continua |
+| I2S BCK | 11 | Bit clock do DAC |
+| I2S WS (LRCK) | 12 | Word select do DAC |
+| I2S DOUT | 13 | Dados de audio |
+| SD SCK | 14 | SPI (FSPI) |
+| SD MISO | 15 | SPI (FSPI) |
+| SD MOSI | 16 | SPI (FSPI) |
+| SD CS | 17 | SPI (FSPI) |
+| MIDI TX | 18 | Serial2, saida DIN |
+| LED status | 38 | Pisca a cada golpe |
 
-Nenhum pino de boot/strapping (0, 2, 12, 15) e usado para entradas
-criticas — evita problemas ao ligar o ESP32.
+### Por que essa pinagem especifica
+
+O ESP32-S3-N16R8 (16MB flash + 8MB PSRAM **Octal**) reserva alguns GPIOs
+para uso interno que **nao podem ser usados** no seu circuito:
+
+| Faixa reservada | Motivo |
+|---|---|
+| GPIO 26-37 | Barramento interno com a flash/PSRAM (na variante Octal ocupa ate o 37; nao ficam disponiveis como pino fisico) |
+| GPIO 19-20 | USB nativo (D-/D+) |
+| GPIO 0 | Strapping / botao BOOT |
+| GPIO 3 | Strapping (fonte do JTAG) |
+| GPIO 43-44 | UART0 (console/Serial de log via USB) |
+| GPIO 45-46 | Strapping (tensao da flash/PSRAM no boot) |
+
+A pinagem acima usa só GPIO 1-2, 4-18 e 38 — todos livres nessa variante,
+sem tocar em nenhum dos pinos da tabela acima.
 
 ---
 
@@ -86,10 +105,10 @@ criticas — evita problemas ao ligar o ESP32.
 ```
                          +-------------------------------+
   8x PIEZO PADS -------> |                                |
-  (com circuito de       |            ESP32               | ---I2S---> PCM5102A ---> Caixa de som
-   protecao, ver abaixo) |         (com PSRAM)             |                          / amplificador
+  (com circuito de       |          ESP32-S3               | ---I2S---> PCM5102A ---> Caixa de som
+   protecao, ver abaixo) |        (N16R8, 8MB PSRAM)        |                          / amplificador
                          |                                 |
-  Pedal Hi-Hat (10k) --> |  ADC1/ADC2   I2S   SPI   UART2  | ---SPI---> Cartao microSD
+  Pedal Hi-Hat (10k) --> |    ADC1     I2S   SPI   UART2   | ---SPI---> Cartao microSD
                          |                                 |            (amostras .wav)
                          +-------------------------------+
                                           |
@@ -122,20 +141,20 @@ esse circuito embutido (ligue-os direto).
 
 ### Pedal do chimbal
 
-Um potenciometro linear 10k com o cursor no GPIO 14, uma ponta em 3.3V
+Um potenciometro linear 10k com o cursor no GPIO 10, uma ponta em 3.3V
 e a outra em GND funciona bem como controlador continuo (fechado →
 aberto). Pedais de hi-hat dedicados (com sensor de posicao) tambem
 funcionam do mesmo jeito.
 
 ### DAC/amplificador I2S (PCM5102A)
 
-| PCM5102A | ESP32 |
+| PCM5102A | ESP32-S3 |
 |---|---|
 | VCC | 3.3V |
 | GND | GND |
-| BCK | GPIO 25 |
-| LCK (WS) | GPIO 26 |
-| DIN | GPIO 27 |
+| BCK | GPIO 11 |
+| LCK (WS) | GPIO 12 |
+| DIN | GPIO 13 |
 | SCK | GND (usa o clock interno do modulo) |
 | FLT | GND |
 | DEMP | GND |
@@ -144,9 +163,9 @@ funcionam do mesmo jeito.
 ### Saida MIDI DIN (opcional)
 
 ```
-ESP32 GPIO17 (TX) ---[220Ω]--- Pino 5 do DIN
-3.3V ---------------[220Ω]--- Pino 4 do DIN
-GND ------------------------- Pino 2 do DIN
+ESP32-S3 GPIO18 (TX) ---[220Ω]--- Pino 5 do DIN
+3.3V ------------------[220Ω]--- Pino 4 do DIN
+GND ---------------------------- Pino 2 do DIN
 ```
 
 ---
@@ -213,11 +232,18 @@ ffmpeg -i entrada.wav -af silenceremove=start_periods=1:start_threshold=-40dB -a
 ## Como compilar e gravar
 
 1. Instale a placa ESP32 na Arduino IDE (veja `libraries.txt`).
-2. Selecione uma placa **com PSRAM** (ex: "ESP32 Wrover Module") e
-   habilite `Tools > PSRAM > Enabled`.
+2. Selecione a placa **"ESP32S3 Dev Module"** e configure em `Tools`:
+   - `PSRAM`: **"OPI PSRAM"** (a N16R8 usa PSRAM Octal — se deixar em
+     "QSPI PSRAM" ou "Disabled" a PSRAM de 8MB nao e detectada)
+   - `Flash Size`: "16MB"
+   - `Partition Scheme`: qualquer esquema padrao com espaco de app
+     suficiente (ex: "16M Flash (3MB APP/9.9MB FATFS)" ou similar)
+   - `USB CDC On Boot`: "Enabled" (para ver o Serial Monitor pela porta
+     USB nativa; se sua devkit tiver 2 portas USB, use a rotulada
+     "UART"/"COM" para gravar/depurar)
 3. Abra `firmware/esp32_bateria_eletronica/esp32_bateria_eletronica.ino`.
 4. Grave o cartao SD com a estrutura de amostras acima e insira no modulo.
-5. Compile e grave no ESP32.
+5. Compile e grave no ESP32-S3.
 6. Abra o Serial Monitor (115200 baud) para ver o carregamento das
    amostras e confirmar que tudo foi encontrado.
 
@@ -240,7 +266,7 @@ Antes de tocar "pra valer", grave `firmware/teste_calibracao_piezo/`
 
 ## Usando com um modulo/DAW externo via MIDI (som ainda mais realista)
 
-A saida MIDI (DIN, `GPIO17`) envia Note On/Off com a velocidade real de
+A saida MIDI (DIN, `GPIO18`) envia Note On/Off com a velocidade real de
 cada golpe, no canal 10 (padrao de bateria em General MIDI), com o
 mapeamento de notas GM (bumbo=36, caixa=38, chimbal fechado=42, chimbal
 aberto=46, pedal do chimbal=44, toms=45/47/50, crash=49, ride=51). Ligue
@@ -272,16 +298,18 @@ dois juntos.
   (varias pastas no SD) e ajustar volume sem recompilar.
 - **Potenciometro de volume fisico** — ler um ADC extra e aplicar em
   `MASTER_VOLUME` em tempo real.
-- **USB-MIDI nativo** — trocando para uma placa ESP32-S3 (USB OTG
-  nativo) e possivel expor a bateria como um dispositivo USB-MIDI
-  classe padrao, sem precisar de interface MIDI-USB externa.
+- **USB-MIDI nativo** — como a placa ja e um ESP32-S3 (USB OTG nativo),
+  da pra expor a bateria como dispositivo USB-MIDI classe padrao direto
+  no PC/celular via `USB.h`/TinyUSB, sem precisar de interface MIDI-USB
+  externa nem do conector DIN. Nao implementado no firmware atual (que
+  usa MIDI DIN via UART) — avise se quiser essa versão.
 
 ## Solucao de problemas
 
 | Sintoma | Causa provavel |
 |---|---|
 | `[SD] ERRO: cartao nao encontrado` | Fiacao SPI errada, cartao nao formatado em FAT32, ou modulo SD com problema de alimentacao (use 3.3V, nao 5V, na maioria dos modulos) |
-| `[AUDIO] ERRO: PSRAM nao encontrada` | Placa sem PSRAM, ou `PSRAM: Enabled` nao selecionado nas opcoes da Arduino IDE |
+| `[AUDIO] ERRO: PSRAM nao encontrada` | `PSRAM: OPI PSRAM` nao selecionado nas opcoes da Arduino IDE (a N16R8 usa PSRAM Octal, nao Quad) |
 | Pad dispara sozinho / dobrado | `threshold` muito baixo ou `maskTimeMs` muito curto para aquele pad — recalibre |
 | Pad nao dispara com toque leve | `threshold` muito alto — reduza e recalibre com `teste_calibracao_piezo` |
 | Chimbal aberto nao aparece | Verifique a calibracao do pedal (`HIHAT_PEDAL_OPEN_MIN`) e se `/hihat/open/*.wav` existe no SD |

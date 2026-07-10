@@ -9,12 +9,17 @@
 # https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 # Ferramentas > Placa > Gerenciador de Placas > "ESP32 by Espressif Systems" >= 2.0.0
 
-# Placa a selecionar: uma ESP32 COM PSRAM, por exemplo:
-#   "ESP32 Wrover Module" ou "ESP32 Dev Module" (com PSRAM: Enabled)
-# As amostras de audio sao carregadas inteiras na PSRAM -- sem PSRAM o
-# firmware principal (esp32_bateria_eletronica) nao vai conseguir tocar
-# os sons (mas o teste_calibracao_piezo funciona em qualquer ESP32).
+# Placa deste projeto: ESP32-S3-N16R8 (16MB flash, 8MB PSRAM Octal)
+# Selecione: "ESP32S3 Dev Module"
+# As amostras de audio sao carregadas inteiras na PSRAM -- sem PSRAM
+# habilitada corretamente o firmware principal (esp32_bateria_eletronica)
+# nao vai conseguir tocar os sons (mas o teste_calibracao_piezo funciona
+# em qualquer ESP32/ESP32-S3, com ou sem PSRAM).
 
-# Configuracoes obrigatorias em Ferramentas (Arduino IDE):
-#   PSRAM: "Enabled" (ou "QSPI PSRAM" / "OPI PSRAM", dependendo da placa)
-#   Partition Scheme: qualquer esquema padrao (o audio fica na PSRAM, nao na flash)
+# Configuracoes obrigatorias em Ferramentas (Arduino IDE), placa ESP32S3:
+#   PSRAM: "OPI PSRAM"   <-- IMPORTANTE: a N16R8 usa PSRAM Octal, nao Quad.
+#                             Se deixar em "QSPI PSRAM" ou "Disabled" a
+#                             PSRAM nao e detectada.
+#   Flash Size: "16MB"
+#   Partition Scheme: qualquer esquema de 16MB com espaco de app suficiente
+#   USB CDC On Boot: "Enabled" (usa a porta USB nativa para o Serial Monitor)

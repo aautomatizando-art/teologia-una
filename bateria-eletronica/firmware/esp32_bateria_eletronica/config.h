@@ -16,38 +16,54 @@ enum PadId {
     NUM_PADS
 };
 
+// ─── PLACA: ESP32-S3-N16R8 (16MB flash, 8MB PSRAM Octal) ───────────────────
+// Pinagem escolhida evitando os pinos reservados desta variante especifica:
+//   GPIO33-37 : uso interno da PSRAM Octal (nao existem como pino livre no N16R8)
+//   GPIO19-20 : USB nativo (D-/D+)
+//   GPIO0     : strapping / botao BOOT
+//   GPIO3     : strapping (selecao de fonte do JTAG)
+//   GPIO43-44 : UART0 (console/Serial de log via USB)
+//   GPIO45-46 : strapping (tensao da flash/PSRAM no boot)
+// Se voce estiver usando outra variante do ESP32-S3 (ex: N8R2, com PSRAM Quad
+// em vez de Octal), os pinos 33-37 ficam livres tambem, mas os valores abaixo
+// funcionam sem alteracao em qualquer variante do S3.
+
 // ─── PINOS DOS PIEZOS (entrada analogica, 0-3.3V apos o circuito de protecao) ──
-#define PIN_KICK   34
-#define PIN_SNARE  35
-#define PIN_TOM1   32
-#define PIN_TOM2   33
-#define PIN_TOM3   36   // "VP"
-#define PIN_CRASH  39   // "VN"
-#define PIN_RIDE    4
-#define PIN_HIHAT  13
+// Todos em ADC1 (GPIO1-10) -- ADC1 nao tem restricao de uso com WiFi/BLE.
+#define PIN_KICK    1
+#define PIN_SNARE   2
+#define PIN_TOM1    4
+#define PIN_TOM2    5
+#define PIN_TOM3    6
+#define PIN_CRASH   7
+#define PIN_RIDE    8
+#define PIN_HIHAT   9
 
 // Pedal do chimbal: posicao continua (fechado / meio-aberto / aberto)
-#define PIN_HIHAT_PEDAL  14
+#define PIN_HIHAT_PEDAL  10
 
 // ─── SAIDA DE AUDIO (DAC I2S, ex: PCM5102A ou amplificador MAX98357A) ──────
-#define I2S_BCK_PIN   25   // bit clock
-#define I2S_WS_PIN    26   // word select / LRCK
-#define I2S_DOUT_PIN  27   // dados de audio
+#define I2S_BCK_PIN   11   // bit clock
+#define I2S_WS_PIN    12   // word select / LRCK
+#define I2S_DOUT_PIN  13   // dados de audio
 
 // ─── CARTAO SD (SPI, onde ficam as amostras .wav) ──────────────────────────
-#define SD_SCK_PIN   18
-#define SD_MISO_PIN  19
-#define SD_MOSI_PIN  23
-#define SD_CS_PIN     5
+#define SD_SCK_PIN   14
+#define SD_MISO_PIN  15
+#define SD_MOSI_PIN  16
+#define SD_CS_PIN    17
 
 // ─── SAIDA MIDI (conector DIN 5 pinos, para usar com modulo/DAW externo) ───
 #define MIDI_ENABLED   true
-#define MIDI_TX_PIN    17
-#define MIDI_RX_PIN    16   // nao usado (so MIDI OUT), exigido pelo Serial2.begin()
+#define MIDI_TX_PIN    18
+#define MIDI_RX_PIN    21   // nao usado (so MIDI OUT), exigido pelo Serial2.begin()
 #define MIDI_CHANNEL   10   // canal 10 = bateria (padrao General MIDI)
 
-// LED de status (pisca a cada golpe detectado)
-#define LED_PIN 2
+// LED de status (pisca a cada golpe detectado).
+// Se a sua devkit tiver LED RGB embutido (WS2812) em vez de LED simples,
+// costuma ser no GPIO 48 -- nesse caso troque este define e ajuste o
+// digitalWrite() em pads.cpp para a biblioteca do LED endereçavel.
+#define LED_PIN 38
 
 // ─── AUDIO ──────────────────────────────────────────────────────────────
 #define AUDIO_SAMPLE_RATE   44100
