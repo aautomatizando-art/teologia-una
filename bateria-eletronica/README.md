@@ -153,17 +153,31 @@ funcionam do mesmo jeito.
 
 ### DAC/amplificador I2S (PCM5102A)
 
-| PCM5102A | ESP32-S3 |
-|---|---|
-| VCC | 3.3V |
-| GND | GND |
-| BCK | GPIO 11 |
-| LCK (WS) | GPIO 12 |
-| DIN | GPIO 13 |
-| SCK | GND (usa o clock interno do modulo) |
-| FLT | GND |
-| DEMP | GND |
-| XSMT | 3.3V |
+A serigrafia varia entre fabricantes do mesmo módulo PCM5102A — os nomes
+abaixo são os mais comuns (inclusive os das placas roxas "GY-PCM5102",
+que usam nomes por extenso em vez de abreviados). É a mesma pinagem,
+só com rótulos diferentes:
+
+| Pino no módulo | Ligar em | Função |
+|---|---|---|
+| **BCK** | GPIO 11 | bit clock |
+| **LRCK** (= LCK / WS) | GPIO 12 | word select |
+| **DIN** | GPIO 13 | dados de áudio (saída do ESP32 → entrada do DAC) |
+| **SCK** | GND | usa o clock interno do módulo (sem clock mestre externo) |
+| **GND** | GND | terra digital |
+| **VIN** (= VCC) | 3.3V | alimentação |
+| **FLT** | GND | seleção de filtro (normal) |
+| **DEMP** | GND | de-ênfase desligada (normal) |
+| **XSMT** | 3.3V | libera o mute (sem isso o áudio fica mudo) |
+| **FMT** | GND | formato I2S padrão |
+| **A3V3** | 3.3V | alimentação analógica (mesmo trilho do VIN) |
+| **AGND** (2x) | GND | terra analógico |
+| **ROUT** / **LROUT** | entrada direita/esquerda do amplificador ou caixa ativa | saída de áudio |
+
+As almofadas de solda **H1L–H4L** (perto de "PCM5100/PCM5101/PCM5102")
+são jumpers de configuração de fábrica — deixe como veio, não precisa
+mexer. Se a sua placa já tem um conector P2 (fone) embutido, pode ligar
+a caixa de som direto nele em vez de fiar ROUT/LROUT manualmente.
 
 ### Saida MIDI DIN (opcional)
 
