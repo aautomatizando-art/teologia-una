@@ -11,6 +11,11 @@
  * e pressionado (fechado), para calibrar HIHAT_PEDAL_CLOSED_MAX e
  * HIHAT_PEDAL_OPEN_MIN.
  *
+ * Assim como o firmware principal, usa scan + mascara: depois de medir o
+ * pico de um golpe, ignora o pad por um tempinho antes de aceitar o
+ * proximo. Sem isso, a vibracao residual do piezo (que decai aos poucos)
+ * seria contada como varios golpes separados, poluindo a leitura.
+ *
  * Bibliotecas: nenhuma alem do ESP32 core.
  */
 
@@ -23,10 +28,12 @@ const int   PEDAL_PIN = 10;
 
 const uint16_t LIMIAR              = 150;   // limiar generico so para este teste
 const uint16_t TEMPO_VARREDURA_MS  = 8;
+const uint16_t TEMPO_MASCARA_MS    = 60;    // ignora re-disparos por esse tempo apos cada golpe
 
 bool     emVarredura[8];
 uint16_t picos[8];
 uint32_t inicioVarredura[8];
+uint32_t fimMascara[8];
 
 void setup() {
     Serial.begin(115200);
@@ -48,7 +55,7 @@ void loop() {
         uint16_t v = analogRead(pinos[i]);
 
         if (!emVarredura[i]) {
-            if (v > LIMIAR) {
+            if (agora >= fimMascara[i] && v > LIMIAR) {
                 emVarredura[i]     = true;
                 picos[i]           = v;
                 inicioVarredura[i] = agora;
@@ -58,6 +65,7 @@ void loop() {
             if (agora - inicioVarredura[i] >= TEMPO_VARREDURA_MS) {
                 Serial.printf("[%-6s] pico=%4u  (pino %d)\n", nomes[i], picos[i], pinos[i]);
                 emVarredura[i] = false;
+                fimMascara[i]  = agora + TEMPO_MASCARA_MS;
             }
         }
     }
