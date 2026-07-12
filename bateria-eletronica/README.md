@@ -125,15 +125,20 @@ Um piezo sozinho gera picos de varias dezenas de volts e tensao
 Use este circuito simples em cada pad:
 
 ```
- Piezo (+) ----+-------------------+------[1N4148]---- 3.3V   (grampeia o topo)
-               |                   |
-               |                 [1MΩ]   (sangra a carga, define zero estavel)
-               |                   |
-               +-------------------+------[1N4148]---- GND    (grampeia negativo)
-               |
-               +------------------------> GPIO do ESP32 (entrada analogica)
+                              +------[1N4148]---- 3.3V   (grampeia o topo)
+                              |
+ Piezo (+) -------------------+------[1MΩ]------- GND    (sangra a carga, define zero estavel)
+                              |
+                              +------[1N4148]---- GND    (grampeia negativo)
+                              |
+                              +------------------> GPIO do ESP32 (entrada analogica)
+
  Piezo (-) --------------------------------------------- GND
 ```
+
+Repare que o resistor de 1MΩ e os dois diodos saem todos do **mesmo ponto**
+(o "+" do piezo) e vao cada um para seu proprio destino — nao ha nada em
+serie no caminho do sinal ate o GPIO.
 
 Isso mantem o sinal sempre entre 0V e 3.3V, protegendo o ADC e dando
 leituras consistentes. Pads comerciais de bateria eletronica ja trazem
