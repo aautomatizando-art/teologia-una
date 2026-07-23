@@ -10,11 +10,12 @@
     GPIO 15 → Botão (GND no outro terminal, usa INPUT_PULLUP)
 
   Comportamento:
-    1. Energizou  → Saída 1 (vermelho) ON, demais OFF
-    2. WiFi ok    → Saída 1 OFF, Saída 2 (amarelo) ON
-    3. Botão 2 s  → Registra palete, Saída 2 OFF,
-                    Saída 3 (sirene) + Saída 4 (verde) ON por 2 s,
-                    depois desligam e Saída 2 (amarelo) volta ON
+    1. Energizou      → Saída 1 (vermelho) ON fixo, demais OFF
+    2. WiFi ok        → Saída 1 OFF, Saída 2 (amarelo) ON
+    3. Perda de WiFi  → Saída 2 OFF, Saída 1 (vermelho) ON; reconecta e volta ao passo 2
+    4. Botão 2 s      → Registra palete, Saída 2 OFF,
+                        Saída 3 (sirene) + Saída 4 (verde) ON por 2 s,
+                        depois desligam e Saída 2 (amarelo) volta ON
 
   Relés ativo-LOW: LOW = relé acionado / ligado
                    HIGH = relé desligado
@@ -56,7 +57,8 @@ const unsigned long CONFIRMACAO_MS  = 2000; // sirene + verde ficam 2 s
 // ── Estado interno ─────────────────────────────────────────────────────────
 unsigned long inicioPressao   = 0;
 unsigned long ultimoHeartbeat = 0;
-bool acionado = false;
+bool acionado    = false;
+bool wifiOnline  = false; // rastreia estado anterior da conexão
 
 // ── setup ──────────────────────────────────────────────────────────────────
 void setup() {
@@ -74,11 +76,10 @@ void setup() {
   RELE_OFF(PIN_SAIDA3);
   RELE_OFF(PIN_SAIDA4);
 
-  // Pisca vermelho enquanto conecta ao WiFi
+  // Aguarda conexão WiFi com vermelho fixo (sem piscar)
   Serial.print("Conectando ao WiFi");
   WiFi.begin(SSID, SENHA_WIFI);
   while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(PIN_SAIDA1, !digitalRead(PIN_SAIDA1)); // pisca
     delay(400);
     Serial.print(".");
   }
@@ -86,6 +87,7 @@ void setup() {
   // Conectado: vermelho OFF → amarelo ON
   RELE_OFF(PIN_SAIDA1);
   RELE_ON(PIN_SAIDA2);
+  wifiOnline = true;
   Serial.printf("\nConectado! IP: %s\n", WiFi.localIP().toString().c_str());
 }
 
@@ -143,6 +145,25 @@ bool registrarPalete(const String& op) {
 // ── loop ───────────────────────────────────────────────────────────────────
 void loop() {
   unsigned long agora = millis();
+  bool conectado = (WiFi.status() == WL_CONNECTED);
+
+  // Detecta mudança de estado do WiFi
+  if (conectado && !wifiOnline) {
+    // Reconectou: vermelho OFF → amarelo ON
+    RELE_OFF(PIN_SAIDA1);
+    RELE_ON(PIN_SAIDA2);
+    wifiOnline = true;
+    Serial.printf("WiFi reconectado! IP: %s\n", WiFi.localIP().toString().c_str());
+  } else if (!conectado && wifiOnline) {
+    // Perdeu conexão: amarelo OFF → vermelho ON
+    RELE_OFF(PIN_SAIDA2);
+    RELE_OFF(PIN_SAIDA3);
+    RELE_OFF(PIN_SAIDA4);
+    RELE_ON(PIN_SAIDA1);
+    wifiOnline = false;
+    Serial.println("WiFi desconectado — aguardando reconexão...");
+    WiFi.reconnect();
+  }
 
   // Heartbeat periódico
   if (agora - ultimoHeartbeat >= HEARTBEAT_MS) {
