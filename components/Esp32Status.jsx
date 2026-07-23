@@ -1,17 +1,31 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// Pequeno indicador de conexão do ESP32.
+// Indicador de conexão do ESP32.
+// Detecta transição online→offline e dispara notificação WhatsApp via API.
 // Uso: <Esp32Status painel={1} />
 export default function Esp32Status({ painel }) {
   const [status, setStatus] = useState(null); // null=carregando, true=online, false=offline
+  const prevStatus = useRef(null); // rastreia estado anterior para detectar transição
 
   useEffect(() => {
     async function checar() {
       try {
         const j = await fetch(`/api/esp32/ping?painel=${painel}`).then((r) => r.json());
         const d = (j.dispositivos || []).find((x) => x.painel === painel);
-        setStatus(d ? d.conectado : false);
+        const conectado = d ? d.conectado : false;
+
+        // Detecta transição online → offline e notifica via WhatsApp
+        if (prevStatus.current === true && conectado === false) {
+          fetch("/api/esp32/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ painel }),
+          }).catch(() => {});
+        }
+
+        prevStatus.current = conectado;
+        setStatus(conectado);
       } catch {
         setStatus(false);
       }

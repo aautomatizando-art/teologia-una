@@ -12,8 +12,10 @@ export async function POST(req) {
 
   const { error } = await supabase
     .from("esp32_status")
-    .upsert({ painel: Number(painel), ultimo_ping: new Date().toISOString(), ip: ip || null },
-             { onConflict: "painel" });
+    .upsert(
+      { painel: Number(painel), ultimo_ping: new Date().toISOString(), ip: ip || null, notificado_em: null },
+      { onConflict: "painel" }
+    );
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
