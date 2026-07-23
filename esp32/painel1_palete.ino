@@ -3,15 +3,21 @@
   Hardware: ESP32 Dev Board
 
   Pinos:
-    GPIO 2  → Saída 1: LED/relé — acende ao conectar WiFi
-    GPIO 4  → Saída 2: LED/relé — ativado após registrar palete
+    GPIO 2  → Saída 1: Luz Vermelha — acende ao ligar (sem WiFi)
+    GPIO 4  → Saída 2: Luz Amarela  — acende ao conectar WiFi (estado idle)
+    GPIO 5  → Saída 3: Sirene       — pulsa 2 s após registrar palete
+    GPIO 18 → Saída 4: Luz Verde    — pulsa 2 s após registrar palete
     GPIO 15 → Botão (GND no outro terminal, usa INPUT_PULLUP)
 
   Comportamento:
-    - Ao conectar ao WiFi, Saída 1 acende
-    - Ao segurar o botão por 2 s, busca a OP ativa no dashboard
-      e registra 1 palete no Painel 1 (Linhas 1+2)
-    - Após registro bem-sucedido, Saída 2 pulsa por 2 s
+    1. Energizou  → Saída 1 (vermelho) ON, demais OFF
+    2. WiFi ok    → Saída 1 OFF, Saída 2 (amarelo) ON
+    3. Botão 2 s  → Registra palete, Saída 2 OFF,
+                    Saída 3 (sirene) + Saída 4 (verde) ON por 2 s,
+                    depois desligam e Saída 2 (amarelo) volta ON
+
+  Relés ativo-LOW: LOW = relé acionado / ligado
+                   HIGH = relé desligado
 
   Dependências (Library Manager):
     - ArduinoJson  (v6+)  — Benoit Blanchon
@@ -32,18 +38,25 @@ const char* BASE_URL   = "https://dashboard-producao-two.vercel.app";
 #define LINHAS_STR  "1,2"      // "1,2" | "3,4" | "5,6"
 
 // ── Pinos ──────────────────────────────────────────────────────────────────
-#define PIN_SAIDA1  2    // LED/relé: WiFi conectado  (ativo-LOW)
-#define PIN_SAIDA2  4    // LED/relé: pulsa após palete (ativo-LOW)
+#define PIN_SAIDA1  2    // Luz Vermelha — energizado sem WiFi
+#define PIN_SAIDA2  4    // Luz Amarela  — conectado/idle
+#define PIN_SAIDA3  5    // Sirene       — confirmação de palete
+#define PIN_SAIDA4  18   // Luz Verde    — confirmação de palete
 #define PIN_BOTAO   15   // Botão (pullup interno, pressão = LOW)
 
 // ── Parâmetros de tempo ────────────────────────────────────────────────────
-const unsigned long HOLD_MS      = 2000; // pressão de 2 s para acionar
-const unsigned long HEARTBEAT_MS = 5000; // intervalo de heartbeat para o dashboard
+const unsigned long HOLD_MS         = 2000; // segurar 2 s para acionar
+const unsigned long HEARTBEAT_MS    = 5000; // intervalo heartbeat dashboard
+const unsigned long CONFIRMACAO_MS  = 2000; // sirene + verde ficam 2 s
+
+// ── Helpers: relé ativo-LOW ────────────────────────────────────────────────
+#define RELE_ON(pin)  digitalWrite(pin, LOW)
+#define RELE_OFF(pin) digitalWrite(pin, HIGH)
 
 // ── Estado interno ─────────────────────────────────────────────────────────
-unsigned long inicioPressao  = 0;
+unsigned long inicioPressao   = 0;
 unsigned long ultimoHeartbeat = 0;
-bool acionado = false; // evita re-disparo enquanto botão fica pressionado
+bool acionado = false;
 
 // ── setup ──────────────────────────────────────────────────────────────────
 void setup() {
@@ -51,52 +64,52 @@ void setup() {
 
   pinMode(PIN_SAIDA1, OUTPUT);
   pinMode(PIN_SAIDA2, OUTPUT);
+  pinMode(PIN_SAIDA3, OUTPUT);
+  pinMode(PIN_SAIDA4, OUTPUT);
   pinMode(PIN_BOTAO,  INPUT_PULLUP);
 
-  digitalWrite(PIN_SAIDA1, HIGH); // relé desligado (ativo-LOW)
-  digitalWrite(PIN_SAIDA2, HIGH);
+  // Estado inicial: só vermelho aceso
+  RELE_ON(PIN_SAIDA1);
+  RELE_OFF(PIN_SAIDA2);
+  RELE_OFF(PIN_SAIDA3);
+  RELE_OFF(PIN_SAIDA4);
 
-  // Pisca Saída 1 enquanto conecta
+  // Pisca vermelho enquanto conecta ao WiFi
   Serial.print("Conectando ao WiFi");
   WiFi.begin(SSID, SENHA_WIFI);
   while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(PIN_SAIDA1, !digitalRead(PIN_SAIDA1));
+    digitalWrite(PIN_SAIDA1, !digitalRead(PIN_SAIDA1)); // pisca
     delay(400);
     Serial.print(".");
   }
 
-  // Conectado: Saída 1 acende fixo (LOW = relé acionado)
-  digitalWrite(PIN_SAIDA1, LOW);
+  // Conectado: vermelho OFF → amarelo ON
+  RELE_OFF(PIN_SAIDA1);
+  RELE_ON(PIN_SAIDA2);
   Serial.printf("\nConectado! IP: %s\n", WiFi.localIP().toString().c_str());
 }
 
-// ── Busca a OP ativa no dashboard ─────────────────────────────────────────
+// ── Busca OP ativa ─────────────────────────────────────────────────────────
 String buscarOPAtiva() {
   if (WiFi.status() != WL_CONNECTED) return "";
 
   HTTPClient http;
   http.begin(String(BASE_URL) + "/api/producao");
   http.setTimeout(5000);
-
   int code = http.GET();
-  if (code != 200) {
-    Serial.printf("GET /api/producao → %d\n", code);
-    http.end();
-    return "";
-  }
+  if (code != 200) { http.end(); return ""; }
 
   String payload = http.getString();
   http.end();
 
   DynamicJsonDocument doc(2048);
   if (deserializeJson(doc, payload) != DeserializationError::Ok) return "";
-
   JsonArray ordens = doc["ordens"].as<JsonArray>();
   if (ordens.size() == 0) return "";
   return ordens[0]["numero"].as<String>();
 }
 
-// ── Envia heartbeat ao dashboard (a cada HEARTBEAT_MS) ────────────────────
+// ── Heartbeat ao dashboard ─────────────────────────────────────────────────
 void enviarHeartbeat() {
   if (WiFi.status() != WL_CONNECTED) return;
 
@@ -105,13 +118,13 @@ void enviarHeartbeat() {
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(3000);
 
-  String ip = WiFi.localIP().toString();
+  String ip   = WiFi.localIP().toString();
   String body = "{\"painel\":" + String(PAINEL_NUM) + ",\"ip\":\"" + ip + "\"}";
   http.POST(body);
   http.end();
 }
 
-// ── Registra 1 palete no painel configurado ───────────────────────────────
+// ── Registra 1 palete ──────────────────────────────────────────────────────
 bool registrarPalete(const String& op) {
   if (WiFi.status() != WL_CONNECTED) return false;
 
@@ -124,7 +137,6 @@ bool registrarPalete(const String& op) {
   int code = http.POST(body);
   Serial.printf("POST /api/producao → %d\n", code);
   http.end();
-
   return (code == 200);
 }
 
@@ -132,7 +144,7 @@ bool registrarPalete(const String& op) {
 void loop() {
   unsigned long agora = millis();
 
-  // Heartbeat periódico independente do botão
+  // Heartbeat periódico
   if (agora - ultimoHeartbeat >= HEARTBEAT_MS) {
     ultimoHeartbeat = agora;
     enviarHeartbeat();
@@ -146,18 +158,24 @@ void loop() {
     if (!acionado && (agora - inicioPressao >= HOLD_MS)) {
       acionado = true;
 
-      Serial.println("Botão segurado 2 s — buscando OP ativa...");
+      Serial.println("Botão 2 s — buscando OP ativa...");
       String op = buscarOPAtiva();
 
       if (op.isEmpty()) {
-        Serial.println("Nenhuma OP ativa encontrada.");
+        Serial.println("Nenhuma OP ativa.");
       } else {
         Serial.printf("OP: %s — registrando palete no Painel %d...\n", op.c_str(), PAINEL_NUM);
         if (registrarPalete(op)) {
           Serial.println("Palete registrado (" LINHAS_STR ")");
-          digitalWrite(PIN_SAIDA2, LOW);  // pulsa relé 2 s
-          delay(2000);
-          digitalWrite(PIN_SAIDA2, HIGH);
+
+          // Amarelo OFF → sirene + verde ON por 2 s → amarelo volta
+          RELE_OFF(PIN_SAIDA2);
+          RELE_ON(PIN_SAIDA3);
+          RELE_ON(PIN_SAIDA4);
+          delay(CONFIRMACAO_MS);
+          RELE_OFF(PIN_SAIDA3);
+          RELE_OFF(PIN_SAIDA4);
+          RELE_ON(PIN_SAIDA2);
         } else {
           Serial.println("Falha ao registrar.");
         }
