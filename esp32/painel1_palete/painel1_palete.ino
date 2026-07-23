@@ -7,7 +7,7 @@
     GPIO 4  → Saída 2: Luz Amarela  — acende ao conectar WiFi (estado idle)
     GPIO 5  → Saída 3: Sirene       — pulsa 2 s após registrar palete
     GPIO 18 → Saída 4: Luz Verde    — pulsa 2 s após registrar palete
-    GPIO 15 → Botão (GND no outro terminal, usa INPUT_PULLUP)
+    GPIO 15 → Botão NC (normalmente fechado para GND, usa INPUT_PULLUP)
 
   Comportamento:
     1. Energizou      → Saída 1 (vermelho) ON fixo, demais OFF
@@ -172,7 +172,7 @@ void loop() {
     enviarHeartbeat();
   }
 
-  bool pressionado = (digitalRead(PIN_BOTAO) == LOW);
+  bool pressionado = (digitalRead(PIN_BOTAO) == HIGH); // NC: repouso=LOW, aberto=HIGH
 
   if (pressionado) {
     if (inicioPressao == 0) inicioPressao = agora;
