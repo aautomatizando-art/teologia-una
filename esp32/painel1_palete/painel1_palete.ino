@@ -48,7 +48,7 @@ const char* BASE_URL   = "https://dashboard-producao-two.vercel.app";
 // ── Parâmetros de tempo ────────────────────────────────────────────────────
 const unsigned long HOLD_MS         = 2000; // segurar 2 s para acionar
 const unsigned long HEARTBEAT_MS    = 5000; // intervalo heartbeat dashboard
-const unsigned long CONFIRMACAO_MS  = 2000; // sirene + verde ficam 2 s
+const unsigned long CONFIRMACAO_MS  = 3000; // verde fica 3 s após confirmação
 
 // ── Helpers: relé ativo-LOW ────────────────────────────────────────────────
 #define RELE_ON(pin)  digitalWrite(pin, LOW)
@@ -187,19 +187,24 @@ void loop() {
         Serial.println("Nenhuma OP ativa.");
       } else {
         Serial.printf("OP: %s — registrando palete no Painel %d...\n", op.c_str(), PAINEL_NUM);
-        if (registrarPalete(op)) {
-          Serial.println("Palete registrado (" LINHAS_STR ")");
 
-          // Amarelo OFF → sirene + verde ON por 2 s → amarelo volta
-          RELE_OFF(PIN_SAIDA2);
-          RELE_ON(PIN_SAIDA3);
+        // Amarelo OFF + sirene ON imediatamente ao acionar
+        RELE_OFF(PIN_SAIDA2);
+        RELE_ON(PIN_SAIDA3);
+
+        if (registrarPalete(op)) {
+          // Registrado: sirene OFF → verde ON por 3 s → amarelo volta
+          Serial.println("Palete registrado (" LINHAS_STR ")");
+          RELE_OFF(PIN_SAIDA3);
           RELE_ON(PIN_SAIDA4);
           delay(CONFIRMACAO_MS);
-          RELE_OFF(PIN_SAIDA3);
           RELE_OFF(PIN_SAIDA4);
           RELE_ON(PIN_SAIDA2);
         } else {
+          // Falha: sirene OFF → amarelo volta
           Serial.println("Falha ao registrar.");
+          RELE_OFF(PIN_SAIDA3);
+          RELE_ON(PIN_SAIDA2);
         }
       }
     }
