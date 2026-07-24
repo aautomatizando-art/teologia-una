@@ -61,6 +61,24 @@ function PainelOP({ titulo, cor, linhas, indice }) {
   const [okPedido, setOkPedido] = useState("");
   const [erroPedido, setErroPedido] = useState("");
 
+  // Controle de produção ativa
+  const [producaoAtiva, setProducaoAtiva] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  async function toggleProducao() {
+    setToggling(true);
+    const novoEstado = !producaoAtiva;
+    try {
+      const res = await fetch("/api/producao/ativo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ painel: indice + 1, ativo: novoEstado }),
+      });
+      if (res.ok) setProducaoAtiva(novoEstado);
+    } catch {}
+    setToggling(false);
+  }
+
   // Dropdown de OPs
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const ordensAbertas = ordens.filter((x) => x.status === "ABERTA");
@@ -69,6 +87,7 @@ function PainelOP({ titulo, cor, linhas, indice }) {
   useEffect(() => { opRef.current = op; }, [op]);
 
   useEffect(() => {
+    // Carrega OPs e estado de produção ativa
     fetch("/api/producao")
       .then((r) => r.json())
       .then((j) => {
@@ -80,6 +99,10 @@ function PainelOP({ titulo, cor, linhas, indice }) {
           buscar(escolhida.numero);
         }
       })
+      .catch(() => {});
+    fetch(`/api/producao/ativo?painel=${indice + 1}`)
+      .then((r) => r.json())
+      .then((j) => setProducaoAtiva(j.ativo || false))
       .catch(() => {});
   }, []);
 
@@ -307,7 +330,33 @@ function PainelOP({ titulo, cor, linhas, indice }) {
           {pedidos.length > 0 && (
             <div className="grid g2" style={{ marginBottom: 18, gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
             <div className="card">
-              <h3>📦 Produzir por Pedido</h3>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                <h3 style={{ margin: 0 }}>📦 Produzir por Pedido</h3>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={toggling}
+                  onClick={toggleProducao}
+                  style={{
+                    background: producaoAtiva ? "rgba(34,197,94,.15)" : "rgba(239,68,68,.12)",
+                    border: `1px solid ${producaoAtiva ? "rgba(34,197,94,.4)" : "rgba(239,68,68,.35)"}`,
+                    color: producaoAtiva ? "#86efac" : "#fca5a5",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    padding: "6px 16px",
+                    borderRadius: 8,
+                    cursor: toggling ? "wait" : "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {toggling ? "..." : producaoAtiva ? "🟢 Produção Ativa — Pausar" : "🔴 Iniciar Produção"}
+                </button>
+              </div>
+              {!producaoAtiva && (
+                <div className="aviso" style={{ marginBottom: 12, background: "rgba(239,68,68,.08)", borderColor: "rgba(239,68,68,.3)", color: "#fca5a5", fontSize: 13 }}>
+                  ⚠️ Registros via BOTOEIRA bloqueados. Clique em <strong>Iniciar Produção</strong> para habilitar.
+                </div>
+              )}
               {erroPedido && <div className="erro">{erroPedido}</div>}
               {okPedido && <div className="aviso" style={{ marginBottom: 14, borderColor: "rgba(34,197,94,.4)", color: "#86efac", background: "rgba(34,197,94,.1)" }}>{okPedido}</div>}
 
