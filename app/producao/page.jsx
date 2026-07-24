@@ -83,14 +83,19 @@ function PainelOP({ titulo, cor, linhas, indice }) {
       .catch(() => {});
   }, []);
 
-  // Refresh silencioso a cada 5 s — atualiza contagem sem tocar no formulário
+  // Polling leve a cada 5 s — recarrega dados só se houve novo registro
+  const totalRef = useRef(null);
   useEffect(() => {
     const id = setInterval(async () => {
       const alvo = opRef.current;
       if (!alvo) return;
       try {
-        const r = await fetch(`/api/producao?op=${encodeURIComponent(alvo)}`);
-        if (r.ok) setDados(await r.json());
+        const { total } = await fetch("/api/producao/status").then((r) => r.json());
+        if (total !== totalRef.current) {
+          totalRef.current = total;
+          const r = await fetch(`/api/producao?op=${encodeURIComponent(alvo)}`);
+          if (r.ok) setDados(await r.json());
+        }
       } catch {}
     }, 5000);
     return () => clearInterval(id);

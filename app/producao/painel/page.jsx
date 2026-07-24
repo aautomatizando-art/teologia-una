@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 export const dynamic = "force-dynamic";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -16,11 +16,13 @@ const PAINEIS = [
   { titulo: "Painel 3", cor: "#a855f7", linhas: [5, 6] },
 ];
 
-const REFRESH_MS = 5000;
+const STATUS_MS = 5000;   // verifica mudança a cada 5 s (requisição leve)
+const RELOAD_MS = 60000;  // recarrega tudo a cada 60 s mesmo sem mudança
 
 export default function PainelVisualizacao() {
   const [paineis, setPaineis] = useState([null, null, null]);
   const [carregando, setCarregando] = useState(true);
+  const totalRef = useRef(null);
 
   async function carregar() {
     try {
@@ -42,7 +44,21 @@ export default function PainelVisualizacao() {
 
   useEffect(() => {
     carregar();
-    const id = setInterval(carregar, REFRESH_MS);
+
+    // Polling leve: só recarrega se houve novo registro ou 60 s sem atualizar
+    let ultimoReload = Date.now();
+    const id = setInterval(async () => {
+      try {
+        const { total } = await fetch("/api/producao/status").then((r) => r.json());
+        const forcarPorTempo = Date.now() - ultimoReload >= RELOAD_MS;
+        if (total !== totalRef.current || forcarPorTempo) {
+          totalRef.current = total;
+          ultimoReload = Date.now();
+          carregar();
+        }
+      } catch {}
+    }, STATUS_MS);
+
     return () => clearInterval(id);
   }, []);
 
