@@ -16,7 +16,7 @@ const PAINEIS = [
   { titulo: "Painel 3", cor: "#a855f7", linhas: [5, 6] },
 ];
 
-const REFRESH_MS = 30000;
+const REFRESH_MS = 5000;
 
 export default function PainelVisualizacao() {
   const [paineis, setPaineis] = useState([null, null, null]);

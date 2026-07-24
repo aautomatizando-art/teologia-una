@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 export const dynamic = "force-dynamic";
 import TopBar from "@/components/TopBar";
 import { pertenceALinhas, agruparPorTipo } from "@/lib/linhas";
@@ -65,6 +65,9 @@ function PainelOP({ titulo, cor, linhas, indice }) {
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const ordensAbertas = ordens.filter((x) => x.status === "ABERTA");
 
+  const opRef = useRef("");
+  useEffect(() => { opRef.current = op; }, [op]);
+
   useEffect(() => {
     fetch("/api/producao")
       .then((r) => r.json())
@@ -78,6 +81,19 @@ function PainelOP({ titulo, cor, linhas, indice }) {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // Refresh silencioso a cada 5 s — atualiza contagem sem tocar no formulário
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const alvo = opRef.current;
+      if (!alvo) return;
+      try {
+        const r = await fetch(`/api/producao?op=${encodeURIComponent(alvo)}`);
+        if (r.ok) setDados(await r.json());
+      } catch {}
+    }, 5000);
+    return () => clearInterval(id);
   }, []);
 
   function toggleLinha(n) {
