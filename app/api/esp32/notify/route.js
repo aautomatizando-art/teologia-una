@@ -1,7 +1,7 @@
 import { getSupabase, supabaseIndisponivel } from "@/lib/supabase";
 import { enviarWhatsApp } from "@/lib/whatsapp";
 
-const OFFLINE_THRESHOLD_S  = 20;  // considera offline após 20 s sem ping
+const OFFLINE_THRESHOLD_S  = 10;  // 10 s < 12 s (TIMEOUT_CONECTADO_S no ping GET)
 const DEBOUNCE_MIN         = 10;  // não notifica novamente em menos de 10 min
 
 // POST /api/esp32/notify — chamado pelo dashboard ao detectar ESP32 offline
