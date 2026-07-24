@@ -175,25 +175,28 @@ void loop() {
   bool pressionado = (digitalRead(PIN_BOTAO) == HIGH); // NC: repouso=LOW, aberto=HIGH
 
   if (pressionado) {
-    if (inicioPressao == 0) inicioPressao = agora;
+    if (inicioPressao == 0) {
+      // Primeiro instante que abre: sirene ON imediatamente
+      inicioPressao = agora;
+      RELE_OFF(PIN_SAIDA2);
+      RELE_ON(PIN_SAIDA3);
+      Serial.println("Botão aberto — sirene ON");
+    }
 
     if (!acionado && (agora - inicioPressao >= HOLD_MS)) {
       acionado = true;
 
-      Serial.println("Botão 2 s — buscando OP ativa...");
+      Serial.println("2 s atingido — buscando OP ativa...");
       String op = buscarOPAtiva();
 
       if (op.isEmpty()) {
         Serial.println("Nenhuma OP ativa.");
+        RELE_OFF(PIN_SAIDA3);
+        RELE_ON(PIN_SAIDA2);
       } else {
         Serial.printf("OP: %s — registrando palete no Painel %d...\n", op.c_str(), PAINEL_NUM);
-
-        // Amarelo OFF + sirene ON imediatamente ao acionar
-        RELE_OFF(PIN_SAIDA2);
-        RELE_ON(PIN_SAIDA3);
-
         if (registrarPalete(op)) {
-          // Registrado: sirene OFF → verde ON por 3 s → amarelo volta
+          // Registrado: sirene OFF → verde ON 3 s → amarelo volta
           Serial.println("Palete registrado (" LINHAS_STR ")");
           RELE_OFF(PIN_SAIDA3);
           RELE_ON(PIN_SAIDA4);
@@ -209,6 +212,12 @@ void loop() {
       }
     }
   } else {
+    if (inicioPressao != 0 && !acionado) {
+      // Fechou antes dos 2 s: cancela — sirene OFF → amarelo volta
+      RELE_OFF(PIN_SAIDA3);
+      RELE_ON(PIN_SAIDA2);
+      Serial.println("Cancelado (< 2 s)");
+    }
     inicioPressao = 0;
     acionado = false;
   }
