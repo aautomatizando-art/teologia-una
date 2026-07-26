@@ -45,7 +45,14 @@ export async function GET(req) {
     .eq("numero", numero.trim())
     .maybeSingle();
 
-  // Coluna caixas_por_palete / kg_batata_por_caixa pode não existir ainda (migration pendente)
+  // Fallback progressivo: tenta sem kg_batata, depois só nome
+  if (error) {
+    ({ data: ordem, error } = await supabase
+      .from("ordens_producao")
+      .select("id, numero, meta_paletes, status, criado_em, produtos(nome, caixas_por_palete)")
+      .eq("numero", numero.trim())
+      .maybeSingle());
+  }
   if (error) {
     ({ data: ordem, error } = await supabase
       .from("ordens_producao")
