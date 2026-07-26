@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/expedicion", rotulo: "🚚 Expedição" },
   { href: "/rastreio", rotulo: "📍 Rastreio" },
   { href: "/backup", rotulo: "💾 Backup" },
+  { href: "/rendimento", rotulo: "🥔 Rendimento" },
 ];
 
 export default function TopBar() {

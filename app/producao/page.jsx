@@ -319,6 +319,15 @@ function PainelOP({ titulo, cor, linhas, indice }) {
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     <div className="kpi" style={{ fontSize: 26 }}>{produzidoCx.toLocaleString("pt-BR")} <small>cx</small></div>
                     <div className="kpi" style={{ fontSize: 26 }}>{(o.produzido || 0).toLocaleString("pt-BR")} <small>paletes</small></div>
+                    {(() => {
+                      const kgPorCx = pedidos[0]?.insumos?.kg_batata_por_caixa || 0;
+                      const totalKg = produzidoCx * kgPorCx;
+                      return kgPorCx > 0 ? (
+                        <div className="kpi" style={{ fontSize: 26 }}>
+                          {totalKg.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} <small>kg bat.</small>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
                 <div className="card"><h3>Status</h3><span className={`badge ${o.status === "ABERTA" ? "ok" : "alto"}`}>{o.status}</span></div>
