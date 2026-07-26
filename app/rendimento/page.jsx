@@ -158,15 +158,12 @@ export default function RendimentoPage() {
   // Gauge 1: ao vivo do formulário
   const gauge1 = parseFloat(form.media_tirada) || 0;
 
-  // Gauge 2: caixas produzidas ÷ kg batata (producao + romaneio + form em preenchimento)
+  // Gauge 2: kg batata (3 painéis de producao) ÷ Qtd Sacos Produzidos (romaneio)
   const regHoje = registros.filter((r) => r.data === hoje);
-  const totalKgBatata = regHoje.reduce((s, r) => s + Number(r.peso_liquido || 0), 0)
-                      + (parseFloat(form.peso_liquido) || 0)
-                      + producaoHoje.total_kg_batata;
-  const totalCaixas   = regHoje.reduce((s, r) => s + Number(r.qtd_sacos_produzidos || 0), 0)
-                      + (parseInt(form.qtd_sacos_produzidos) || 0)
-                      + producaoHoje.total_caixas;
-  const gauge2 = totalKgBatata > 0 ? totalCaixas / totalKgBatata : 0;
+  const totalKgBatata     = producaoHoje.total_kg_batata;
+  const totalSacosRomaneio = regHoje.reduce((s, r) => s + Number(r.qtd_sacos_produzidos || 0), 0)
+                           + (parseInt(form.qtd_sacos_produzidos) || 0);
+  const gauge2 = totalSacosRomaneio > 0 ? totalKgBatata / totalSacosRomaneio : 0;
 
   // Dados do gráfico de barras
   const dadosGrafico = useMemo(() => {
@@ -286,11 +283,11 @@ export default function RendimentoPage() {
           <h3>📊 Média do Dia</h3>
           <Velocimetro
             value={gauge2}
-            titulo="Total do dia: Caixas ÷ Kg Batata (3 painéis)"
+            titulo="Total do dia: Kg Batata ÷ Sacos Produzidos"
             detalhe={
-              totalKgBatata > 0
-                ? `${totalCaixas} cx ÷ ${totalKgBatata.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg`
-                : "Sem dados para hoje"
+              totalSacosRomaneio > 0
+                ? `${totalKgBatata.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg ÷ ${totalSacosRomaneio} sacos`
+                : `${totalKgBatata.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg bat. — aguardando romaneio`
             }
           />
         </div>
