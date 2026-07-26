@@ -24,26 +24,37 @@ function nivelPara(v) {
   return NIVEIS[0];
 }
 
-// SVG donut arc — usa cy - r*sin para que o gauge bulge para CIMA
+// Converte ângulo de relógio (0°=topo, horário) para coordenada SVG
+function gPt(cx, cy, r, deg) {
+  const rad = deg * Math.PI / 180;
+  return [cx + r * Math.sin(rad), cy - r * Math.cos(rad)];
+}
+
+// Arco donut: gauge vai de 270° (esquerda) a 450°=90° (direita) passando pelo TOPO (360°)
+// valor v → ângulo = 270 + (v/maxV)*180
 function arcSeg(fromV, toV, maxV, cx, cy, r, ri) {
-  const a1 = Math.PI * (1 - fromV / maxV);
-  const a2 = Math.PI * (1 - toV  / maxV);
-  const large = (a1 - a2) > Math.PI ? 1 : 0;
-  const pt = (a, rad) => [cx + rad * Math.cos(a), cy - rad * Math.sin(a)];
-  const [ox1, oy1] = pt(a1, r);
-  const [ox2, oy2] = pt(a2, r);
-  const [ix1, iy1] = pt(a1, ri);
-  const [ix2, iy2] = pt(a2, ri);
-  return `M ${ox1} ${oy1} A ${r} ${r} 0 ${large} 0 ${ox2} ${oy2} L ${ix2} ${iy2} A ${ri} ${ri} 0 ${large} 1 ${ix1} ${iy1} Z`;
+  const a1 = 270 + (fromV / maxV) * 180;
+  const a2 = 270 + (toV   / maxV) * 180;
+  const large = (a2 - a1) > 180 ? 1 : 0;
+  const [ox1, oy1] = gPt(cx, cy, r,  a1);
+  const [ox2, oy2] = gPt(cx, cy, r,  a2);
+  const [ix1, iy1] = gPt(cx, cy, ri, a1);
+  const [ix2, iy2] = gPt(cx, cy, ri, a2);
+  // outer: horário (sweep=1) | inner: anti-horário (sweep=0) → furo correto
+  return `M ${ox1} ${oy1} A ${r} ${r} 0 ${large} 1 ${ox2} ${oy2} L ${ix2} ${iy2} A ${ri} ${ri} 0 ${large} 0 ${ix1} ${iy1} Z`;
 }
 
 function Velocimetro({ value, titulo, detalhe }) {
   const cx = 100, cy = 96, r = 80, ri = 50;
   const v = Math.max(0, Math.min(value || 0, GAUGE_MAX));
   const nivel = nivelPara(v);
-  const na = Math.PI * (1 - v / GAUGE_MAX);
-  const nx = cx + (ri - 4) * Math.cos(na);
-  const ny = cy - (ri - 4) * Math.sin(na);
+  // agulha usa mesma convenção de ângulo: 270°=esquerda, 450°=direita passando pelo topo
+  const needleDeg = 270 + (v / GAUGE_MAX) * 180;
+  const [nx, ny] = gPt(cx, cy, ri - 4, needleDeg);
+  // marcas de escala nas extremidades e no topo
+  const [lx, ly] = gPt(cx, cy, r + 10, 270); // "0" na esquerda
+  const [tx, ty] = gPt(cx, cy, r + 10, 360); // "10" no topo
+  const [rx2, ry2] = gPt(cx, cy, r + 10, 450); // "20" na direita
 
   return (
     <div>
@@ -69,9 +80,9 @@ function Velocimetro({ value, titulo, detalhe }) {
           {nivel.label}
         </text>
         {/* marcas de escala */}
-        <text x={17}  y={102} textAnchor="middle" fill="#4b5563" fontSize={9}>0</text>
-        <text x={100} y={14}  textAnchor="middle" fill="#4b5563" fontSize={9}>{GAUGE_MAX / 2}</text>
-        <text x={183} y={102} textAnchor="middle" fill="#4b5563" fontSize={9}>{GAUGE_MAX}</text>
+        <text x={lx}  y={ly}  textAnchor="middle" fill="#4b5563" fontSize={9}>0</text>
+        <text x={tx}  y={ty}  textAnchor="middle" fill="#4b5563" fontSize={9}>{GAUGE_MAX / 2}</text>
+        <text x={rx2} y={ry2} textAnchor="middle" fill="#4b5563" fontSize={9}>{GAUGE_MAX}</text>
       </svg>
       {detalhe && (
         <p style={{ textAlign: "center", fontSize: 11, color: "#6b7280", margin: "6px 0 0" }}>{detalhe}</p>
