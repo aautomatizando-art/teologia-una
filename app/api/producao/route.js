@@ -41,11 +41,11 @@ export async function GET(req) {
 
   let { data: ordem, error } = await supabase
     .from("ordens_producao")
-    .select("id, numero, meta_paletes, status, criado_em, produtos(nome, caixas_por_palete)")
+    .select("id, numero, meta_paletes, status, criado_em, produtos(nome, caixas_por_palete, kg_batata_por_caixa)")
     .eq("numero", numero.trim())
     .maybeSingle();
 
-  // Coluna caixas_por_palete pode não existir ainda (migration pendente)
+  // Coluna caixas_por_palete / kg_batata_por_caixa pode não existir ainda (migration pendente)
   if (error) {
     ({ data: ordem, error } = await supabase
       .from("ordens_producao")
@@ -93,6 +93,7 @@ export async function GET(req) {
       status: ordem.status,
       produzido,
       caixasPorPalete,
+      kgBatataPorCaixa: ordem.produtos?.kg_batata_por_caixa || 0,
       percentual: ordem.meta_paletes ? Math.min(100, Math.round((produzidoCx / ordem.meta_paletes) * 100)) : 0,
     },
     pedidos: pedidos.data || [],
@@ -140,6 +141,20 @@ export async function POST(req) {
     .eq("numero", (op || "").trim())
     .maybeSingle();
   if (!ordem) return Response.json({ error: `Ordem "${op}" não encontrada.` }, { status: 404 });
+
+  // Valida se produção está ativa para o painel antes de registrar paletes
+  if (acao === "paletes") {
+    const primeiraLinha = parseInt((linhas || "1").split(",")[0]);
+    const painelNum = primeiraLinha <= 2 ? 1 : primeiraLinha <= 4 ? 2 : 3;
+    const { data: painelStatus } = await supabase
+      .from("esp32_status")
+      .select("producao_ativa")
+      .eq("painel", painelNum)
+      .maybeSingle();
+    if (!painelStatus?.producao_ativa) {
+      return Response.json({ error: "Produção não iniciada neste painel. Clique em 'Iniciar Produção'." }, { status: 403 });
+    }
+  }
 
   let error = null;
   if (acao === "paletes") {
