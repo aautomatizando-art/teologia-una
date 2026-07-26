@@ -180,14 +180,67 @@ UART (LD2410C)
   256000 8N1
 ```
 
-**Onde instalar:** altura de 1,10 m do piso (zona de respiração sentada), longe
-de porta, janela, difusor de ar e de qualquer fonte de calor. O sensor de
-iluminância deve ficar no **plano de trabalho** (altura da carteira, ~0,75 m), com
-o fotodiodo voltado para cima e sem sombra de estrutura.
+### 2.3 Onde instalar — dois módulos por sala
 
-### 2.3 Calibração obrigatória
+Os pontos de medição que as normas exigem estão em **alturas diferentes**, e não
+existe uma posição única que sirva para todos. Por isso a instalação recomendada
+usa dois módulos, cada um no seu perfil (`PERFIL_PAREDE` / `PERFIL_TETO` no
+`config.h`). Os dois apontam para o mesmo `ambiente_id` — o backend consolida os
+parâmetros por sala, cada valor carimbado com o `device_id` de origem.
 
-Sem estes dois passos os números não têm validade:
+| | **Módulo A — ar, térmico, acústico** | **Módulo B — óptica e presença** |
+|---|---|---|
+| **Posição** | Parede interna, **1,10 m do piso** | **Teto, centro da sala** |
+| **Sensores** | SCD41, SHT45, SPS30, SGP41, SFA30, FS3000, microfone | VEML7700, AS7341, fotodiodo, LD2410 |
+| **Afastar de** | Porta e janela (≥ 1,5 m), difusor de ar, quadro elétrico, parede externa, qualquer fonte de calor | Luminária (≥ 50 cm de deslocamento lateral), difusor |
+| **Por quê** | A zona ocupada da NBR 16401-2 vai de 0,10 a 1,80 m. Parede a 1,10 m é a prática consolidada — o ar da zona ocupada é bem misturado na horizontal, o que importa é a altura | Centro do teto é a melhor posição para o radar de presença, e a única prática para a óptica |
+
+**Não instale tudo numa case única no centro do teto.** Três problemas
+independentes, e dois deles invalidam medição que vai para laudo:
+
+1. **Autoaquecimento.** ESP32 com WiFi (~0,4 W) mais o ventilador do SPS30
+   (~0,3 W) numa caixa fechada elevam o ar interno **5 a 10 °C** acima do
+   ambiente. O SHT45 tem exatidão de ±0,1 °C, que vira irrelevante dentro de uma
+   caixa 6 °C quente — e como a UR é derivada da temperatura, 5 °C de erro viram
+   ~20 pontos percentuais de erro em umidade. A conformidade térmica sai errada
+   por construção.
+2. **Iluminância no teto mede outra grandeza.** A NBR ISO/CIE 8995-1 mede Ēm no
+   **plano de tarefa** (carteira, ~0,75 m), sensor voltado para cima. Do teto
+   olhando para baixo, o que se mede é a luminância refletida do piso e do
+   mobiliário — que muda se trocarem o piso ou a cor das mesas. Usável só com o
+   fator `LUX_FATOR` levantado por sala (§ 2.4).
+3. **CO₂, temperatura e ruído no teto são estratificados.** O ar do teto é mais
+   quente e tem CO₂ diferente do que o ocupante respira. A NBR 10152 mede na
+   posição do ouvinte, ~1,2 m sentado.
+
+Se ainda assim for módulo único por restrição de custo ou de obra, ponha-o na
+**parede a 1,10 m** — não no teto. Você perde presença e óptica, mas mantém
+válido o que é mais cobrado em fiscalização: CO₂, temperatura, umidade e
+particulado.
+
+### 2.4 Requisitos da case
+
+Valem para os dois módulos. Caixa selada não é opção: metade dos sensores
+precisa de troca de ar ou de caminho acústico/óptico.
+
+- **SHT45 fora da caixa**, num toco de 10 cm com abrigo contra radiação. Se não
+  houver como, no ponto mais baixo da caixa, com respiro embaixo e em cima
+  (efeito chaminé) e o mais longe possível do regulador e do ESP32. O
+  `TEMP_OFFSET_C` do `config.h` é correção **residual**, não substituto do
+  arranjo físico.
+- **SPS30** com entrada e saída de ar atravessando a parede da caixa, em
+  linha reta e desobstruídas. Selado, ele não mede nada.
+- **Microfone** com furo acústico de 3–4 mm e tela anti-poeira, sem cavidade
+  atrás. Selado, você mede a ressonância da caixa.
+- **VEML7700 e fotodiodo** com janela óptica limpa, voltados para a fonte, sem
+  sombra de estrutura.
+- **LD2410** atrás de ABS fino — atravessa plástico, **não** atravessa metal nem
+  a própria placa de circuito. Nada de case metálica no módulo de teto.
+- **FS3000** com o elemento exposto no ar livre, orientado ao longo do fluxo.
+
+### 2.5 Calibração obrigatória
+
+Sem estes passos os números não têm validade:
 
 1. **Nível sonoro.** Coloque um decibelímetro classe 2 calibrado ao lado do nó e
    ajuste `MIC_OFFSET_DB` no `config.h` até as leituras coincidirem. A
@@ -196,6 +249,13 @@ Sem estes dois passos os números não têm validade:
    fresco de 400 ppm. Numa sala que nunca é ventilada isso deriva. Deixe o nó ao
    ar livre por 10 minutos a cada troca de semestre, ou desative a ASC e faça
    calibração forçada.
+3. **Temperatura e umidade.** Com a sala em regime, compare com um
+   termo-higrômetro de referência a 1,10 m e ajuste `TEMP_OFFSET_C` e
+   `UR_OFFSET_PCT`. Refaça se trocar a caixa ou o arranjo interno.
+4. **Iluminância (só no módulo de teto).** Luxímetro sobre a carteira voltado
+   para cima, sala em uso normal, leitura simultânea do módulo, e
+   `LUX_FATOR = lux_do_luxímetro / lux_do_módulo`. Vale enquanto piso,
+   mobiliário e pintura não mudarem — refaça depois de reforma.
 
 ---
 

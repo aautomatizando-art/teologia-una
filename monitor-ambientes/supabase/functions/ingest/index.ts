@@ -227,7 +227,19 @@ Deno.serve(async (req) => {
   const avaliacao: Record<string, unknown>[] = [];
   const novosAlertas: string[] = [];
 
-  const ocupado = leitura.presenca as boolean | undefined;
+  // A presença pode vir de OUTRO nó da mesma sala: numa instalação com dois
+  // módulos, quem detecta presença é o de teto e quem mede ruído é o de
+  // parede. Sem consultar o contexto da sala, o nó de parede avaliaria
+  // ruído e iluminância como se a sala estivesse sempre em uso.
+  let ocupado = leitura.presenca as boolean | undefined;
+  if (ocupado === undefined) {
+    const { data: ctx } = await db
+      .from('amb_v_contexto_atual')
+      .select('presenca')
+      .eq('ambiente_id', disp.ambiente_id)
+      .maybeSingle();
+    if (ctx?.presenca !== null && ctx?.presenca !== undefined) ocupado = ctx.presenca;
+  }
 
   for (const lim of (limites ?? []) as Limite[]) {
     const valor = leitura[lim.parametro] as number | undefined;

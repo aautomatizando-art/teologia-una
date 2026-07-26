@@ -81,19 +81,84 @@
 #define PIN_LD2410_RX  18   // RX do ESP32  <- TX do sensor
 #define PIN_LD2410_TX  19   // TX do ESP32  -> RX do sensor
 
-// ─── HABILITAR / DESABILITAR SENSORES ─────────────────────────────────────
-// Comente a linha do sensor que nao estiver instalado. O firmware simplesmente
-// omite o campo no JSON, e o backend nao avalia o que nao recebeu.
-#define USA_VEML7700   // iluminancia (lux)
-#define USA_AS7341     // temperatura de cor (TCC)
-#define USA_FLICKER    // modulacao de flicker via fotodiodo
-#define USA_SCD41      // CO2 + temperatura + umidade
-#define USA_SHT45      // temperatura + umidade de referencia (mais preciso)
-#define USA_SPS30      // MP1 / MP2,5 / MP4 / MP10
-#define USA_SGP41      // indice de COV e de NOx
-// #define USA_SFA30   // formaldeido (HCHO) — opcional, sensor caro
-#define USA_FS3000     // velocidade do ar
-#define USA_MIC        // nivel sonoro LAeq dB(A)
-#define USA_LD2410     // presenca
+// ═══ PERFIL DO MODULO ═════════════════════════════════════════════════════
+// A instalacao recomendada usa DOIS modulos por sala, porque os pontos de
+// medicao exigidos pelas normas ficam em alturas diferentes:
+//
+//   PAREDE (1,10 m do piso, parede interna) — ar, termico, acustico.
+//     A zona ocupada da NBR 16401-2 vai de 0,10 a 1,80 m. No teto o ar e
+//     estratificado: mais quente e com CO2 diferente do que se respira.
+//
+//   TETO (centro da sala) — iluminancia, cor, flicker e presenca.
+//     Centro do teto e o melhor lugar para o radar de presenca. Para luz e
+//     a unica posicao pratica, mas exige o fator de calibracao abaixo.
+//
+// Descomente UM dos dois perfis. Cada modulo tem seu proprio DEVICE_ID e seu
+// proprio cadastro em amb_dispositivos, os dois apontando para o MESMO
+// ambiente_id — o backend consolida os parametros por sala.
+#define PERFIL_PAREDE
+// #define PERFIL_TETO
+
+#ifdef PERFIL_PAREDE
+  #define USA_SCD41      // CO2 + temperatura + umidade
+  #define USA_SHT45      // temperatura + umidade de referencia (mais preciso)
+  #define USA_SPS30      // MP1 / MP2,5 / MP4 / MP10
+  #define USA_SGP41      // indice de COV e de NOx
+  // #define USA_SFA30   // formaldeido (HCHO) — opcional, sensor caro
+  #define USA_FS3000     // velocidade do ar
+  #define USA_MIC        // nivel sonoro LAeq dB(A)
+#endif
+
+#ifdef PERFIL_TETO
+  #define USA_VEML7700   // iluminancia (lux)
+  #define USA_AS7341     // temperatura de cor (TCC)
+  #define USA_FLICKER    // modulacao de flicker via fotodiodo
+  #define USA_LD2410     // presenca por radar mmWave
+#endif
+
+// Modulo unico (nao recomendado — ver README §2.4): descomente tudo abaixo e
+// comente os dois perfis acima. Aceite que a iluminancia e a temperatura
+// perdem validade metrologica.
+// #define USA_VEML7700
+// #define USA_AS7341
+// #define USA_FLICKER
+// #define USA_SCD41
+// #define USA_SHT45
+// #define USA_SPS30
+// #define USA_SGP41
+// #define USA_FS3000
+// #define USA_MIC
+// #define USA_LD2410
+
+// ═══ CALIBRACOES DE INSTALACAO ════════════════════════════════════════════
+
+// ─── Correcao de autoaquecimento (modulo de parede) ──────────────────────
+// O ESP32 com WiFi dissipa ~0,4 W e o ventilador do SPS30 mais ~0,3 W. Dentro
+// de uma caixa fechada isso eleva o ar interno de 5 a 10 C acima do ambiente,
+// e o SHT45 le esse ar quente. Como a umidade relativa deriva da temperatura,
+// um erro de 5 C vira ~20 pontos percentuais de erro em UR — o suficiente para
+// invalidar a conformidade termica.
+//
+// A solucao mecanica vem primeiro: SHT45 FORA da caixa, num toco de 10 cm.
+// Este offset e a correcao residual, nao substituto do arranjo fisico.
+// Como levantar: com a sala em regime, compare com um termohigrometro de
+// referencia a 1,10 m e ajuste ate coincidir. Refaca se trocar a caixa.
+#define TEMP_OFFSET_C   0.0    // subtraido da leitura (positivo = caixa quente)
+#define UR_OFFSET_PCT   0.0    // somado a leitura
+
+// ─── Fator de iluminancia (modulo de teto) ───────────────────────────────
+// A NBR ISO/CIE 8995-1 mede Em NO PLANO DE TAREFA (carteira, ~0,75 m), com o
+// sensor voltado para cima. Um sensor no teto olhando para baixo mede outra
+// coisa: a luminancia refletida do piso e do mobiliario.
+//
+// Este fator converte uma na outra. Levantamento, uma vez por sala:
+//   1. luximetro sobre a carteira, voltado para cima, sala em uso normal
+//   2. leitura simultanea do modulo de teto (Serial ou dashboard)
+//   3. LUX_FATOR = (lux do luximetro) / (lux do modulo de teto)
+//
+// O fator so vale enquanto o piso, o mobiliario e a pintura nao mudarem.
+// Refaca depois de reforma. E ele NAO substitui a medicao em malha do
+// Anexo B para verificacao formal — serve para tendencia continua.
+#define LUX_FATOR       1.0
 
 #endif

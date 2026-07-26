@@ -387,7 +387,10 @@ void lerSensores() {
 #ifdef USA_VEML7700
   if (sensorOk[0]) {
     float lx = veml.readLux(VEML_LUX_AUTO);    // troca ganho/integracao sozinho
-    if (!isnan(lx) && lx >= 0) m.lux = lx;
+    // LUX_FATOR converte a leitura do teto (luminancia refletida) para a
+    // iluminancia no plano de tarefa, que e o que a NBR 8995-1 cobra.
+    // Ver config.h para o procedimento de levantamento do fator.
+    if (!isnan(lx) && lx >= 0) m.lux = lx * LUX_FATOR;
   }
 #endif
 
@@ -406,8 +409,9 @@ void lerSensores() {
       if (scd4x.readMeasurement(co2, t, h) == 0 && co2 != 0) {
         m.co2 = co2;
         // Fallback: sem SHT45 instalado, T e UR vem do proprio SCD41.
-        if (isnan(m.temp)) m.temp = t;
-        if (isnan(m.ur))   m.ur   = h;
+        // Mesma correcao de autoaquecimento — o sensor esta na mesma caixa.
+        if (isnan(m.temp)) m.temp = t - TEMP_OFFSET_C;
+        if (isnan(m.ur))   m.ur   = constrain(h + UR_OFFSET_PCT, 0.0f, 100.0f);
       }
     }
   }
@@ -416,7 +420,11 @@ void lerSensores() {
 #ifdef USA_SHT45
   if (sensorOk[3]) {
     float t = 0, h = 0;
-    if (sht4x.measureHighPrecision(t, h) == 0) { m.temp = t; m.ur = h; }
+    if (sht4x.measureHighPrecision(t, h) == 0) {
+      // Correcao residual de autoaquecimento da caixa — ver config.h.
+      m.temp = t - TEMP_OFFSET_C;
+      m.ur   = constrain(h + UR_OFFSET_PCT, 0.0f, 100.0f);
+    }
   }
 #endif
 

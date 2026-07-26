@@ -485,15 +485,63 @@ $$;
 -- 9. VIEWS
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Última leitura de cada ambiente.
+-- Última leitura de cada ambiente (linha bruta, por dispositivo mais recente).
 CREATE OR REPLACE VIEW amb_v_ultima_leitura AS
 SELECT DISTINCT ON (l.ambiente_id) l.*
 FROM amb_leituras l
 ORDER BY l.ambiente_id, l.lido_em DESC;
 
+-- Janela de validade de uma medida. Passado esse tempo sem leitura nova, o
+-- parâmetro vira 'sem_dado' em vez de exibir eternamente um valor velho —
+-- sensor mudo tem que aparecer como mudo, não como conforme.
+CREATE OR REPLACE FUNCTION amb_validade() RETURNS INTERVAL
+LANGUAGE sql IMMUTABLE AS $$ SELECT INTERVAL '2 hours' $$;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- VALOR ATUAL POR PARÂMETRO — consolidando TODOS os dispositivos da sala
+--
+-- Uma sala costuma ter dois nós: o de parede (ar, térmico, acústico, a 1,10 m)
+-- e o de teto (iluminância, cor, flicker, presença). Cada um envia um conjunto
+-- diferente de colunas. Pegar "a última linha da sala" faria os parâmetros
+-- piscarem entre presente e ausente conforme qual nó falou por último.
+-- Aqui a consolidação é por PARÂMETRO: o valor não nulo mais recente, venha
+-- do nó que vier.
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE VIEW amb_v_valores_atuais AS
+SELECT DISTINCT ON (l.ambiente_id, d.parametro)
+  l.ambiente_id,
+  d.parametro,
+  d.valor,
+  l.lido_em,
+  l.device_id
+FROM amb_leituras l
+CROSS JOIN LATERAL amb_desempilhar(l.*) d
+WHERE l.lido_em > NOW() - amb_validade()
+ORDER BY l.ambiente_id, d.parametro, l.lido_em DESC;
+
+-- Contexto da sala (presença e CO₂ externo) também consolidado entre nós:
+-- quem detecta presença é o nó de teto, quem mede CO₂ é o de parede.
+CREATE OR REPLACE VIEW amb_v_contexto_atual AS
+SELECT
+  a.id AS ambiente_id,
+  (SELECT l.presenca FROM amb_leituras l
+    WHERE l.ambiente_id = a.id AND l.presenca IS NOT NULL
+      AND l.lido_em > NOW() - amb_validade()
+    ORDER BY l.lido_em DESC LIMIT 1)  AS presenca,
+  (SELECT l.co2_ext FROM amb_leituras l
+    WHERE l.ambiente_id = a.id AND l.co2_ext IS NOT NULL
+      AND l.lido_em > NOW() - amb_validade()
+    ORDER BY l.lido_em DESC LIMIT 1)  AS co2_ext,
+  (SELECT MAX(l.lido_em) FROM amb_leituras l
+    WHERE l.ambiente_id = a.id)       AS lido_em
+FROM amb_ambientes a;
+
 -- Conformidade atual: uma linha por (ambiente × parâmetro), com o valor lido,
 -- o limite efetivo da norma e o status. É a fonte dos cards e do gráfico de
 -- "% do limite normativo".
+--
+-- Lê de amb_v_valores_atuais, então funciona igual com um nó por sala ou com
+-- vários (parede + teto), sem que um apague os parâmetros do outro.
 CREATE OR REPLACE VIEW amb_v_conformidade AS
 SELECT
   a.id                AS ambiente_id,
@@ -507,31 +555,32 @@ SELECT
   p.sentido,
   p.origem,
   p.casas,
-  ul.lido_em,
-  d.valor             AS valor,
+  v.lido_em,
+  v.device_id,
+  v.valor             AS valor,
   lim.minimo          AS limite_min,
   -- Limite efetivo: a NBR 17037 define o CO₂ como diferencial sobre o externo.
   CASE WHEN lim.delta_externo
-       THEN lim.maximo + COALESCE(ul.co2_ext, 420)
+       THEN lim.maximo + COALESCE(ctx.co2_ext, 420)
        ELSE lim.maximo
   END                 AS limite_max,
   CASE WHEN lim.delta_externo
-       THEN lim.alvo + COALESCE(ul.co2_ext, 420)
+       THEN lim.alvo + COALESCE(ctx.co2_ext, 420)
        ELSE lim.alvo
   END                 AS alvo,
   lim.tol_atencao_pct,
   lim.delta_externo,
   lim.so_ocupado,
-  ul.presenca,
+  ctx.presenca,
   lim.norma,
   lim.observacao,
   -- Parâmetro marcado como so_ocupado com o ambiente vazio não é avaliado:
   -- sala escura e silenciosa fora do expediente não é não conformidade.
-  CASE WHEN lim.so_ocupado AND ul.presenca IS FALSE THEN 'sem_dado'
+  CASE WHEN lim.so_ocupado AND ctx.presenca IS FALSE THEN 'sem_dado'
        ELSE amb_status_valor(
-              d.valor,
+              v.valor,
               lim.minimo,
-              CASE WHEN lim.delta_externo THEN lim.maximo + COALESCE(ul.co2_ext, 420) ELSE lim.maximo END,
+              CASE WHEN lim.delta_externo THEN lim.maximo + COALESCE(ctx.co2_ext, 420) ELSE lim.maximo END,
               lim.tol_atencao_pct)
   END                 AS status,
   -- Uso da faixa normativa, normalizado para que 100% signifique SEMPRE
@@ -541,30 +590,23 @@ SELECT
   CASE
     -- Faixa fechada: distância do centro, em % da semiamplitude.
     WHEN lim.minimo IS NOT NULL AND lim.maximo IS NOT NULL THEN
-      ROUND(100.0 * ABS(d.valor - (lim.minimo + lim.maximo) / 2.0)
+      ROUND(100.0 * ABS(v.valor - (lim.minimo + lim.maximo) / 2.0)
             / NULLIF((lim.maximo - lim.minimo) / 2.0, 0), 1)
     -- Só teto: quanto do teto está sendo consumido.
     WHEN lim.maximo IS NOT NULL THEN
-      ROUND(100.0 * d.valor / NULLIF(
-        CASE WHEN lim.delta_externo THEN lim.maximo + COALESCE(ul.co2_ext, 420) ELSE lim.maximo END, 0), 1)
+      ROUND(100.0 * v.valor / NULLIF(
+        CASE WHEN lim.delta_externo THEN lim.maximo + COALESCE(ctx.co2_ext, 420) ELSE lim.maximo END, 0), 1)
     -- Só piso: invertido, para que ficar abaixo do mínimo também passe de 100%.
     WHEN lim.minimo IS NOT NULL THEN
-      ROUND(100.0 * lim.minimo / NULLIF(d.valor, 0), 1)
+      ROUND(100.0 * lim.minimo / NULLIF(v.valor, 0), 1)
     ELSE NULL
   END                 AS pct_limite,
   p.ordem
 FROM amb_ambientes a
--- Junta direto em amb_leituras (e não na view amb_v_ultima_leitura) porque
--- amb_desempilhar espera o tipo composto amb_leituras: o tipo de linha de uma
--- view não é aceito no lugar dele.
-JOIN amb_leituras ul ON ul.id = (
-  SELECT l2.id FROM amb_leituras l2
-   WHERE l2.ambiente_id = a.id
-   ORDER BY l2.lido_em DESC
-   LIMIT 1)
-CROSS JOIN LATERAL amb_desempilhar(ul.*) d
-JOIN amb_limites lim  ON lim.tipo_ambiente = a.tipo AND lim.parametro = d.parametro
-JOIN amb_parametros p ON p.chave = d.parametro
+JOIN amb_v_valores_atuais v  ON v.ambiente_id = a.id
+LEFT JOIN amb_v_contexto_atual ctx ON ctx.ambiente_id = a.id
+JOIN amb_limites lim  ON lim.tipo_ambiente = a.tipo AND lim.parametro = v.parametro
+JOIN amb_parametros p ON p.chave = v.parametro
 WHERE a.ativo;
 
 -- Índice de conformidade por ambiente: % dos parâmetros avaliados que estão
@@ -692,6 +734,8 @@ CREATE POLICY amb_alertas_leitura    ON amb_alertas    FOR SELECT TO anon, authe
 -- As views herdam a RLS das tabelas base (security_invoker), então o anon
 -- lê apenas o que as policies acima permitem.
 ALTER VIEW amb_v_ultima_leitura      SET (security_invoker = true);
+ALTER VIEW amb_v_valores_atuais      SET (security_invoker = true);
+ALTER VIEW amb_v_contexto_atual      SET (security_invoker = true);
 ALTER VIEW amb_v_conformidade        SET (security_invoker = true);
 ALTER VIEW amb_v_indice_ambiente     SET (security_invoker = true);
 ALTER VIEW amb_v_serie_horaria       SET (security_invoker = true);
@@ -702,7 +746,8 @@ ALTER VIEW amb_v_conformidade_diaria SET (security_invoker = true);
 -- explícito evita um "permission denied" caso o default tenha sido alterado.
 GRANT SELECT ON amb_ambientes, amb_parametros, amb_limites,
                 amb_leituras, amb_alertas,
-                amb_v_ultima_leitura, amb_v_conformidade, amb_v_indice_ambiente,
+                amb_v_ultima_leitura, amb_v_valores_atuais, amb_v_contexto_atual,
+                amb_v_conformidade, amb_v_indice_ambiente,
                 amb_v_serie_horaria, amb_v_conformidade_diaria
   TO anon, authenticated;
 
