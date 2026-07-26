@@ -23,8 +23,11 @@ export async function POST(req) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!user) return Response.json({ error: "Usuário ou senha inválidos." }, { status: 401 });
 
-  // Cada área de login exige o papel correspondente (admin entra em ambas)
-  const exigido = area === "estoque" ? ["estoque", "admin"] : ["producao", "admin"];
+  // Cada área de login exige o papel correspondente
+  const exigido =
+    area === "estoque" ? ["estoque", "admin"] :
+    area === "rendimento" ? ["rendimento", "admin"] :
+    ["producao", "admin"];
   if (!exigido.includes(user.role)) {
     return Response.json(
       { error: `Este usuário não tem acesso à área de ${area === "estoque" ? "estoque" : "produção"}.` },

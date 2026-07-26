@@ -14,6 +14,7 @@ const REGRAS = [
   { prefixo: "/backup", papeis: ["estoque", "admin"], login: "/login-estoque" },
   { prefixo: "/entrega", papeis: ["estoque", "admin"], login: "/login-estoque" },
   { prefixo: "/expedicion", papeis: ["estoque", "admin"], login: "/login-estoque" },
+  { prefixo: "/rendimento", papeis: ["rendimento", "admin"], login: "/login-rendimento" },
 ];
 
 export async function middleware(req) {
@@ -42,5 +43,6 @@ export const config = {
     "/backup/:path*",
     "/entrega/:path*",
     "/expedicion/:path*",
+    "/rendimento/:path*",
   ],
 };
