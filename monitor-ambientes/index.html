@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoramento de Ambientes · Conformidade NBR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  /* Superfícies e tinta — mesmo sistema das outras dashboards do repositório */
+  --bg:#0e0e0e; --bg2:#161616; --bg3:#1e1e1e; --bg4:#262626;
+  --border:#2e2e2e; --text:#f2f2f2; --muted:#898781; --text2:#c3c2b7;
+  --grid:#2c2c2a; --eixo:#383835;
+
+  /* Séries do gráfico (validadas contra a superfície #161616) */
+  --serie-lido:#3987e5;
+  --serie-alvo:#0ca30c;
+
+  /* Estados de conformidade — sempre acompanhados de ícone e rótulo */
+  --ok:#0ca30c; --atencao:#fab219; --critico:#d03b3b; --sem-dado:#6b6b68;
+
+  --radius:12px; --radius-sm:8px; --transition:.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Archivo',system-ui,sans-serif;
+  font-size:15px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* ── HEADER ───────────────────────────────────────────────────────── */
+.site-header{background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0 clamp(16px,4vw,48px);position:sticky;top:0;z-index:100;}
+.header-inner{max-width:1240px;margin:0 auto;min-height:68px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 0;}
+.header-brand{display:flex;align-items:center;gap:12px;}
+.logo-pill{background:#fff;border-radius:8px;padding:5px 9px;display:inline-flex;align-items:center;}
+.header-title{font-family:'Archivo Black',sans-serif;font-size:clamp(12px,1.8vw,15px);line-height:1.25;}
+.header-title span{color:var(--serie-lido);}
+.header-title small{display:block;font-family:'Archivo',sans-serif;font-weight:500;
+  font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:2px;}
+.conexao{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);}
+.ponto{width:8px;height:8px;border-radius:50%;background:var(--sem-dado);flex-shrink:0;}
+.ponto.on{background:var(--ok);box-shadow:0 0 0 3px rgba(12,163,12,.18);}
+.ponto.demo{background:var(--atencao);box-shadow:0 0 0 3px rgba(250,178,25,.18);}
+
+/* ── LAYOUT ───────────────────────────────────────────────────────── */
+.page{max-width:1240px;margin:0 auto;padding:28px clamp(16px,4vw,48px) 90px;}
+.section-title{font-family:'Archivo Black',sans-serif;font-size:11px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:32px 0 16px;
+  display:flex;align-items:center;gap:12px;}
+.section-title:first-of-type{margin-top:0;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── FILTROS — uma única linha, acima de tudo que ela filtra ──────── */
+.filtros{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;margin-bottom:24px;}
+.campo{display:flex;flex-direction:column;gap:6px;min-width:170px;flex:1 1 170px;}
+.campo label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+select,.btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text);font-family:inherit;font-size:14px;padding:9px 12px;outline:none;
+  transition:var(--transition);cursor:pointer;width:100%;}
+select:focus,.btn:focus-visible{border-color:var(--serie-lido);box-shadow:0 0 0 3px rgba(57,135,229,.16);}
+.btn{width:auto;font-size:13px;font-weight:600;padding:9px 16px;white-space:nowrap;}
+.btn:hover{border-color:var(--text2);}
+.btn[aria-pressed="true"]{background:var(--bg4);border-color:var(--serie-lido);color:var(--text);}
+
+/* ── HERO ─────────────────────────────────────────────────────────── */
+.hero{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;display:grid;grid-template-columns:minmax(200px,auto) 1fr;gap:28px;align-items:center;}
+@media(max-width:720px){.hero{grid-template-columns:1fr;gap:20px;}}
+.hero-num{font-size:clamp(52px,8vw,72px);font-weight:700;line-height:1;letter-spacing:-.03em;}
+.hero-num small{font-size:.35em;font-weight:600;color:var(--muted);margin-left:4px;letter-spacing:0;}
+.hero-rot{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  font-weight:700;margin-bottom:8px;}
+.hero-sub{font-size:13px;color:var(--text2);margin-top:8px;}
+.hero-resumo{display:flex;gap:10px;flex-wrap:wrap;}
+.resumo-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 16px;flex:1 1 130px;min-width:130px;}
+.resumo-item b{display:block;font-size:24px;font-weight:700;line-height:1.2;}
+.resumo-item span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;}
+
+/* ── CHIP DE STATUS — cor nunca sozinha: sempre ícone + rótulo ────── */
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:99px;letter-spacing:.03em;white-space:nowrap;
+  border:1px solid transparent;}
+.chip .ic{font-size:10px;line-height:1;}
+.chip.conforme    {color:#5ede5e;background:rgba(12,163,12,.14);border-color:rgba(12,163,12,.35);}
+.chip.atencao     {color:#ffd166;background:rgba(250,178,25,.14);border-color:rgba(250,178,25,.35);}
+.chip.nao_conforme{color:#ff8080;background:rgba(208,59,59,.16);border-color:rgba(208,59,59,.4);}
+.chip.sem_dado    {color:var(--muted);background:rgba(137,135,129,.12);border-color:rgba(137,135,129,.3);}
+
+/* ── STAT TILES ───────────────────────────────────────────────────── */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.tile{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;display:flex;flex-direction:column;gap:10px;}
+.tile-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.tile-rot{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);line-height:1.35;}
+.tile-valor{font-size:30px;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.tile-valor small{font-size:.46em;font-weight:600;color:var(--muted);margin-left:4px;letter-spacing:0;}
+/* Medidor: trilho é um passo claro da mesma rampa da barra */
+.meter{height:6px;border-radius:99px;background:rgba(137,135,129,.18);overflow:hidden;}
+.meter i{display:block;height:100%;border-radius:99px;transition:width .4s ease;}
+.tile-norma{font-size:11px;color:var(--muted);line-height:1.5;}
+.tile-norma b{color:var(--text2);font-weight:600;}
+.tile-fonte{font-size:10px;color:var(--muted);opacity:.8;font-family:'Fira Code',monospace;}
+
+/* ── CARDS DE GRÁFICO ─────────────────────────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 22px;margin-bottom:18px;}
+.card-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;
+  flex-wrap:wrap;margin-bottom:4px;}
+.card-tit{font-size:15px;font-weight:700;}
+.card-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.legenda{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0 6px;}
+.leg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);}
+.leg .traco{width:18px;height:2px;border-radius:2px;flex-shrink:0;}
+.leg .faixa{width:18px;height:11px;border-radius:3px;flex-shrink:0;}
+.grafico{position:relative;width:100%;height:340px;}
+.grafico.baixo{height:300px;}
+
+/* ── TABELAS (o par acessível de cada gráfico) ────────────────────── */
+.tabela-wrap{overflow-x:auto;margin-top:14px;border:1px solid var(--border);border-radius:var(--radius-sm);}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px;}
+th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:700;background:var(--bg3);position:sticky;top:0;}
+td{color:var(--text2);}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:'Fira Code',monospace;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(255,255,255,.025);}
+[hidden]{display:none !important;}
+
+/* ── ALERTAS ──────────────────────────────────────────────────────── */
+.alerta{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);
+  border:1px solid var(--border);border-left:3px solid var(--critico);
+  border-radius:var(--radius-sm);padding:13px 16px;margin-bottom:9px;flex-wrap:wrap;}
+.alerta.atencao{border-left-color:var(--atencao);}
+.alerta-corpo{flex:1 1 220px;min-width:0;}
+@media(max-width:600px){
+  .alerta{gap:8px;}
+  .alerta-corpo{flex-basis:100%;}
+  .alerta-hora{flex-basis:100%;}
+}
+.alerta-tit{font-size:13px;font-weight:700;}
+.alerta-txt{font-size:12px;color:var(--text2);margin-top:2px;}
+.alerta-norma{font-size:11px;color:var(--muted);margin-top:3px;font-style:italic;}
+.alerta-hora{font-size:11px;color:var(--muted);font-family:'Fira Code',monospace;white-space:nowrap;}
+
+.vazio{text-align:center;padding:34px 20px;color:var(--muted);font-size:13px;
+  background:var(--bg2);border:1px dashed var(--border);border-radius:var(--radius);}
+.nota{font-size:12px;color:var(--muted);line-height:1.65;margin-top:10px;}
+.nota b{color:var(--text2);font-weight:600;}
+
+/* Recarga sem pulo de layout — segura o render anterior esmaecido */
+.carregando{opacity:.45;transition:opacity .2s;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <span class="logo-pill">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="2.5" y="3.5" width="19" height="14" rx="2" stroke="#0e0e0e" stroke-width="1.7"/>
+          <path d="M6.5 13.5l3.2-3.8 2.6 2.6 2.4-3.4 2.8 4.6" stroke="#3987e5" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 20.5h8" stroke="#0e0e0e" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <div class="header-title">
+        MONITOR DE <span>AMBIENTES</span>
+        <small>Conformidade NBR · iluminação, ar e conforto</small>
+      </div>
+    </div>
+    <div class="conexao">
+      <span class="ponto" id="pontoConexao"></span>
+      <span id="txtConexao">conectando…</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- Uma linha de filtros, acima de tudo que ela escopa -->
+  <div class="filtros">
+    <div class="campo">
+      <label for="selAmbiente">Ambiente</label>
+      <select id="selAmbiente"></select>
+    </div>
+    <div class="campo">
+      <label for="selParametro">Parâmetro do gráfico temporal</label>
+      <select id="selParametro"></select>
+    </div>
+    <div class="campo">
+      <label for="selPeriodo">Período</label>
+      <select id="selPeriodo">
+        <option value="24">Últimas 24 horas</option>
+        <option value="72">Últimos 3 dias</option>
+        <option value="168" selected>Últimos 7 dias</option>
+        <option value="720">Últimos 30 dias</option>
+      </select>
+    </div>
+    <button class="btn" id="btnAtualizar" type="button">Atualizar</button>
+  </div>
+
+  <!-- HERO: o número que a dashboard lidera -->
+  <div class="hero" id="hero">
+    <div>
+      <div class="hero-rot">Índice de conformidade</div>
+      <div class="hero-num" id="heroNum">—<small>%</small></div>
+      <div id="heroChip" style="margin-top:12px"></div>
+      <div class="hero-sub" id="heroSub">Carregando…</div>
+    </div>
+    <div class="hero-resumo" id="heroResumo"></div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="section-title">Não conformidades abertas</div>
+  <div id="listaAlertas"></div>
+
+  <!-- TILES -->
+  <div class="section-title">Parâmetros medidos · última leitura</div>
+  <div class="tiles" id="tiles"></div>
+
+  <!-- GRÁFICO 1: lido vs alvo normativo ao longo do tempo -->
+  <div class="section-title">Lido × indicado pela norma</div>
+  <div class="card">
+    <div class="card-topo">
+      <div>
+        <div class="card-tit" id="tempTitulo">—</div>
+        <div class="card-sub" id="tempSub">—</div>
+      </div>
+      <button class="btn" id="btnTabelaTemp" type="button" aria-pressed="false">Ver tabela</button>
+    </div>
+    <div class="legenda">
+      <span class="leg"><span class="traco" style="background:var(--serie-lido)"></span>Lido</span>
+      <span class="leg"><span class="traco" style="background:var(--serie-alvo);
+            background-image:repeating-linear-gradient(90deg,var(--serie-alvo) 0 5px,transparent 5px 9px)"></span>Alvo da norma</span>
+      <span class="leg"><span class="faixa" style="background:rgba(12,163,12,.16);border:1px solid rgba(12,163,12,.4)"></span>Faixa conforme</span>
+    </div>
+    <div class="grafico"><canvas id="graficoTemporal"></canvas></div>
+    <div class="tabela-wrap" id="wrapTabelaTemp" hidden>
+      <table>
+        <thead><tr><th>Hora</th><th class="num">Lido</th><th class="num">Alvo da norma</th>
+          <th class="num">Faixa</th><th>Status</th></tr></thead>
+        <tbody id="tbodyTemp"></tbody>
+      </table>
+    </div>
+    <p class="nota" id="notaTemporal"></p>
+  </div>
+
+  <!-- GRÁFICO 2: comparação entre parâmetros -->
+  <div class="section-title">Uso da faixa normativa por parâmetro</div>
+  <div class="card">
+    <div class="card-topo">
+      <div>
+        <div class="card-tit">Quanto cada parâmetro consome do limite da norma</div>
+        <div class="card-sub">100% é exatamente o limite. Acima de 100% está fora da norma — vale para teto (CO₂), piso (iluminância) e faixa (temperatura).</div>
+      </div>
+      <button class="btn" id="btnTabelaUso" type="button" aria-pressed="false">Ver tabela</button>
+    </div>
+    <div class="legenda">
+      <span class="leg"><span class="faixa" style="background:var(--ok)"></span>● Conforme</span>
+      <span class="leg"><span class="faixa" style="background:var(--atencao)"></span>▲ Atenção</span>
+      <span class="leg"><span class="faixa" style="background:var(--critico)"></span>✕ Não conforme</span>
+    </div>
+    <div class="grafico baixo"><canvas id="graficoUso"></canvas></div>
+    <div class="tabela-wrap" id="wrapTabelaUso" hidden>
+      <table>
+        <thead><tr><th>Parâmetro</th><th class="num">Lido</th><th class="num">Faixa normativa</th>
+          <th class="num">Uso</th><th>Status</th><th>Norma</th></tr></thead>
+        <tbody id="tbodyUso"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PARÂMETROS DE PROJETO -->
+  <div class="section-title">Exigências da norma que não se medem por sensor</div>
+  <div class="card">
+    <div class="card-topo">
+      <div>
+        <div class="card-tit">Parâmetros de projeto e de levantamento</div>
+        <div class="card-sub">Cobrados pela NBR ISO/CIE 8995-1, mas verificados no memorial luminotécnico ou em medição de campo em malha — não há sensor contínuo para eles.</div>
+      </div>
+    </div>
+    <div class="tabela-wrap">
+      <table>
+        <thead><tr><th>Parâmetro</th><th class="num">Exigência</th><th>Como verificar</th><th>Norma</th></tr></thead>
+        <tbody id="tbodyProjeto"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="nota">
+    <b>Base normativa.</b> Iluminação: ABNT NBR ISO/CIE 8995-1:2013 · Qualidade do ar:
+    ABNT NBR 17037:2023 (substituiu a Resolução RE 09/2003 da ANVISA) · Conforto térmico e
+    ventilação: ABNT NBR 16401-2:2008 e 16401-3:2008 · Acústica: ABNT NBR 10152:2017 ·
+    Ergonomia: NR-17 · Material particulado e formaldeído: OMS AQG 2021.
+    Os limites ficam na tabela <code>amb_limites</code> do Supabase — editá-los ali muda o
+    critério de todo o sistema, inclusive dos alertas de WhatsApp.
+  </p>
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+// CONFIGURAÇÃO
+// ══════════════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://odnjbvsjqteqapppkkpc.supabase.co';
+const SUPABASE_KEY = 'COLE_AQUI_A_ANON_KEY';
+
+// Sem chave configurada a página entra em modo demonstração com dados
+// sintéticos, para conferir o layout antes do hardware existir.
+const MODO_DEMO = !SUPABASE_KEY || SUPABASE_KEY.startsWith('COLE_AQUI');
+const sb = MODO_DEMO ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CORES = {
+  lido:'#3987e5', alvo:'#0ca30c',
+  conforme:'#0ca30c', atencao:'#fab219', nao_conforme:'#d03b3b', sem_dado:'#6b6b68',
+  grid:'#2c2c2a', eixo:'#383835', tinta:'#898781', tinta2:'#c3c2b7', superficie:'#161616'
+};
+// Cor nunca sozinha: cada status carrega ícone e rótulo.
+const ICONE = { conforme:'●', atencao:'▲', nao_conforme:'✕', sem_dado:'—' };
+const ROTULO = { conforme:'Conforme', atencao:'Atenção', nao_conforme:'Não conforme', sem_dado:'Sem dado' };
+
+// "Fora de uso" e "sem dado" são coisas diferentes para quem opera o prédio:
+// a primeira é esperada, a segunda pede verificação do sensor.
+const rotuloStatus = c =>
+  (c.status === 'sem_dado' && c.so_ocupado && c.presenca === false)
+    ? 'Fora de uso' : ROTULO[c.status];
+
+let estado = { ambientes:[], limites:[], parametros:[], conformidade:[], serie:[], alertas:[] };
+let chartTemporal = null, chartUso = null;
+
+const $ = id => document.getElementById(id);
+const num = (v, casas=0) =>
+  (v === null || v === undefined || Number.isNaN(Number(v)))
+    ? '—' : Number(v).toLocaleString('pt-BR', {minimumFractionDigits:casas, maximumFractionDigits:casas});
+
+// Índices adimensionais (UGR, Ra, Uo, COV) têm unidade '—' no catálogo:
+// escrever esse travessão ao lado do número só polui.
+const un = p => (!p || !p.unidade || p.unidade === '—') ? '' : p.unidade;
+
+// ══════════════════════════════════════════════════════════════════════════
+// REGRA DE CONFORMIDADE — espelha amb_status_valor() do Postgres
+// ══════════════════════════════════════════════════════════════════════════
+function classificar(valor, min, max, tolPct) {
+  if (valor === null || valor === undefined || Number.isNaN(valor)) return 'sem_dado';
+  if (max !== null && valor > max) return 'nao_conforme';
+  if (min !== null && valor < min) return 'nao_conforme';
+  const tol = tolPct || 0;
+  // Faixa fechada: a margem de atenção é % da LARGURA da faixa. Usar % do
+  // limite quebraria em escalas que não começam no zero — 8% de 25,5 °C
+  // marcaria 23,5 °C, o meio da zona de conforto, como "quase fora".
+  if (min !== null && max !== null) {
+    const margem = (max - min) * tol / 100;
+    return (valor >= max - margem || valor <= min + margem) ? 'atencao' : 'conforme';
+  }
+  if (max !== null && valor >= max * (1 - tol/100)) return 'atencao';
+  if (min !== null && valor <= min * (1 + tol/100)) return 'atencao';
+  return 'conforme';
+}
+
+// Normaliza para que 100% signifique SEMPRE "no limite", qualquer que seja
+// a natureza do parâmetro. É o que torna comparável, no mesmo eixo, um teto
+// de CO₂ com um piso de iluminância.
+function usoDaFaixa(valor, min, max) {
+  if (valor === null || Number.isNaN(valor)) return null;
+  if (min !== null && max !== null) {
+    const semi = (max - min) / 2;
+    if (!semi) return null;
+    return Math.round(Math.abs(valor - (min + max) / 2) / semi * 1000) / 10;
+  }
+  if (max !== null && max !== 0) return Math.round(valor / max * 1000) / 10;
+  if (min !== null && valor !== 0) return Math.round(min / valor * 1000) / 10;
+  return null;
+}
+
+// O limite de CO₂ da NBR 17037 é diferencial sobre o ar externo.
+const maxEfetivo = (lim, co2Ext) =>
+  lim.maximo === null ? null : (lim.delta_externo ? lim.maximo + (co2Ext ?? 420) : lim.maximo);
+const alvoEfetivo = (lim, co2Ext) =>
+  lim.alvo === null ? null : (lim.delta_externo ? lim.alvo + (co2Ext ?? 420) : lim.alvo);
+
+// ══════════════════════════════════════════════════════════════════════════
+// PLUGINS DO CHART.JS
+// ══════════════════════════════════════════════════════════════════════════
+
+// Faixa conforme: retângulo entre o mínimo e o máximo normativos.
+const faixaNorma = {
+  id:'faixaNorma',
+  beforeDatasetsDraw(chart, _a, opts) {
+    if (!opts || (opts.min === null && opts.max === null)) return;
+    const {ctx, chartArea:a, scales:{y}} = chart;
+    const topo  = opts.max !== null ? y.getPixelForValue(opts.max) : a.top;
+    const base  = opts.min !== null ? y.getPixelForValue(opts.min) : a.bottom;
+    const yIni  = Math.max(a.top, Math.min(topo, base));
+    const yFim  = Math.min(a.bottom, Math.max(topo, base));
+    if (yFim <= yIni) return;
+    ctx.save();
+    // Lavagem discreta: quem carrega a informação é a linha de fronteira,
+    // não o bloco. Faixa saturada dominaria o gráfico e afogaria a série.
+    ctx.fillStyle = 'rgba(12,163,12,.07)';
+    ctx.fillRect(a.left, yIni, a.right - a.left, yFim - yIni);
+    ctx.strokeStyle = 'rgba(12,163,12,.55)';
+    ctx.lineWidth = 1;
+    if (opts.max !== null && topo >= a.top && topo <= a.bottom) {
+      ctx.beginPath(); ctx.moveTo(a.left, topo); ctx.lineTo(a.right, topo); ctx.stroke();
+    }
+    if (opts.min !== null && base >= a.top && base <= a.bottom) {
+      ctx.beginPath(); ctx.moveTo(a.left, base); ctx.lineTo(a.right, base); ctx.stroke();
+    }
+    ctx.restore();
+  }
+};
+
+// Fio de prumo do cursor sobre o gráfico temporal.
+const prumo = {
+  id:'prumo',
+  afterDatasetsDraw(chart) {
+    const ativos = chart.tooltip?.getActiveElements?.() ?? [];
+    if (!ativos.length) return;
+    const x = ativos[0].element.x, a = chart.chartArea;
+    chart.ctx.save();
+    chart.ctx.strokeStyle = CORES.eixo;
+    chart.ctx.lineWidth = 1;
+    chart.ctx.beginPath();
+    chart.ctx.moveTo(x, a.top); chart.ctx.lineTo(x, a.bottom); chart.ctx.stroke();
+    chart.ctx.restore();
+  }
+};
+
+// Rótulo direto na ponta da barra — sempre FORA da barra, para nunca depender
+// da luminância do preenchimento e nunca ser cortado por uma barra curta.
+const rotuloPonta = {
+  id:'rotuloPonta',
+  afterDatasetsDraw(chart) {
+    const {ctx} = chart;
+    const meta = chart.getDatasetMeta(0);
+    ctx.save();
+    ctx.font = '600 11px Archivo, system-ui, sans-serif';
+    ctx.fillStyle = CORES.tinta2;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    meta.data.forEach((barra, i) => {
+      const v = chart.data.datasets[0].data[i];
+      if (v === null || v === undefined) return;
+      const texto = `${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}%`;
+      // Se não couber à direita, recua para dentro em vez de transbordar —
+      // e aí o texto vira branco, porque a tinta clara padrão não tem
+      // contraste sobre o preenchimento saturado da barra.
+      const cabeFora = chart.chartArea.right - barra.x > ctx.measureText(texto).width + 10;
+      ctx.textAlign = cabeFora ? 'left' : 'right';
+      ctx.fillStyle = cabeFora ? CORES.tinta2 : '#ffffff';
+      ctx.fillText(texto, cabeFora ? barra.x + 8 : barra.x - 8, barra.y);
+    });
+    ctx.restore();
+  }
+};
+
+// Linha do limite normativo (100%) no gráfico de barras.
+const linhaLimite = {
+  id:'linhaLimite',
+  afterDatasetsDraw(chart) {
+    const {ctx, chartArea:a, scales:{x}} = chart;
+    if (!x) return;
+    const px = x.getPixelForValue(100);
+    if (px < a.left || px > a.right) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(208,59,59,.75)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '700 10px Archivo, system-ui, sans-serif';
+    ctx.fillStyle = '#ff8080';
+    ctx.textAlign = 'center';
+    ctx.fillText('LIMITE DA NORMA', px, a.top - 6);
+    ctx.restore();
+  }
+};
+
+// Os plugins são anexados a cada gráfico individualmente (campo `plugins` da
+// config), nunca via Chart.register — registrar globalmente faria o rótulo de
+// barra e a linha de 100% desenharem também sobre o gráfico temporal.
+Chart.defaults.font.family = "Archivo, system-ui, sans-serif";
+Chart.defaults.color = CORES.tinta;
+
+// ══════════════════════════════════════════════════════════════════════════
+// DADOS
+// ══════════════════════════════════════════════════════════════════════════
+async function carregarBase() {
+  if (MODO_DEMO) return demoBase();
+  const [amb, lim, par] = await Promise.all([
+    sb.from('amb_ambientes').select('*').eq('ativo', true).order('codigo'),
+    sb.from('amb_limites').select('*'),
+    sb.from('amb_parametros').select('*').order('ordem'),
+  ]);
+  if (amb.error || lim.error || par.error) throw (amb.error || lim.error || par.error);
+  estado.ambientes  = amb.data;
+  estado.limites    = lim.data;
+  estado.parametros = par.data;
+}
+
+async function carregarAmbiente(ambienteId, horas) {
+  if (MODO_DEMO) return demoAmbiente(ambienteId, horas);
+  const desde = new Date(Date.now() - horas * 3600e3).toISOString();
+  const [conf, serie, alertas] = await Promise.all([
+    sb.from('amb_v_conformidade').select('*').eq('ambiente_id', ambienteId).order('ordem'),
+    sb.from('amb_v_serie_horaria').select('*').eq('ambiente_id', ambienteId)
+      .gte('hora', desde).order('hora'),
+    sb.from('amb_alertas').select('*').eq('ambiente_id', ambienteId)
+      .is('fechado_em', null).order('aberto_em', {ascending:false}),
+  ]);
+  if (conf.error || serie.error || alertas.error) throw (conf.error || serie.error || alertas.error);
+  estado.conformidade = conf.data;
+  estado.serie        = serie.data;
+  estado.alertas      = alertas.data;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MODO DEMONSTRAÇÃO
+// ══════════════════════════════════════════════════════════════════════════
+function demoBase() {
+  estado.ambientes = [
+    {id:'d1', codigo:'SALA-101', nome:'Sala 101 — Teologia I', tipo:'sala_aula', climatizado:true},
+    {id:'d2', codigo:'ADM-01',   nome:'Secretaria Acadêmica',  tipo:'escritorio', climatizado:true},
+  ];
+  estado.parametros = [
+    {chave:'lux',    nome:'Iluminância mantida (Ēm)', unidade:'lx',   grupo:'iluminacao', origem:'sensor', casas:0, ordem:10, norma:'ABNT NBR ISO/CIE 8995-1:2013'},
+    {chave:'ugr',    nome:'Ofuscamento (UGRL)',       unidade:'—',    grupo:'iluminacao', origem:'projeto', casas:0, ordem:20, norma:'ABNT NBR ISO/CIE 8995-1:2013'},
+    {chave:'uo',     nome:'Uniformidade (Uo)',        unidade:'—',    grupo:'iluminacao', origem:'levantamento', casas:2, ordem:30, norma:'ABNT NBR ISO/CIE 8995-1:2013'},
+    {chave:'ra',     nome:'Reprodução de cor (Ra)',   unidade:'—',    grupo:'iluminacao', origem:'projeto', casas:0, ordem:40, norma:'ABNT NBR ISO/CIE 8995-1:2013'},
+    {chave:'tcc',    nome:'Temperatura de cor (TCC)', unidade:'K',    grupo:'iluminacao', origem:'sensor', casas:0, ordem:50, norma:'ABNT NBR ISO/CIE 8995-1:2013'},
+    {chave:'flicker',nome:'Modulação de flicker',     unidade:'%',    grupo:'iluminacao', origem:'sensor', casas:1, ordem:60, norma:'IEEE 1789-2015'},
+    {chave:'co2',    nome:'Dióxido de carbono (CO₂)', unidade:'ppm',  grupo:'ar', origem:'sensor', casas:0, ordem:70, norma:'ABNT NBR 17037:2023'},
+    {chave:'pm25',   nome:'Material particulado MP2,5',unidade:'µg/m³',grupo:'ar', origem:'sensor', casas:1, ordem:80, norma:'ABNT NBR 17037:2023 / OMS'},
+    {chave:'pm10',   nome:'Material particulado MP10', unidade:'µg/m³',grupo:'ar', origem:'sensor', casas:1, ordem:90, norma:'ABNT NBR 17037:2023 / OMS'},
+    {chave:'voc',    nome:'Índice de COV',            unidade:'—',    grupo:'ar', origem:'sensor', casas:0, ordem:100, norma:'ISO 16000-29'},
+    {chave:'ar_ext', nome:'Vazão de ar exterior',     unidade:'L/s·p',grupo:'ar', origem:'sensor', casas:1, ordem:140, norma:'ABNT NBR 16401-3:2008'},
+    {chave:'temp',   nome:'Temperatura',              unidade:'°C',   grupo:'termico', origem:'sensor', casas:1, ordem:150, norma:'ABNT NBR 16401-2:2008'},
+    {chave:'ur',     nome:'Umidade relativa',         unidade:'%',    grupo:'termico', origem:'sensor', casas:0, ordem:160, norma:'ABNT NBR 16401-2:2008 / NR-17'},
+    {chave:'vel_ar', nome:'Velocidade do ar',         unidade:'m/s',  grupo:'termico', origem:'sensor', casas:2, ordem:170, norma:'ABNT NBR 16401-2:2008'},
+    {chave:'ruido',  nome:'Nível sonoro (LAeq)',      unidade:'dB(A)',grupo:'acustico', origem:'sensor', casas:1, ordem:180, norma:'ABNT NBR 10152:2017'},
+  ];
+  // Parâmetros que só valem com o ambiente em uso — espelha o UPDATE de
+  // amb_limites.so_ocupado no supabase-setup.sql.
+  const SO_OCUPADO = new Set(['lux','tcc','flicker','ruido','ar_ext']);
+  const base = (tipo, ajustes) => estado.parametros.map(p => Object.assign({
+    tipo_ambiente:tipo, parametro:p.chave, minimo:null, maximo:null, alvo:null,
+    delta_externo:false, so_ocupado:SO_OCUPADO.has(p.chave),
+    tol_atencao_pct:10, norma:p.norma, observacao:null
+  }, ajustes[p.chave] || {}));
+
+  estado.limites = [
+    ...base('sala_aula', {
+      lux:{minimo:300,maximo:750,alvo:300}, ugr:{maximo:19,alvo:19}, uo:{minimo:0.60,alvo:0.60},
+      ra:{minimo:80,alvo:80}, tcc:{minimo:3000,maximo:6000,alvo:4000}, flicker:{maximo:10,alvo:4},
+      co2:{maximo:700,alvo:500,delta_externo:true,tol_atencao_pct:15},
+      pm25:{maximo:15,alvo:5,tol_atencao_pct:20}, pm10:{maximo:45,alvo:15,tol_atencao_pct:20},
+      voc:{maximo:250,alvo:100,tol_atencao_pct:20}, ar_ext:{minimo:3.8,alvo:3.8},
+      temp:{minimo:22.5,maximo:25.5,alvo:24,tol_atencao_pct:8}, ur:{minimo:40,maximo:65,alvo:50},
+      vel_ar:{maximo:0.20,alvo:0.15,tol_atencao_pct:20}, ruido:{maximo:45,alvo:35},
+    }),
+    ...base('escritorio', {
+      lux:{minimo:500,maximo:1000,alvo:500}, ugr:{maximo:19,alvo:19}, uo:{minimo:0.60,alvo:0.60},
+      ra:{minimo:80,alvo:80}, tcc:{minimo:3000,maximo:6000,alvo:4000}, flicker:{maximo:10,alvo:4},
+      co2:{maximo:700,alvo:500,delta_externo:true,tol_atencao_pct:15},
+      pm25:{maximo:15,alvo:5,tol_atencao_pct:20}, pm10:{maximo:45,alvo:15,tol_atencao_pct:20},
+      voc:{maximo:250,alvo:100,tol_atencao_pct:20}, ar_ext:{minimo:2.5,alvo:2.5},
+      temp:{minimo:22.5,maximo:25.5,alvo:24,tol_atencao_pct:8}, ur:{minimo:40,maximo:65,alvo:50},
+      vel_ar:{maximo:0.20,alvo:0.15,tol_atencao_pct:20}, ruido:{maximo:45,alvo:35},
+    }),
+  ];
+}
+
+// Gera uma série plausível: aula das 7h às 12h e das 13h às 17h, com o CO₂
+// subindo com a sala ocupada e caindo no intervalo.
+function demoAmbiente(ambienteId, horas) {
+  const amb = estado.ambientes.find(a => a.id === ambienteId) || estado.ambientes[0];
+  const agora = new Date(); agora.setMinutes(0,0,0);
+  const serie = [];
+  const rnd = (a,b) => a + Math.random()*(b-a);
+
+  for (let h = horas - 1; h >= 0; h--) {
+    const t = new Date(agora.getTime() - h*3600e3);
+    const hora = t.getHours(), dia = t.getDay();
+    // A última hora entra sempre ocupada e com CO₂ alto, para a demonstração
+    // mostrar a dashboard no estado que interessa: com sala em uso e uma não
+    // conformidade real na tela.
+    const ultima  = h === 0;
+    const ocupada = ultima || (dia >= 1 && dia <= 5 && ((hora >= 7 && hora < 12) || (hora >= 13 && hora < 17)));
+    const carga   = ultima ? 1 : (ocupada ? Math.min(1, (hora % 5 + 1) / 4) : 0);
+
+    serie.push({
+      hora: t.toISOString(),
+      presenca: ocupada,
+      lux:     ocupada ? Math.round(rnd(280, 430)) : Math.round(rnd(15, 60)),
+      tcc:     ocupada ? Math.round(rnd(3850, 4250)) : null,
+      flicker: ocupada ? Math.round(rnd(2.5, 6.5)*10)/10 : null,
+      co2:     ultima ? Math.round(rnd(1180, 1290))
+                      : Math.round(420 + carga*rnd(420, 700) + rnd(-25, 25)),
+      co2_ext: 420,
+      pm25:    Math.round(rnd(3, 13)*10)/10,
+      pm10:    Math.round(rnd(8, 28)*10)/10,
+      voc:     Math.round(rnd(85, 160)),
+      ar_ext:  ocupada ? Math.round(rnd(3.0, 7.5)*10)/10 : null,
+      temp:    Math.round((ocupada ? rnd(23.2, 26.1) : rnd(21.8, 24.2))*10)/10,
+      ur:      Math.round(rnd(44, 68)),
+      vel_ar:  Math.round(rnd(0.05, 0.19)*100)/100,
+      ruido:   ocupada ? Math.round(rnd(38, 52)*10)/10 : null,
+      ocupacao: ocupada ? 34 : 0,
+    });
+  }
+  estado.serie = serie;
+
+  const ultima = serie[serie.length - 1];
+  const limites = estado.limites.filter(l => l.tipo_ambiente === amb.tipo);
+  estado.conformidade = limites.map(lim => {
+    const p = estado.parametros.find(x => x.chave === lim.parametro);
+    // UGR, Ra e Uo não vêm de sensor — no demo entram com o valor de projeto.
+    const projeto = {ugr:18, ra:82, uo:0.64};
+    const valor = p.origem === 'sensor'
+      ? (ultima[lim.parametro] ?? null)
+      : (projeto[lim.parametro] ?? null);
+    const max = maxEfetivo(lim, ultima.co2_ext);
+    // Ambiente fora de uso não é avaliado nos parâmetros so_ocupado.
+    const foraDeUso = lim.so_ocupado && ultima.presenca === false;
+    return {
+      ambiente_id: amb.id, ambiente_codigo: amb.codigo, ambiente_nome: amb.nome,
+      ambiente_tipo: amb.tipo, parametro: lim.parametro, parametro_nome: p.nome,
+      unidade: p.unidade, grupo: p.grupo, origem: p.origem, casas: p.casas, ordem: p.ordem,
+      lido_em: ultima.hora, valor, presenca: ultima.presenca,
+      limite_min: lim.minimo, limite_max: max, alvo: alvoEfetivo(lim, ultima.co2_ext),
+      tol_atencao_pct: lim.tol_atencao_pct, delta_externo: lim.delta_externo,
+      so_ocupado: lim.so_ocupado, norma: lim.norma, observacao: lim.observacao,
+      status: foraDeUso ? 'sem_dado' : classificar(valor, lim.minimo, max, lim.tol_atencao_pct),
+      pct_limite: foraDeUso ? null : usoDaFaixa(valor, lim.minimo, max),
+    };
+  });
+
+  estado.alertas = estado.conformidade
+    .filter(c => c.status === 'nao_conforme')
+    .map(c => ({
+      id:'a-'+c.parametro, parametro:c.parametro, severidade:'critico', valor:c.valor,
+      limite_min:c.limite_min, limite_max:c.limite_max, norma:c.norma,
+      aberto_em:new Date(Date.now() - Math.random()*5400e3).toISOString(),
+      mensagem:`${c.parametro_nome} fora da faixa em ${c.ambiente_nome}`,
+    }));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// RENDERIZAÇÃO
+// ══════════════════════════════════════════════════════════════════════════
+function renderHero() {
+  const medidos = estado.conformidade.filter(c => c.status !== 'sem_dado');
+  const conformes = medidos.filter(c => c.status === 'conforme').length;
+  const atencao   = medidos.filter(c => c.status === 'atencao').length;
+  const fora      = medidos.filter(c => c.status === 'nao_conforme').length;
+
+  // "Atenção" ainda está DENTRO da faixa da norma — é o aviso de que o
+  // parâmetro se aproximou do limite. Contá-lo como não conformidade
+  // inflaria a reprovação e tiraria a credibilidade do número.
+  const dentro = conformes + atencao;
+  const indice = medidos.length ? Math.round(dentro / medidos.length * 100) : null;
+
+  // A cor segue o valor do índice, não a existência de uma falha isolada:
+  // pintar "93%" de vermelho contradiz o próprio número. A não conformidade
+  // aparece no rótulo ao lado e no bloco vermelho do resumo.
+  const cor = indice === null ? CORES.tinta
+            : indice >= 100 ? CORES.conforme
+            : indice >= 90  ? CORES.atencao
+            : CORES.nao_conforme;
+  $('heroNum').innerHTML = `${indice === null ? '—' : indice}<small>%</small>`;
+  $('heroNum').style.color = cor;
+
+  $('heroChip').innerHTML = fora > 0
+    ? `<span class="chip nao_conforme"><span class="ic">${ICONE.nao_conforme}</span>${
+        fora} ${fora === 1 ? 'parâmetro fora da norma' : 'parâmetros fora da norma'}</span>`
+    : atencao > 0
+      ? `<span class="chip atencao"><span class="ic">${ICONE.atencao}</span>Tudo dentro da norma, ${
+          atencao === 1 ? '1 parâmetro perto do limite' : atencao + ' parâmetros perto do limite'}</span>`
+      : `<span class="chip conforme"><span class="ic">${ICONE.conforme}</span>Ambiente em conformidade</span>`;
+
+  const ultima = estado.conformidade[0]?.lido_em;
+  $('heroSub').textContent = ultima
+    ? `${dentro} de ${medidos.length} parâmetros dentro da faixa normativa · última leitura ${
+        new Date(ultima).toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'})}`
+    : 'Sem leituras no período.';
+
+  $('heroResumo').innerHTML = [
+    ['Com folga', conformes, CORES.conforme, ICONE.conforme],
+    ['Perto do limite', atencao, CORES.atencao, ICONE.atencao],
+    ['Fora da norma', fora, CORES.nao_conforme, ICONE.nao_conforme],
+  ].map(([rot, val, c, ic]) => `
+    <div class="resumo-item">
+      <b style="color:${c}">${ic} ${val}</b>
+      <span>${rot}</span>
+    </div>`).join('');
+}
+
+function renderAlertas() {
+  const el = $('listaAlertas');
+  if (!estado.alertas.length) {
+    el.innerHTML = `<div class="vazio">● Nenhuma não conformidade aberta neste ambiente.</div>`;
+    return;
+  }
+  el.innerHTML = estado.alertas.map(a => {
+    const p = estado.parametros.find(x => x.chave === a.parametro) || {};
+    const u = un(p);
+    const faixa = (a.limite_min !== null && a.limite_max !== null)
+      ? `${num(a.limite_min, p.casas)}–${num(a.limite_max, p.casas)} ${u}`
+      : a.limite_max !== null ? `≤ ${num(a.limite_max, p.casas)} ${u}`
+                              : `≥ ${num(a.limite_min, p.casas)} ${u}`;
+    return `
+    <div class="alerta ${a.severidade === 'atencao' ? 'atencao' : ''}">
+      <span class="chip ${a.severidade === 'atencao' ? 'atencao' : 'nao_conforme'}">
+        <span class="ic">${a.severidade === 'atencao' ? ICONE.atencao : ICONE.nao_conforme}</span>
+        ${a.severidade === 'atencao' ? 'Atenção' : 'Não conforme'}
+      </span>
+      <div class="alerta-corpo">
+        <div class="alerta-tit">${p.nome || a.parametro}</div>
+        <div class="alerta-txt">Lido <b>${num(a.valor, p.casas)} ${u}</b> · faixa normativa ${faixa}</div>
+        <div class="alerta-norma">${a.norma || ''}</div>
+      </div>
+      <div class="alerta-hora">${new Date(a.aberto_em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTiles() {
+  const sensores = estado.conformidade.filter(c => c.origem === 'sensor');
+  if (!sensores.length) {
+    $('tiles').innerHTML = `<div class="vazio">Sem leituras de sensor para este ambiente.</div>`;
+    return;
+  }
+  $('tiles').innerHTML = sensores.map(c => {
+    const cor = CORES[c.status] || CORES.sem_dado;
+    const faixa = (c.limite_min !== null && c.limite_max !== null)
+      ? `${num(c.limite_min, c.casas)} a ${num(c.limite_max, c.casas)}`
+      : c.limite_max !== null ? `≤ ${num(c.limite_max, c.casas)}`
+                              : `≥ ${num(c.limite_min, c.casas)}`;
+    const uso = c.pct_limite === null || c.pct_limite === undefined ? 0 : c.pct_limite;
+    return `
+    <div class="tile">
+      <div class="tile-topo">
+        <div class="tile-rot">${c.parametro_nome}</div>
+        <span class="chip ${c.status}"><span class="ic">${ICONE[c.status]}</span>${rotuloStatus(c)}</span>
+      </div>
+      <div class="tile-valor" style="color:${c.status === 'sem_dado' ? CORES.tinta : 'var(--text)'}">
+        ${num(c.valor, c.casas)}<small>${un(c)}</small>
+      </div>
+      <div class="meter"><i style="width:${Math.min(100, uso)}%;background:${cor}"></i></div>
+      <div class="tile-norma">Norma: <b>${faixa} ${un(c)}</b>${
+        c.delta_externo ? ' <span style="opacity:.7">(700 ppm acima do externo)</span>' : ''}${
+        c.so_ocupado ? ' <span style="opacity:.7">· só com o ambiente em uso</span>' : ''}</div>
+      <div class="tile-fonte">${c.norma}</div>
+    </div>`;
+  }).join('');
+}
+
+// Esta tabela mostra EXIGÊNCIA, não medição — então sai direto de amb_limites,
+// e não da conformidade. Se dependesse da conformidade só apareceria quando
+// alguém lançasse um valor de UGR/Ra na leitura, o que nunca acontece: esses
+// parâmetros vêm do memorial de projeto, não do sensor.
+function renderProjeto() {
+  const amb = estado.ambientes.find(a => a.id === $('selAmbiente').value) || estado.ambientes[0];
+  const como = {
+    projeto: 'Memorial luminotécnico (DIALux/Relux) ou datasheet da luminária',
+    levantamento: 'Medição de campo em malha de pontos — NBR ISO/CIE 8995-1, Anexo B',
+  };
+  const linhas = (estado.limites || [])
+    .filter(l => l.tipo_ambiente === amb?.tipo)
+    .map(l => ({ lim:l, p: estado.parametros.find(x => x.chave === l.parametro) }))
+    .filter(r => r.p && r.p.origem !== 'sensor')
+    .sort((a, b) => a.p.ordem - b.p.ordem);
+
+  $('tbodyProjeto').innerHTML = linhas.length ? linhas.map(({lim, p}) => {
+    const exig = lim.minimo !== null && lim.minimo !== undefined
+      ? `≥ ${num(lim.minimo, p.casas)}` : `≤ ${num(lim.maximo, p.casas)}`;
+    return `<tr>
+      <td>${p.nome}</td>
+      <td class="num">${exig} ${un(p)}</td>
+      <td>${como[p.origem] || '—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${lim.norma}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--muted)">—</td></tr>`;
+}
+
+// ── Gráfico temporal ─────────────────────────────────────────────────────
+function renderTemporal() {
+  const chave = $('selParametro').value;
+  const conf  = estado.conformidade.find(c => c.parametro === chave);
+  const p     = estado.parametros.find(x => x.chave === chave);
+  if (!p) return;
+
+  const pontos = estado.serie
+    .map(s => ({ t:new Date(s.hora), v:s[chave] === undefined ? null : s[chave] }))
+    .filter(s => s.v !== null && s.v !== undefined);
+
+  const min  = conf?.limite_min ?? null;
+  const max  = conf?.limite_max ?? null;
+  const alvo = conf?.alvo ?? null;
+
+  $('tempTitulo').textContent = `${p.nome} — ${$('selAmbiente').selectedOptions[0]?.text ?? ''}`;
+  $('tempSub').textContent =
+    `${pontos.length} médias horárias · faixa da norma: ` +
+    (min !== null && max !== null ? `${num(min,p.casas)} a ${num(max,p.casas)} ${un(p)}`
+     : max !== null ? `≤ ${num(max,p.casas)} ${un(p)}` : `≥ ${num(min,p.casas)} ${un(p)}`);
+  $('notaTemporal').innerHTML = conf?.observacao
+    ? `<b>${conf.norma}.</b> ${conf.observacao}` : `<b>${p.norma}.</b>`;
+
+  const rotulos = pontos.map(s =>
+    s.t.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}));
+
+  const dados = {
+    labels: rotulos,
+    datasets: [
+      {
+        label:'Lido',
+        data: pontos.map(s => s.v),
+        borderColor: CORES.lido,
+        backgroundColor: 'rgba(57,135,229,.10)',
+        borderWidth: 2, tension: .25, fill: true,
+        pointRadius: 0, pointHoverRadius: 5,
+        pointHoverBackgroundColor: CORES.lido,
+        pointHoverBorderColor: CORES.superficie, pointHoverBorderWidth: 2,
+      },
+      ...(alvo !== null ? [{
+        label:'Alvo da norma',
+        data: pontos.map(() => alvo),
+        borderColor: CORES.alvo,
+        borderWidth: 2, borderDash: [6,4],   // tracejado = 2º canal de identidade
+        pointRadius: 0, pointHoverRadius: 0, fill: false, tension: 0,
+      }] : []),
+    ],
+  };
+
+  const cfg = {
+    type:'line',
+    data: dados,
+    plugins: [faixaNorma, prumo],
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:{duration:250},
+      interaction:{mode:'index', intersect:false},
+      layout:{padding:{top:6, right:10}},
+      plugins:{
+        legend:{display:false},                     // legenda em HTML, acima
+        faixaNorma:{min, max},
+        tooltip:{
+          backgroundColor:'#1e1e1e', borderColor:CORES.eixo, borderWidth:1,
+          titleColor:'#f2f2f2', bodyColor:CORES.tinta2, padding:11, displayColors:true,
+          boxWidth:9, boxHeight:9, usePointStyle:true, cornerRadius:8,
+          callbacks:{
+            label: c => `${c.dataset.label}: ${num(c.parsed.y, p.casas)} ${un(p)}`,
+            afterBody: itens => {
+              const v = itens[0].parsed.y;
+              const st = classificar(v, min, max, conf?.tol_atencao_pct ?? 10);
+              return `${ICONE[st]} ${ROTULO[st]}`;
+            },
+          },
+        },
+      },
+      scales:{
+        x:{ grid:{color:CORES.grid, drawTicks:false}, border:{color:CORES.eixo},
+            ticks:{color:CORES.tinta, maxRotation:0, autoSkip:true, maxTicksLimit:9, font:{size:11}} },
+        y:{ grid:{color:CORES.grid, drawTicks:false}, border:{color:CORES.eixo},
+            ticks:{color:CORES.tinta, font:{size:11},
+                   callback:v => v.toLocaleString('pt-BR', {maximumFractionDigits:p.casas})},
+            title:{display:true, text:un(p) || p.nome, color:CORES.tinta, font:{size:11, weight:'600'}} },
+      },
+    },
+  };
+
+  if (chartTemporal) chartTemporal.destroy();
+  chartTemporal = new Chart($('graficoTemporal'), cfg);
+
+  // Par acessível: os mesmos valores em tabela
+  $('tbodyTemp').innerHTML = pontos.map((s, i) => {
+    const st = classificar(s.v, min, max, conf?.tol_atencao_pct ?? 10);
+    return `<tr>
+      <td>${rotulos[i]}</td>
+      <td class="num">${num(s.v, p.casas)} ${un(p)}</td>
+      <td class="num">${alvo !== null ? num(alvo, p.casas) + ' ' + un(p) : '—'}</td>
+      <td class="num">${min !== null && max !== null ? `${num(min,p.casas)}–${num(max,p.casas)}`
+        : max !== null ? `≤ ${num(max,p.casas)}` : `≥ ${num(min,p.casas)}`}</td>
+      <td><span class="chip ${st}"><span class="ic">${ICONE[st]}</span>${ROTULO[st]}</span></td>
+    </tr>`;
+  }).reverse().join('');
+}
+
+// ── Gráfico de uso da faixa ──────────────────────────────────────────────
+function renderUso() {
+  const linhas = estado.conformidade
+    .filter(c => c.pct_limite !== null && c.pct_limite !== undefined && c.status !== 'sem_dado')
+    .sort((a,b) => b.pct_limite - a.pct_limite);
+
+  const cfg = {
+    type:'bar',
+    data:{
+      labels: linhas.map(c => c.parametro_nome),
+      datasets:[{
+        label:'Uso da faixa normativa',
+        data: linhas.map(c => c.pct_limite),
+        backgroundColor: linhas.map(c => CORES[c.status]),
+        borderRadius:{topLeft:0, bottomLeft:0, topRight:4, bottomRight:4},
+        borderSkipped:'start',
+        barThickness: 18,          // marca fina; a sobra da faixa vira ar
+        maxBarThickness: 24,
+      }],
+    },
+    plugins: [rotuloPonta, linhaLimite],
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{duration:250},
+      layout:{padding:{top:18, right:46}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1e1e1e', borderColor:CORES.eixo, borderWidth:1,
+          titleColor:'#f2f2f2', bodyColor:CORES.tinta2, padding:11, displayColors:false, cornerRadius:8,
+          callbacks:{
+            label: c => {
+              const l = linhas[c.dataIndex];
+              const faixa = (l.limite_min !== null && l.limite_max !== null)
+                ? `${num(l.limite_min,l.casas)}–${num(l.limite_max,l.casas)} ${un(l)}`
+                : l.limite_max !== null ? `≤ ${num(l.limite_max,l.casas)} ${un(l)}`
+                                        : `≥ ${num(l.limite_min,l.casas)} ${un(l)}`;
+              return [
+                `Lido: ${num(l.valor, l.casas)} ${un(l)}`,
+                `Norma: ${faixa}`,
+                `Uso da faixa: ${num(l.pct_limite,0)}%`,
+                `${ICONE[l.status]} ${ROTULO[l.status]}`,
+                l.norma,
+              ];
+            },
+          },
+        },
+      },
+      scales:{
+        x:{ beginAtZero:true, grid:{color:CORES.grid, drawTicks:false}, border:{color:CORES.eixo},
+            ticks:{color:CORES.tinta, font:{size:11}, callback:v => v + '%'},
+            title:{display:true, text:'% do limite normativo', color:CORES.tinta,
+                   font:{size:11, weight:'600'}} },
+        y:{ grid:{display:false}, border:{color:CORES.eixo},
+            // Em tela estreita o rótulo longo engoliria a área de plotagem e
+            // as barras virariam tocos. Trunca e limita o eixo a 42% da
+            // largura; o nome completo continua na dica e na tabela.
+            afterFit: escala => { escala.width = Math.min(escala.width, escala.chart.width * 0.42); },
+            ticks:{ color:CORES.tinta2, font:{size:11}, autoSkip:false, crossAlign:'far',
+                    callback(valor) {
+                      const t = this.getLabelForValue(valor);
+                      const limite = this.chart.width < 560 ? 16 : 30;
+                      return t.length > limite ? t.slice(0, limite - 1) + '…' : t;
+                    } } },
+      },
+    },
+  };
+
+  if (chartUso) chartUso.destroy();
+  chartUso = new Chart($('graficoUso'), cfg);
+  $('graficoUso').parentElement.style.height = Math.max(240, linhas.length * 34 + 70) + 'px';
+
+  $('tbodyUso').innerHTML = linhas.map(c => {
+    const faixa = (c.limite_min !== null && c.limite_max !== null)
+      ? `${num(c.limite_min,c.casas)}–${num(c.limite_max,c.casas)} ${un(c)}`
+      : c.limite_max !== null ? `≤ ${num(c.limite_max,c.casas)} ${un(c)}`
+                              : `≥ ${num(c.limite_min,c.casas)} ${un(c)}`;
+    return `<tr>
+      <td>${c.parametro_nome}</td>
+      <td class="num">${num(c.valor, c.casas)} ${un(c)}</td>
+      <td class="num">${faixa}</td>
+      <td class="num">${num(c.pct_limite, 0)}%</td>
+      <td><span class="chip ${c.status}"><span class="ic">${ICONE[c.status]}</span>${ROTULO[c.status]}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${c.norma}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CONTROLE
+// ══════════════════════════════════════════════════════════════════════════
+function preencherSeletores() {
+  $('selAmbiente').innerHTML = estado.ambientes
+    .map(a => `<option value="${a.id}">${a.nome} (${a.codigo})</option>`).join('');
+  atualizarSeletorParametro();
+}
+
+// Só entram no seletor os parâmetros que este tipo de ambiente realmente
+// tem limite normativo e que vêm de sensor.
+function atualizarSeletorParametro() {
+  const amb = estado.ambientes.find(a => a.id === $('selAmbiente').value) || estado.ambientes[0];
+  if (!amb) return;
+  const daNorma = new Set(estado.limites.filter(l => l.tipo_ambiente === amb.tipo).map(l => l.parametro));
+  const anterior = $('selParametro').value;
+  const opcoes = estado.parametros.filter(p => p.origem === 'sensor' && daNorma.has(p.chave));
+  $('selParametro').innerHTML = opcoes
+    .map(p => `<option value="${p.chave}">${p.nome}</option>`).join('');
+  if (opcoes.some(p => p.chave === anterior)) $('selParametro').value = anterior;
+  else if (opcoes.some(p => p.chave === 'co2')) $('selParametro').value = 'co2';
+}
+
+async function atualizar() {
+  const el = document.querySelector('.page');
+  el.classList.add('carregando');           // segura o render anterior, sem esqueleto
+  try {
+    await carregarAmbiente($('selAmbiente').value, Number($('selPeriodo').value));
+    renderHero(); renderAlertas(); renderTiles(); renderProjeto();
+    renderTemporal(); renderUso();
+    marcarConexao(true);
+  } catch (e) {
+    console.error(e);
+    marcarConexao(false, e.message);
+  } finally {
+    el.classList.remove('carregando');
+  }
+}
+
+function marcarConexao(ok, msg) {
+  const ponto = $('pontoConexao'), txt = $('txtConexao');
+  if (MODO_DEMO) {
+    ponto.className = 'ponto demo';
+    txt.textContent = 'modo demonstração — configure a anon key';
+    return;
+  }
+  ponto.className = 'ponto' + (ok ? ' on' : '');
+  txt.textContent = ok
+    ? `conectado · ${new Date().toLocaleTimeString('pt-BR',{timeStyle:'short'})}`
+    : `sem conexão${msg ? ' — ' + msg : ''}`;
+}
+
+function ligarBotaoTabela(idBotao, idWrap, idGrafico) {
+  $(idBotao).addEventListener('click', () => {
+    const aberto = $(idWrap).hidden;
+    $(idWrap).hidden = !aberto;
+    $(idGrafico).closest('.grafico').hidden = aberto;
+    $(idBotao).setAttribute('aria-pressed', String(aberto));
+    $(idBotao).textContent = aberto ? 'Ver gráfico' : 'Ver tabela';
+  });
+}
+
+async function iniciar() {
+  ligarBotaoTabela('btnTabelaTemp', 'wrapTabelaTemp', 'graficoTemporal');
+  ligarBotaoTabela('btnTabelaUso',  'wrapTabelaUso',  'graficoUso');
+
+  $('selAmbiente').addEventListener('change', () => { atualizarSeletorParametro(); atualizar(); });
+  $('selParametro').addEventListener('change', renderTemporal);
+  $('selPeriodo').addEventListener('change', atualizar);
+  $('btnAtualizar').addEventListener('click', atualizar);
+
+  try {
+    await carregarBase();
+    preencherSeletores();
+    await atualizar();
+  } catch (e) {
+    console.error(e);
+    marcarConexao(false, e.message);
+    $('heroSub').textContent = 'Falha ao carregar. Confira a URL e a anon key do Supabase.';
+    return;
+  }
+
+  if (!MODO_DEMO) {
+    // Realtime: nova leitura ou novo alerta redesenha o ambiente aberto.
+    sb.channel('amb-monitor')
+      .on('postgres_changes', {event:'INSERT', schema:'public', table:'amb_leituras'},
+          p => { if (p.new.ambiente_id === $('selAmbiente').value) atualizar(); })
+      .on('postgres_changes', {event:'*', schema:'public', table:'amb_alertas'},
+          p => { if ((p.new ?? p.old)?.ambiente_id === $('selAmbiente').value) atualizar(); })
+      .subscribe();
+  }
+  setInterval(atualizar, 120000);   // rede de segurança se o realtime cair
+}
+
+iniciar();
+</script>
+</body>
+</html>
