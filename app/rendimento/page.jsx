@@ -103,6 +103,7 @@ export default function RendimentoPage() {
   const [okForm, setOkForm] = useState("");
   const [registros, setRegistros] = useState([]);
   const [filtro, setFiltro] = useState("diario"); // "diario" | "mensal"
+  const [producaoHoje, setProducaoHoje] = useState({ total_caixas: 0, total_kg_batata: 0 });
 
   async function carregar() {
     try {
@@ -111,7 +112,14 @@ export default function RendimentoPage() {
     } catch {}
   }
 
-  useEffect(() => { carregar(); }, []);
+  async function carregarProducao() {
+    try {
+      const j = await fetch("/api/producao/hoje").then((r) => r.json());
+      setProducaoHoje(j);
+    } catch {}
+  }
+
+  useEffect(() => { carregar(); carregarProducao(); }, []);
 
   function campo(key, valor) {
     setForm((prev) => {
@@ -150,13 +158,15 @@ export default function RendimentoPage() {
   // Gauge 1: ao vivo do formulário
   const gauge1 = parseFloat(form.media_tirada) || 0;
 
-  // Gauge 2: soma do dia (db + form em preenchimento)
+  // Gauge 2: caixas produzidas ÷ kg batata (producao + romaneio + form em preenchimento)
   const regHoje = registros.filter((r) => r.data === hoje);
-  const totalPeso  = regHoje.reduce((s, r) => s + Number(r.peso_liquido || 0), 0)
-                   + (parseFloat(form.peso_liquido) || 0);
-  const totalSacos = regHoje.reduce((s, r) => s + Number(r.qtd_sacos_produzidos || 0), 0)
-                   + (parseInt(form.qtd_sacos_produzidos) || 0);
-  const gauge2 = totalSacos > 0 ? totalPeso / totalSacos : 0;
+  const totalKgBatata = regHoje.reduce((s, r) => s + Number(r.peso_liquido || 0), 0)
+                      + (parseFloat(form.peso_liquido) || 0)
+                      + producaoHoje.total_kg_batata;
+  const totalCaixas   = regHoje.reduce((s, r) => s + Number(r.qtd_sacos_produzidos || 0), 0)
+                      + (parseInt(form.qtd_sacos_produzidos) || 0)
+                      + producaoHoje.total_caixas;
+  const gauge2 = totalKgBatata > 0 ? totalCaixas / totalKgBatata : 0;
 
   // Dados do gráfico de barras
   const dadosGrafico = useMemo(() => {
@@ -276,10 +286,10 @@ export default function RendimentoPage() {
           <h3>📊 Média do Dia</h3>
           <Velocimetro
             value={gauge2}
-            titulo="Total do dia: Peso ÷ Sacos Produzidos"
+            titulo="Total do dia: Caixas ÷ Kg Batata (3 painéis)"
             detalhe={
-              totalSacos > 0
-                ? `${totalPeso.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg ÷ ${totalSacos} sacos`
+              totalKgBatata > 0
+                ? `${totalCaixas} cx ÷ ${totalKgBatata.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg`
                 : "Sem dados para hoje"
             }
           />
