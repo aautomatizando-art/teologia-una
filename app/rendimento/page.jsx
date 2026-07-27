@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Cell,
 } from "recharts";
+import TopBar from "@/components/TopBar";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,7 @@ export default function RendimentoPage() {
   const [registros, setRegistros] = useState([]);
   const [filtro, setFiltro] = useState("diario"); // "diario" | "mensal"
   const [diaSelecionado, setDiaSelecionado] = useState(null); // "YYYY-MM-DD" ou null = hoje
+  const [barHover, setBarHover] = useState(null); // dataISO da barra com mouse em cima
   const [producaoHoje, setProducaoHoje] = useState({ total_caixas: 0, total_kg_batata: 0 });
   const [historicoProd, setHistoricoProd] = useState([]);
 
@@ -204,15 +206,13 @@ export default function RendimentoPage() {
   }, [historicoProd, filtro]);
 
   return (
-    <div className="shell">
-      {/* Cabeçalho */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+    <>
+      <TopBar />
+      <div className="shell">
+      <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 18, fontWeight: 800, color: "#a5b4fc", margin: 0 }}>
           🥔 Controle de Rendimento
         </h1>
-        <form action="/api/auth/logout" method="post">
-          <button type="submit" className="btn sec" style={{ fontSize: 12 }}>⬅ Sair</button>
-        </form>
       </div>
 
       {/* ── BLOCO 1: ROMANEIO ── */}
@@ -397,16 +397,24 @@ export default function RendimentoPage() {
                   formatter={(v) => [`${v} kg`, "Kg Batata"]} />
                 <Bar dataKey="kg" name="kg batata" radius={[6, 6, 0, 0]}
                   cursor={filtro === "diario" ? "pointer" : "default"}
+                  activeBar={false}
+                  onMouseEnter={(data) => filtro === "diario" && setBarHover(data?.dataISO || null)}
+                  onMouseLeave={() => setBarHover(null)}
                   onClick={(entry) => {
                     if (filtro !== "diario") return;
                     setDiaSelecionado((prev) => prev === entry.dataISO ? null : entry.dataISO);
+                    setBarHover(null);
                   }}>
-                  {dadosGrafico.map((entry, i) => (
-                    <Cell key={i}
-                      fill={diaSelecionado === entry.dataISO ? "#a78bfa" : "#06b6d4"}
-                      opacity={diaSelecionado && diaSelecionado !== entry.dataISO ? 0.45 : 1}
-                    />
-                  ))}
+                  {dadosGrafico.map((entry, i) => {
+                    const selecionado = diaSelecionado === entry.dataISO;
+                    const hovered    = barHover === entry.dataISO;
+                    const temSel     = !!diaSelecionado;
+                    const fill = selecionado ? "#a78bfa"
+                                : hovered    ? "#22d3ee"
+                                :              "#06b6d4";
+                    const opacity = temSel && !selecionado ? 0.4 : 1;
+                    return <Cell key={i} fill={fill} opacity={opacity} />;
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -453,5 +461,6 @@ export default function RendimentoPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
