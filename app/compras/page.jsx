@@ -274,7 +274,7 @@ export default function PaginaCompras() {
 
           <form onSubmit={criar}>
             {/* ── Linha 1: identificação do pedido ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
               <div className="campo">
                 <label>Data *</label>
                 <input type="date" required value={formHeader.data} onChange={(e) => setFormHeader({ ...formHeader, data: e.target.value })} />
@@ -296,6 +296,10 @@ export default function PaginaCompras() {
                   <option value="MODERADO">🟢 MODERADO</option>
                 </select>
               </div>
+            </div>
+
+            {/* ── Linha 2: dados do cliente ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
               <div className="campo">
                 <label>Nome do Cliente</label>
                 <input value={formHeader.nome_cliente} placeholder="Cliente"
@@ -453,6 +457,7 @@ export default function PaginaCompras() {
                         style={corTicket(p.status_rastreio)}>
                         <span className="prod">#{p.id} • {p.produtos?.nome}</span>
                         <span className="meta">Qtd: {p.quantidade} • {p.solicitante}</span>
+                        {p.nome_cliente && <span className="meta">👤 {p.nome_cliente}</span>}
                         <span className="meta">📅 {p.data?.split("-").reverse().join("/")} ⏰ {String(p.hora).slice(0, 5)}</span>
                         {p.status_rastreio > 0 && (
                           <span style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: p.status_rastreio === 6 ? "#4ade80" : p.status_rastreio >= 3 ? "#86efac" : "#a5b4fc" }}>
