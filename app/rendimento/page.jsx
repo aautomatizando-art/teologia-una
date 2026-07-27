@@ -313,6 +313,53 @@ export default function RendimentoPage() {
         </div>
       </div>
 
+      {/* ── ROMANEIOS DO DIA SELECIONADO ── */}
+      {diaSelecionado && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>📋 Romaneios de {labelDia}</h3>
+            <button className="btn sec" style={{ fontSize: 11 }} onClick={() => setDiaSelecionado(null)}>✕ Fechar</button>
+          </div>
+          {regDia.length === 0 ? (
+            <div className="muted" style={{ textAlign: "center", padding: "20px 0" }}>
+              Nenhum romaneio registrado neste dia.
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="tab">
+                <thead>
+                  <tr>
+                    <th>Fornecedor</th><th>Região</th><th>Tipo</th>
+                    <th>Peso Líq. (kg)</th><th>Sacos</th><th>Sacos Prod.</th><th>Média (kg/saco)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {regDia.map((r) => {
+                    const nivel = nivelPara(Number(r.media_tirada));
+                    return (
+                      <tr key={r.id}>
+                        <td>{r.fornecedor}</td>
+                        <td>{r.regiao || "—"}</td>
+                        <td>{r.tipo_batata || "—"}</td>
+                        <td>{Number(r.peso_liquido).toLocaleString("pt-BR")}</td>
+                        <td>{r.qtd_sacos}</td>
+                        <td>{r.qtd_sacos_produzidos}</td>
+                        <td>
+                          <span style={{ color: nivel.cor, fontWeight: 700 }}>
+                            {Number(r.media_tirada).toFixed(2)}
+                            <span style={{ fontSize: 10, marginLeft: 4 }}>({nivel.label})</span>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── BLOCO 3: GRÁFICO HISTÓRICO ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
