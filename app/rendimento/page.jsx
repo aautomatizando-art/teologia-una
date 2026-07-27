@@ -394,6 +394,8 @@ export default function RendimentoPage() {
                 <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} domain={[0, "auto"]}
                   label={{ value: "kg", angle: -90, position: "insideLeft", fill: "#8b96c0", fontSize: 11, dy: 10 }} />
                 <Tooltip contentStyle={TOOLTIP}
+                  labelStyle={{ color: "#e8ecf8" }}
+                  itemStyle={{ color: "#e8ecf8" }}
                   formatter={(v) => [`${v} kg`, "Kg Batata"]} />
                 <Bar dataKey="kg" name="kg batata" radius={[6, 6, 0, 0]}
                   cursor={filtro === "diario" ? "pointer" : "default"}
