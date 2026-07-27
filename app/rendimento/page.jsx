@@ -104,6 +104,7 @@ export default function RendimentoPage() {
   const [registros, setRegistros] = useState([]);
   const [filtro, setFiltro] = useState("diario"); // "diario" | "mensal"
   const [producaoHoje, setProducaoHoje] = useState({ total_caixas: 0, total_kg_batata: 0 });
+  const [historicoProd, setHistoricoProd] = useState([]);
 
   async function carregar() {
     try {
@@ -114,8 +115,12 @@ export default function RendimentoPage() {
 
   async function carregarProducao() {
     try {
-      const j = await fetch("/api/producao/hoje").then((r) => r.json());
-      setProducaoHoje(j);
+      const [hoje, hist] = await Promise.all([
+        fetch("/api/producao/hoje").then((r) => r.json()),
+        fetch("/api/producao/historico").then((r) => r.json()),
+      ]);
+      setProducaoHoje(hoje);
+      setHistoricoProd(hist.dias || []);
     } catch {}
   }
 
@@ -165,25 +170,23 @@ export default function RendimentoPage() {
                            + (parseInt(form.qtd_sacos_produzidos) || 0);
   const gauge2 = totalSacosRomaneio > 0 ? totalKgBatata / totalSacosRomaneio : 0;
 
-  // Dados do gráfico de barras
+  // Dados do gráfico de barras — kg de batata produzida por dia (producao)
   const dadosGrafico = useMemo(() => {
     const map = {};
-    for (const r of registros) {
+    for (const r of historicoProd) {
       const chave = filtro === "mensal" ? r.data.slice(0, 7) : r.data;
-      if (!map[chave]) map[chave] = { peso: 0, sacos: 0 };
-      map[chave].peso  += Number(r.peso_liquido || 0);
-      map[chave].sacos += Number(r.qtd_sacos_produzidos || 0);
+      if (!map[chave]) map[chave] = 0;
+      map[chave] += r.total_kg;
     }
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([chave, v]) => ({
+      .map(([chave, kg]) => ({
         periodo: filtro === "mensal"
           ? new Date(chave + "-15").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
           : new Date(chave + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-        media: v.sacos > 0 ? parseFloat((v.peso / v.sacos).toFixed(2)) : 0,
-        cor: nivelPara(v.sacos > 0 ? v.peso / v.sacos : 0).cor,
+        kg: parseFloat(kg.toFixed(1)),
       }));
-  }, [registros, filtro]);
+  }, [historicoProd, filtro]);
 
   return (
     <div className="shell">
@@ -296,7 +299,7 @@ export default function RendimentoPage() {
       {/* ── BLOCO 3: GRÁFICO HISTÓRICO ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>📈 Histórico — kg/saco produzido</h3>
+          <h3 style={{ margin: 0 }}>📈 Histórico — Kg Batata Produzida</h3>
           <div style={{ display: "flex", gap: 8 }}>
             <button className={`btn mini ${filtro === "diario" ? "" : "sec"}`}
               onClick={() => setFiltro("diario")}>Diário</button>
@@ -307,7 +310,7 @@ export default function RendimentoPage() {
 
         {dadosGrafico.length === 0 ? (
           <div className="muted" style={{ padding: "40px 0", textAlign: "center" }}>
-            Nenhum dado. Salve romaneios para visualizar o histórico.
+            Nenhum dado de produção nos últimos 90 dias.
           </div>
         ) : (
           <div style={{ height: 320 }}>
@@ -316,23 +319,15 @@ export default function RendimentoPage() {
                 <CartesianGrid stroke="#26305c" strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="periodo" tick={{ fill: "#8b96c0", fontSize: 11 }}
                   angle={-35} textAnchor="end" interval={0} />
-                <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} domain={[0, "auto"]} />
+                <YAxis tick={{ fill: "#8b96c0", fontSize: 11 }} domain={[0, "auto"]}
+                  label={{ value: "kg", angle: -90, position: "insideLeft", fill: "#8b96c0", fontSize: 11, dy: 10 }} />
                 <Tooltip contentStyle={TOOLTIP}
-                  formatter={(v) => [`${v} kg/saco`, "Média"]} />
-                <ReferenceLine y={15} stroke="#6366f1" strokeDasharray="6 3"
-                  label={{ value: "Ref: 15", fill: "#a5b4fc", fontSize: 11, position: "insideTopRight" }} />
-                {dadosGrafico.map((d, i) => null)}
-                <Bar dataKey="media" name="kg/saco" radius={[6, 6, 0, 0]}
-                  fill="#06b6d4"
-                  label={false}
-                />
+                  formatter={(v) => [`${v} kg`, "Kg Batata"]} />
+                <Bar dataKey="kg" name="kg batata" radius={[6, 6, 0, 0]} fill="#06b6d4" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )}
-        <div className="muted" style={{ fontSize: 11, marginTop: 8 }}>
-          — — Linha de referência em 15 sacos
-        </div>
       </div>
 
       {/* Tabela de registros */}
