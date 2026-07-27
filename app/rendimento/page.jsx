@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ReferenceLine,
+  CartesianGrid, Tooltip, Cell,
 } from "recharts";
 
 export const dynamic = "force-dynamic";
@@ -103,6 +103,7 @@ export default function RendimentoPage() {
   const [okForm, setOkForm] = useState("");
   const [registros, setRegistros] = useState([]);
   const [filtro, setFiltro] = useState("diario"); // "diario" | "mensal"
+  const [diaSelecionado, setDiaSelecionado] = useState(null); // "YYYY-MM-DD" ou null = hoje
   const [producaoHoje, setProducaoHoje] = useState({ total_caixas: 0, total_kg_batata: 0 });
   const [historicoProd, setHistoricoProd] = useState([]);
 
@@ -160,15 +161,28 @@ export default function RendimentoPage() {
     finally { setSalvando(false); }
   }
 
-  // Gauge 1: ao vivo do formulário
-  const gauge1 = parseFloat(form.media_tirada) || 0;
-
-  // Gauge 2: kg batata (3 painéis de producao) ÷ Qtd Sacos Produzidos (romaneio)
+  // Registros do dia visualizado (hoje ou dia clicado no gráfico)
   const regHoje = registros.filter((r) => r.data === hoje);
-  const totalKgBatata     = producaoHoje.total_kg_batata;
-  const totalSacosRomaneio = regHoje.reduce((s, r) => s + Number(r.qtd_sacos_produzidos || 0), 0)
-                           + (parseInt(form.qtd_sacos_produzidos) || 0);
-  const gauge2 = totalSacosRomaneio > 0 ? totalKgBatata / totalSacosRomaneio : 0;
+  const regDia  = diaSelecionado ? registros.filter((r) => r.data === diaSelecionado) : regHoje;
+
+  // Gauge 1: ao vivo do formulário (ou média dos registros do dia selecionado)
+  const gauge1 = diaSelecionado
+    ? (regDia.length > 0
+        ? regDia.reduce((s, r) => s + Number(r.media_tirada || 0), 0) / regDia.length
+        : 0)
+    : parseFloat(form.media_tirada) || 0;
+
+  // Gauge 2: kg batata ÷ sacos produzidos — do dia visualizado
+  const kgBatataDia = diaSelecionado
+    ? (historicoProd.find((d) => d.data === diaSelecionado)?.total_kg || 0)
+    : producaoHoje.total_kg_batata;
+  const sacosRomaneioDia = regDia.reduce((s, r) => s + Number(r.qtd_sacos_produzidos || 0), 0)
+                         + (diaSelecionado ? 0 : (parseInt(form.qtd_sacos_produzidos) || 0));
+  const gauge2 = sacosRomaneioDia > 0 ? kgBatataDia / sacosRomaneioDia : 0;
+
+  const labelDia = diaSelecionado
+    ? new Date(diaSelecionado + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })
+    : null;
 
   // Dados do gráfico de barras — kg de batata produzida por dia (producao)
   const dadosGrafico = useMemo(() => {
@@ -181,6 +195,7 @@ export default function RendimentoPage() {
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([chave, kg]) => ({
+        dataISO: chave,
         periodo: filtro === "mensal"
           ? new Date(chave + "-15").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
           : new Date(chave + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -263,11 +278,13 @@ export default function RendimentoPage() {
       {/* ── BLOCO 2: VELOCÍMETROS ── */}
       <div className="grid g2" style={{ marginBottom: 24 }}>
         <div className="card">
-          <h3>🎯 Média Tirada</h3>
+          <h3>🎯 Média Tirada{labelDia ? ` — ${labelDia}` : ""}</h3>
           <Velocimetro
             value={gauge1}
-            titulo="Leitura ao vivo do formulário"
-            detalhe={`Valor inserido: ${gauge1.toFixed(2)} kg/saco`}
+            titulo={diaSelecionado ? `Média dos registros de ${labelDia}` : "Leitura ao vivo do formulário"}
+            detalhe={diaSelecionado
+              ? (regDia.length > 0 ? `${regDia.length} registro(s) • média ${gauge1.toFixed(2)} kg/saco` : "Sem romaneio neste dia")
+              : `Valor inserido: ${gauge1.toFixed(2)} kg/saco`}
           />
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
             {NIVEIS.map((n) => (
@@ -283,14 +300,14 @@ export default function RendimentoPage() {
         </div>
 
         <div className="card">
-          <h3>📊 Média do Dia</h3>
+          <h3>📊 Média do Dia{labelDia ? ` — ${labelDia}` : ""}</h3>
           <Velocimetro
             value={gauge2}
-            titulo="Total do dia: Kg Batata ÷ Sacos Produzidos"
+            titulo={`${labelDia || "Hoje"}: Kg Batata ÷ Sacos Produzidos`}
             detalhe={
-              totalSacosRomaneio > 0
-                ? `${totalKgBatata.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg ÷ ${totalSacosRomaneio} sacos`
-                : `${totalKgBatata.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg bat. — aguardando romaneio`
+              sacosRomaneioDia > 0
+                ? `${kgBatataDia.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg ÷ ${sacosRomaneioDia} sacos`
+                : `${kgBatataDia.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg bat. — aguardando romaneio`
             }
           />
         </div>
@@ -299,12 +316,20 @@ export default function RendimentoPage() {
       {/* ── BLOCO 3: GRÁFICO HISTÓRICO ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>📈 Histórico — Kg Batata Produzida</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0 }}>📈 Histórico — Kg Batata Produzida</h3>
+            {filtro === "diario" && diaSelecionado && (
+              <button className="btn sec" style={{ fontSize: 11, padding: "2px 10px" }}
+                onClick={() => setDiaSelecionado(null)}>
+                📅 {labelDia} ✕
+              </button>
+            )}
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button className={`btn mini ${filtro === "diario" ? "" : "sec"}`}
-              onClick={() => setFiltro("diario")}>Diário</button>
+              onClick={() => { setFiltro("diario"); setDiaSelecionado(null); }}>Diário</button>
             <button className={`btn mini ${filtro === "mensal" ? "" : "sec"}`}
-              onClick={() => setFiltro("mensal")}>Mensal</button>
+              onClick={() => { setFiltro("mensal"); setDiaSelecionado(null); }}>Mensal</button>
           </div>
         </div>
 
@@ -323,7 +348,19 @@ export default function RendimentoPage() {
                   label={{ value: "kg", angle: -90, position: "insideLeft", fill: "#8b96c0", fontSize: 11, dy: 10 }} />
                 <Tooltip contentStyle={TOOLTIP}
                   formatter={(v) => [`${v} kg`, "Kg Batata"]} />
-                <Bar dataKey="kg" name="kg batata" radius={[6, 6, 0, 0]} fill="#06b6d4" />
+                <Bar dataKey="kg" name="kg batata" radius={[6, 6, 0, 0]}
+                  cursor={filtro === "diario" ? "pointer" : "default"}
+                  onClick={(entry) => {
+                    if (filtro !== "diario") return;
+                    setDiaSelecionado((prev) => prev === entry.dataISO ? null : entry.dataISO);
+                  }}>
+                  {dadosGrafico.map((entry, i) => (
+                    <Cell key={i}
+                      fill={diaSelecionado === entry.dataISO ? "#a78bfa" : "#06b6d4"}
+                      opacity={diaSelecionado && diaSelecionado !== entry.dataISO ? 0.45 : 1}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
